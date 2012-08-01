@@ -2,13 +2,13 @@ from setuptools import setup, find_packages
 
 
 setup(
-    name='amo-validator',
+    name='app-validator',
     version='1.0',
-    description='Validates addons for Mozilla products.',
+    description='Validates open web apps.',
     long_description=open('README.rst').read(),
     author='Matt Basta',
     author_email='me@mattbasta.com',
-    url='http://github.com/mattbasta/amo-validator',
+    url='http://github.com/mattbasta/app-validator',
     license='BSD',
     packages=find_packages(exclude=['tests',
                                     'tests/*',
@@ -19,7 +19,7 @@ setup(
     install_requires=[p.strip() for p in open('./requirements.txt')
                                               if not p.startswith(('#',
                                                                    '-e'))],
-    scripts=["addon-validator"],
+    scripts=["app-validator"],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Web Environment',

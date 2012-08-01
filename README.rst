@@ -1,10 +1,9 @@
-==============================
- addons.mozilla.org Validator
-==============================
+===================================
+ marketplace.mozilla.org Validator
+===================================
 
-The AMO Validator is a tool designed to scan Mozilla add-on packages for
-problems such as security vulnerabilities, exploits, spamware and badware,
-and lots of other gunk. By using a combination of various techniques and
+The Apps Validator is a tool designed to scan open web apps for
+problems and invalid code. By using a combination of various techniques and
 detection mechanisms, the validator is capable of being both efficient as well
 as thorough.
 
@@ -19,7 +18,6 @@ Python Libraries:
 
 - argparse
 - cssutils
-- rdflib
 - fastchardet
 
 Python Libraries for Testing:
@@ -86,12 +84,10 @@ your environment.
 
 Run the validator as follows ::
 
-    python addon-validator <path to xpi> [-t <expected type>] [-o <output type>] [-v] [--boring] [--selfhosted] [--determined]
+    python app-validator <path to app> [-o <output type>] [-v] [--boring] [--selfhosted] [--determined]
 
 The path to the XPI should point to an XPI file.
 
--t                  The type that you expect your add-on to be detected as. The
-                    list of types is listed below.
 -o                  The type of output to generate. Types are listed below.
 -v                  Enable verbose mode. Extra information will be displayed in
                     verbose mode, namely notices (informational messages),
@@ -105,44 +101,6 @@ The path to the XPI should point to an XPI file.
                     tier has failed. Certain high-tiered tests may
                     inadvertently fail when this option is enabled for badly
                     malformed add-ons.
---target-appversion     Accepts a JSON string containing an object whose keys
-                    are GUIDs and values are lists of version strings. In the
-                    targetApplication and compatibility tests, the add-on's
-                    predefined ``<em:targetApplication>`` values will be
-                    overridden if its GUIDs match thoes from the JSON. E.g.:
-                    ``{"{ec8030f7-c20a-464f-9b0e-13a3a9e97384}": "5.*"}``
---for-appversions   Accepts a JSON string containing an object whose keys are
-                    GUIDs and values are lists of version strings. If this
-                    list is specified, non-inlinecompatibility tests will only
-                    be run if they specifically target the applications and
-                    veresions in this parameter. E.g.:
-                    ``{"{ec8030f7-c20a-464f-9b0e-13a3a9e97384}": ["6.*"]}``
-
-
-Expected Type:
-==============
-
-The expected type should be one of the following values:
-
-any (default)
-    Accepts any extension
-extension
-    Accepts only extensions
-theme
-    Accepts only themes
-dictionary
-    Accepts only dictionaries
-languagepack
-    Accepts only language packs
-search
-    Accepts only OpenSearch XML files (unpackaged)
-multi
-    Accepts only multi-item XPI packages
-
-Specifying an expected type will throw an error if the validator
-does not detect that particular type when scanning. All addon type
-detection mechanisms are used to make this determination.
-
 
 Output Type:
 ============
@@ -180,16 +138,11 @@ sample document below.
 ::
 
     {
-        "detected_type": "extension",
+        "detected_type": "packaged_app",
         "errors": 2,
         "warnings": 1,
         "notices": 1,
         "success": false,
-        "compatibility_summary": {
-            "errors": 1,
-            "warnings": 0,
-            "notices": 0
-        },
         "ending_tier": 4,
         "message_tree": {
             "module": {
@@ -223,7 +176,7 @@ sample document below.
                 "message": "This is the error message text.",
                 "description": ["Description of the error message.",
                                 "Additional description text"],
-                "file": ["chrome/foo.jar", "bar/zap.js"],
+                "file": "chrome/foo.bar",
                 "line": 12,
                 "column": 50,
                 "context: [
@@ -231,18 +184,9 @@ sample document below.
                     "       an_error_is_somewhere_on_this_line.prototy.eval("whatever");",
                     null
                 ],
-                "compatibility_type": "error",
-                "for_appversions": {
-                    "{ec8030f7-c20a-464f-9b0e-13a3a9e97384}": ["5.0a2", "6.0a1"]
-                },
                 "tier": 2
             }
-        ],
-        "metadata": {
-            "name": "Best Add-on Evar",
-            "version": "9000",
-            "guid": "foo@bar.com"
-        }
+        ]
     }
 
 
@@ -371,39 +315,12 @@ or, after setting the proper python path: ::
 
     nosetests
 
-However, to turn run unit tests with code coverage, the appropriate
-command would be: ::
-
-    nosetests --with-coverage --cover-package=validator --cover-skip=validator.outputhandlers.,validator.main,validator.constants,validator.constants_local --cover-inclusive --cover-tests
-
-Note that in order to use the --cover-skip nose parameter, you must
-install the included patch for nose's coverage.py plugin: ::
-
-    extras/cover.py
-
-This file should overwrite the standard nose coverage plugin at the
-appropriate location: ::
-
-    ~/.virtualenvs/[virtual environment]/lib/pythonX.X/site-packages/nose/plugins/cover.py
-    /usr/lib/pythonX.X/site-packages/nose/plugins/cover.py
-
-
 ----------
  Updating
 ----------
 
 Some regular maintenance needs to be performed on the validator in order to
 make sure that the results are accurate.
-
-App Versions
-============
-
-A list of Mozilla ``<em:targetApplication>`` values is stored in the
-``validator/app_versions.json`` file. This must be updated to include the latest
-application versions. This information can be found on AMO:
-
-https://addons.mozilla.org/en-US/firefox/pages/appversions/
-
 
 JS Libraries
 ============
@@ -422,41 +339,3 @@ regenerated with each new library version. To update: ::
 To add new libraries to the mix, edit ``extras/jslibfetcher.py`` and add the
 version number to the appropriate tuple.
 
-
-Jetpack
-=======
-
-In order to maintain Jetpack compatibility, the whitelist hashes need to be
-regenerated with each successive Jetpack version. To rebuild the hash library,
-simply run: ::
-
-    cd jetpack
-    ./generate_jp_whitelist.sh
-
-That's it!
-
-
-Language Packs
-==============
-
-With every version of every app that's released, the language pack references
-need to be updated.
-
-We now have an automated tool to ease this tedious process. It is currently
-designed to work on OS X with the OS X versions of Mozilla applications, though
-it could conceivably run on any \*NIX platform against the OS X application
-packages.
-
-To run the tool, first create a new directory: ``extras/language_controls/``
-
-Put the ``.app`` packages for each updated product into this directory. Once
-this is ready, simply run: ::
-
-    cd extras
-    python update_langpacks.py
-
-That should be it. Note that this tool will fail horribly if any of the teams
-change the locations that the various language files are stored in.
-
-Also note that this tool should only be run against the en-US versions of these
-applications.
