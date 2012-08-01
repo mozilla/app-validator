@@ -5,7 +5,7 @@ import sys
 import zipfile
 from StringIO import StringIO
 
-from validator.validate import validate
+from .validate import validate
 from constants import *
 
 
@@ -13,12 +13,6 @@ def main():
     "Main function. Handles delegation to other functions."
 
     expectations = {"any": PACKAGE_ANY,
-                    "extension": PACKAGE_EXTENSION,
-                    "theme": PACKAGE_THEME,
-                    "dictionary": PACKAGE_DICTIONARY,
-                    "languagepack": PACKAGE_LANGPACK,
-                    "search": PACKAGE_SEARCHPROV,
-                    "multi": PACKAGE_MULTI,
                     "webapp": PACKAGE_WEBAPP}
 
     # Parse the arguments that
@@ -27,12 +21,6 @@ def main():
 
     parser.add_argument("package",
                         help="The path of the package you're testing")
-    parser.add_argument("-t",
-                        "--type",
-                        default="any",
-                        choices=expectations.keys(),
-                        help="Type of addon you assume you're testing",
-                        required=False)
     parser.add_argument("-o",
                         "--output",
                         default="text",
@@ -61,34 +49,6 @@ def main():
                         help="""Indicates that the addon will not be
                         hosted on addons.mozilla.org. This allows the
                         <em:updateURL> element to be set.""")
-    parser.add_argument("--approved_applications",
-                        default="validator/app_versions.json",
-                        help="""A JSON file containing acceptable applications
-                        and their versions""")
-    parser.add_argument("--target-maxversion",
-                        help="""JSON string to override the package's
-                        targetapp_maxVersion for validation. The JSON object
-                        should be a dict of versions keyed by application
-                        GUID. For example, setting a package's max Firefox
-                        version to 5.*:
-                        {"{ec8030f7-c20a-464f-9b0e-13a3a9e97384}": "5.*"}
-                        """)
-    parser.add_argument("--target-minversion",
-                        help="""JSON string to override the package's
-                        targetapp_minVersion for validation. The JSON object
-                        should be a dict of versions keyed by application
-                        GUID. For example, setting a package's min Firefox
-                        version to 5.*:
-                        {"{ec8030f7-c20a-464f-9b0e-13a3a9e97384}": "5.*"}
-                        """)
-    parser.add_argument("--for-appversions",
-                        help="""JSON string to run validation tests for
-                        compatibility with a specific app/version. The JSON
-                        object should be a dict of version lists keyed by
-                        application GUID. For example, running Firefox 6.*
-                        compatibility tests:
-                        {"{ec8030f7-c20a-464f-9b0e-13a3a9e97384}": ["6.*"]}
-                        """)
     parser.add_argument("--timeout",
                         help="The amount of time before validation is "
                              "terminated with a timeout exception.",
@@ -104,16 +64,6 @@ def main():
                 args.type
         sys.exit(1)
 
-    overrides = {}
-    if args.target_minversion:
-       overrides['targetapp_minVersion'] = json.loads(args.target_minversion)
-    if args.target_maxversion:
-       overrides['targetapp_maxVersion'] = json.loads(args.target_maxversion)
-
-    for_appversions = None
-    if args.for_appversions:
-        for_appversions = json.loads(args.for_appversions)
-
     try:
         timeout = int(args.timeout)
     except ValueError:
@@ -123,12 +73,8 @@ def main():
     expectation = expectations[args.type]
     error_bundle = validate(args.package,
                             format=None,
-                            approved_applications=args.approved_applications,
                             determined=args.determined,
                             listed=not args.selfhosted,
-                            overrides=overrides,
-                            for_appversions=for_appversions,
-                            expectation=expectation,
                             timeout=timeout)
 
     # Print the output of the tests based on the requested format.

@@ -6,8 +6,7 @@ import types
 import spidermonkey
 import instanceactions
 import instanceproperties
-from validator.constants import BUGZILLA_BUG, FENNEC_GUID, FIREFOX_GUID
-from validator.decorator import version_range
+from appvalidator.constants import BUGZILLA_BUG, FENNEC_GUID, FIREFOX_GUID
 from jstypes import *
 
 
@@ -450,28 +449,6 @@ def _call_create_pref(a, t, e):
                 "distinct string unique to and indicative of your add-on.")
 
 
-def _readonly_top(t, r, rn):
-    """Handle the readonly callback for window.top."""
-    t.err.notice(
-        err_id=("testcases_javascript_actions",
-                "_readonly_top"),
-        notice="window.top is a reserved variable",
-        description="The 'top' global variable is reserved and cannot be "
-                    "assigned any values starting with Gecko 6. Review your "
-                    "code for any uses of the 'top' global, and refer to "
-                    "%s for more information." % BUGZILLA_BUG % 654137,
-        filename=t.filename,
-        line=t.line,
-        column=t.position,
-        context=t.context,
-        for_appversions={FIREFOX_GUID:
-                             version_range("firefox", "6.0a1", "7.0a1"),
-                         FENNEC_GUID:
-                             version_range("fennec", "6.0a1", "7.0a1")},
-        compatibility_type="warning",
-        tier=5)
-
-
 def _expression(traverser, node):
     "Evaluates an expression and returns the result"
     result = traverser._traverse_node(node["expression"])
@@ -596,22 +573,6 @@ def _expr_assignment(traverser, node):
 
         traverser._debug("ASSIGNMENT:DIRECT:GLOB_OVERWRITE %s" %
                              global_overwrite)
-
-        if (global_overwrite and
-            not traverser.is_jsm and
-            readonly_value == True):
-
-            traverser.err.warning(
-                err_id=("testcases_javascript_actions",
-                        "_expr_assignment",
-                        "global_overwrite"),
-                warning="Global variable overwrite",
-                description="An attempt was made to overwrite a global "
-                            "variable in some JavaScript code.",
-                filename=traverser.filename,
-                line=traverser.line,
-                column=traverser.position,
-                context=traverser.context)
 
         if isinstance(readonly_value, types.LambdaType):
             # The readonly attribute supports a lambda function that accepts

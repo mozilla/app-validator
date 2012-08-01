@@ -2,21 +2,21 @@ import sys
 
 from nose.tools import eq_
 
-from validator.errorbundler import ErrorBundle
-from validator.outputhandlers.shellcolors import OutputHandler
-import validator.unicodehelper
-import validator.testcases.scripting
+from appvalidator.errorbundler import ErrorBundle
+from appvalidator.outputhandlers.shellcolors import OutputHandler
+import appvalidator.unicodehelper
+import appvalidator.testcases.scripting
 
 
 # Originated from bug 626496
 def _do_test(path):
-    script = validator.unicodehelper.decode(open(path, "rb").read())
+    script = appvalidator.unicodehelper.decode(open(path, "rb").read())
     print script.encode("ascii", "replace")
 
     err = ErrorBundle(instant=True)
     err.supported_versions = {}
     err.handler = OutputHandler(sys.stdout, False)
-    validator.testcases.scripting.test_js_file(err, path, script)
+    appvalidator.testcases.scripting.test_js_file(err, path, script)
     return err
 
 

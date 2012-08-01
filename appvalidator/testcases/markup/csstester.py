@@ -2,7 +2,7 @@ import re
 import fnmatch
 import cssutils
 
-from validator.contextgenerator import ContextGenerator
+from appvalidator.contextgenerator import ContextGenerator
 
 BAD_URL_PAT = "url\(['\"]?(?!(chrome:|resource:))(\/\/|(ht|f)tps?:\/\/|data:)[a-z0-9\/\-\.#]*['\"]?\)"
 BAD_URL = re.compile(BAD_URL_PAT, re.I)
@@ -76,44 +76,6 @@ def _run_css_tests(err, tokens, filename, line_start=0, context=None):
             print line + line_start
             continue
 
-        # Save the last descriptor for reference.
-        if tok_type == "IDENT":
-            last_descriptor = value.lower()
-
-        elif tok_type == "URI":
-
-            # If we hit a URI after -moz-binding, we may have a
-            # potential security issue.
-            if last_descriptor == "-moz-binding":
-                # We need to make sure the URI is not remote.
-                if BAD_URL.match(value):
-                    err.warning(("testcases_markup_csstester",
-                                 "_run_css_tests",
-                                 "-moz-binding_external"),
-                                "Cannot reference external scripts.",
-                                "-moz-binding cannot reference external "
-                                "scripts in CSS. This is considered to be a "
-                                "security issue. The script file must be "
-                                "placed in the /content/ directory of the "
-                                "package.",
-                                filename,
-                                line=line + line_start,
-                                context=context.get_context(line))
-
-        elif tok_type == "HASH":
-            # Search for interference with the identity box.
-            if value == "#identity-box":
-                identity_box_mods.append(str(line + line_start))
-
-    if identity_box_mods:
-        err.warning(("testcases_markup_csstester",
-                    "_run_css_tests",
-                    "identity_box"),
-                    "Modification to identity box.",
-                    ["The identity box (#identity-box) is a sensitive piece "
-                     "of the interface and should not be modified.",
-                     "Lines: %s" % ", ".join(identity_box_mods)],
-                    filename)
     if unicode_errors:
         err.info(("testcases_markup_csstester",
                   "test_css_file",

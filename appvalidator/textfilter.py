@@ -1,5 +1,4 @@
 
-
 def is_ctrl_char(x, y=None):
     "Returns whether X is an ASCII control character"
     if y is None:

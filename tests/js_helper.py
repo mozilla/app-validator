@@ -4,11 +4,11 @@ from nose.tools import eq_
 
 import helper
 from helper import MockXPI
-from validator.errorbundler import ErrorBundle
-from validator.outputhandlers.shellcolors import OutputHandler
-import validator.testcases.content
-import validator.testcases.scripting
-validator.testcases.scripting.traverser.DEBUG = True
+from appvalidator.errorbundler import ErrorBundle
+from appvalidator.outputhandlers.shellcolors import OutputHandler
+import appvalidator.testcases.content
+import appvalidator.testcases.scripting
+appvalidator.testcases.scripting.traverser.DEBUG = True
 
 
 def _do_test(path):
@@ -23,8 +23,6 @@ def _do_test_raw(script, path="foo.js", bootstrap=False, ignore_pollution=True,
     "Performs a test on a JS file"
 
     err = ErrorBundle(instant=True)
-    if jetpack:
-        err.metadata["is_jetpack"] = True
 
     err.handler = OutputHandler(sys.stdout, True)
     err.supported_versions = {}
@@ -33,7 +31,7 @@ def _do_test_raw(script, path="foo.js", bootstrap=False, ignore_pollution=True,
     if detected_type:
         err.detected_type = detected_type
 
-    validator.testcases.content._process_file(
+    appvalidator.testcases.content._process_file(
             err, MockXPI(), path, script, path.lower(), not ignore_pollution)
     if err.final_context is not None:
         print err.final_context.output()
@@ -42,7 +40,7 @@ def _do_test_raw(script, path="foo.js", bootstrap=False, ignore_pollution=True,
 
 
 def _do_real_test_raw(script, path="foo.js", versions=None, detected_type=None,
-                      metadata=None, resources=None, jetpack=False):
+                      metadata=None, resources=None):
     """Perform a JS test using a non-mock bundler."""
 
     err = ErrorBundle(for_appversions=versions or {})
@@ -52,11 +50,9 @@ def _do_real_test_raw(script, path="foo.js", versions=None, detected_type=None,
         err.metadata = metadata
     if resources is not None:
         err.resources = resources
-    if jetpack:
-        err.metadata["is_jetpack"] = True
 
-    validator.testcases.content._process_file(err, MockXPI(), path, script,
-                                              path.lower())
+    appvalidator.testcases.content._process_file(err, MockXPI(), path, script,
+                                                 path.lower())
     return err
 
 
@@ -103,10 +99,10 @@ class TestCase(helper.TestCase):
         if self.err.supported_versions is None:
             self.err.supported_versions = {}
 
-        validator.testcases.content._process_file(self.err, MockXPI(),
-                                                  self.file_path, script,
-                                                  self.file_path.lower(),
-                                                  expose_pollution)
+        appvalidator.testcases.content._process_file(self.err, MockXPI(),
+                                                     self.file_path, script,
+                                                     self.file_path.lower(),
+                                                     expose_pollution)
         if self.err.final_context is not None:
             print self.err.final_context.output()
             self.final_context = self.err.final_context

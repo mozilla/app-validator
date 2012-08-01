@@ -1,9 +1,8 @@
 import types
 import instanceproperties
 
-from validator.constants import JETPACK_URI_URL
-
 recursion_buster = []
+
 
 class JSObject(object):
     """
@@ -178,24 +177,6 @@ class JSWrapper(object):
         if value == self.value:
             return
 
-        # We want to obey the permissions of global objects
-        if (self.is_global and
-            (not traverser or not traverser.is_jsm) and
-            (isinstance(self.value, dict) and
-             ("overwritable" not in self.value or
-              self.value["overwritable"] == False))):
-            traverser.err.warning(("testcases_javascript_jstypes",
-                                   "JSWrapper_set_value",
-                                   "global_overwrite"),
-                                  "Global overwrite",
-                                  "An attempt to overwrite a global variable "
-                                  "was made in some JS code.",
-                                  traverser.filename,
-                                  line=traverser.line,
-                                  column=traverser.position,
-                                  context=traverser.context)
-            return self
-
         if isinstance(value, (bool, str, int, float, long, unicode)):
             self.inspect_literal(value)
             value = JSLiteral(value)
@@ -365,26 +346,8 @@ class JSWrapper(object):
 
         self.traverser._debug("INSPECTING: %s" % value)
 
-        if isinstance(value, (str, unicode)):
-            # TODO(basta): Testing for jetpack should be easier.
-            if ("is_jetpack" in self.traverser.err.metadata and
-                value.startswith("resource://") and
-                "-data/" in value):
-                # Since Jetpack files are ignored, this should not be scanning
-                # anything inside the jetpack directories.
-                self.traverser.err.warning(
-                    err_id=("javascript_js_jstypes", "jswrapper",
-                            "jetpack_abs_uri"),
-                    warning="Absolute URIs in Jetpack 1.4 are disallowed",
-                    description=["As of Jetpack 1.4, absolute URIs are no "
-                                 "longer allowed within add-ons.",
-                                 "See %s for more information." %
-                                     JETPACK_URI_URL],
-                    filename=self.traverser.filename,
-                    line=self.traverser.line,
-                    column=self.traverser.position,
-                    context=self.traverser.context,
-                    compatibility_type="error")
+        # This is a no-op for now.
+        pass
 
     def __str__(self):
         """Returns a textual version of the object."""

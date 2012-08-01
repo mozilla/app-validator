@@ -1,4 +1,4 @@
-import validator.testcases.javascript.jstypes as jstypes
+import appvalidator.testcases.javascript.jstypes as jstypes
 from js_helper import _do_test_raw
 
 

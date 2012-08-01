@@ -7,10 +7,10 @@ import types
 from nose.tools import eq_
 
 from helper import TestCase
-import validator.constants
-from validator.errorbundler import ErrorBundle
-from validator.specs.webapps import WebappSpec
-import validator.webapp
+import appvalidator.constants
+from appvalidator.errorbundler import ErrorBundle
+from appvalidator.specs.webapps import WebappSpec
+import appvalidator.webapp
 
 
 class TestWebappAccessories(TestCase):
@@ -95,7 +95,7 @@ class TestWebapps(TestCase):
 
     def analyze(self):
         """Run the webapp tests on the file."""
-        self.detected_type = validator.constants.PACKAGE_WEBAPP
+        self.detected_type = appvalidator.constants.PACKAGE_WEBAPP
         self.setup_err()
         with tempfile.NamedTemporaryFile(delete=False) as t:
             if isinstance(self.data, types.StringTypes):
@@ -103,7 +103,7 @@ class TestWebapps(TestCase):
             else:
                 t.write(json.dumps(self.data))
             name = t.name
-        validator.webapp.detect_webapp(self.err, name)
+        appvalidator.webapp.detect_webapp(self.err, name)
         os.unlink(name)
 
     def test_pass(self):
@@ -114,7 +114,7 @@ class TestWebapps(TestCase):
     def test_bom(self):
         """Test that a plain webapp with a BOM won't throw errors."""
         self.setup_err()
-        validator.webapp.detect_webapp(
+        appvalidator.webapp.detect_webapp(
             self.err, "tests/resources/unicodehelper/utf8_webapp.json")
         self.assert_silent()
 
@@ -197,7 +197,7 @@ class TestWebapps(TestCase):
     def test_icons_has_min_listed(self):
         self.listed = True
         self.data["installs_allowed_from"] = \
-                validator.constants.DEFAULT_WEBAPP_MRKT_URLS
+                appvalidator.constants.DEFAULT_WEBAPP_MRKT_URLS
         del self.data["icons"]["128"]
         self.analyze()
         self.assert_failed(with_errors=True)
@@ -266,7 +266,7 @@ class TestWebapps(TestCase):
             self.analyze()
             self.assert_silent()
 
-        for url in validator.constants.DEFAULT_WEBAPP_MRKT_URLS:
+        for url in appvalidator.constants.DEFAULT_WEBAPP_MRKT_URLS:
             yield test_iaf, self, orig_iaf, url
 
     def test_iaf_wildcard(self):
@@ -283,7 +283,7 @@ class TestWebapps(TestCase):
         HTTPS, we flag it as using the wrong protocol and not as an invalid URL.
         """
         self.listed = True
-        bad_url = validator.constants.DEFAULT_WEBAPP_MRKT_URLS[0].replace(
+        bad_url = appvalidator.constants.DEFAULT_WEBAPP_MRKT_URLS[0].replace(
                 "https", "http")
 
         self.data["installs_allowed_from"] = (bad_url, )

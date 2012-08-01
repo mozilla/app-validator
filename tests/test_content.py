@@ -3,29 +3,10 @@ from nose.tools import eq_
 from helper import MockXPI
 from js_helper import _do_test_raw
 
-import validator.xpi as xpi
-import validator.testcases.content as content
-from validator.errorbundler import ErrorBundle
-from validator.chromemanifest import ChromeManifest
-from validator.constants import *
-
-
-def test_xpcnativewrappers():
-    "Tests that xpcnativewrappers is not in the chrome.manifest"
-
-    err = ErrorBundle()
-    assert content.test_xpcnativewrappers(err, None) is None
-
-    err.save_resource("chrome.manifest",
-                      ChromeManifest("foo bar", "chrome.manifest"))
-    content.test_xpcnativewrappers(err, None)
-    assert not err.failed()
-
-    err.save_resource("chrome.manifest",
-                      ChromeManifest("xpcnativewrappers on",
-                                     "chrome.manifest"))
-    content.test_xpcnativewrappers(err, None)
-    assert err.failed()
+import appvalidator.xpi as xpi
+import appvalidator.testcases.content as content
+from appvalidator.errorbundler import ErrorBundle
+from appvalidator.constants import *
 
 
 def test_jar_subpackage():

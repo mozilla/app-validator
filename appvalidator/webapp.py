@@ -4,7 +4,7 @@ import types
 import urlparse
 
 from unicodehelper import decode
-from validator.specs.webapps import WebappSpec
+from .specs.webapps import WebappSpec
 
 
 def detect_webapp(err, package):
@@ -40,7 +40,7 @@ def detect_webapp_raw(err, webapp):
     Parse and validate a webapp based on the dict version of the manifest.
     """
 
-    from validator.specs.webapps import WebappSpec
+    from .specs.webapps import WebappSpec
     ws = WebappSpec(webapp, err)
     ws.validate()
 

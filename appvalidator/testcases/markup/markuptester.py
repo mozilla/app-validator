@@ -6,13 +6,12 @@ try:
 except ImportError:  # pragma: no cover
     import html.parser as htmlparser
 
-import validator.testcases.scripting as scripting
-import validator.unicodehelper as unicodehelper
-from validator.testcases.markup import csstester
-from validator.contextgenerator import ContextGenerator
-from validator.constants import *
-from validator.compat import FX6_DEFINITION
-from validator.decorator import version_range
+from .. import scripting
+import appvalidator.unicodehelper as unicodehelper
+from . import csstester
+from appvalidator.contextgenerator import ContextGenerator
+from appvalidator.constants import *
+
 
 DEBUG = False
 
@@ -28,10 +27,6 @@ DOM_MUTATION_HANDLERS = (
         "ondomcharacterdatamodified", "ondomelementnamechanged",
         "ondomnodeinserted", "ondomnodeinsertedintodocument", "ondomnoderemoved",
         "ondomnoderemovedfromdocument", "ondomsubtreemodified", )
-UNSAFE_THEME_XBL = ("constructor", "destructor", "field", "getter",
-                    "implementation", "setter", )
-
-GENERIC_IDS = ("string-bundle", "strings", )
 
 
 class MarkupParser(htmlparser.HTMLParser):
@@ -50,7 +45,6 @@ class MarkupParser(htmlparser.HTMLParser):
         self.xml_state = []
         self.xml_line_stack = []
         self.xml_buffer = []
-        self.xbl = False
 
         self.reported = set()
         self.found_scripts = set()  # A set of script URLs in the doc.
@@ -197,201 +191,10 @@ class MarkupParser(htmlparser.HTMLParser):
                 line=self.line,
                 context=self.context)
 
-        # Test for banned XBL in themes.
-        if self.err.detected_type == PACKAGE_THEME:
-            if tag.startswith("xbl:"):
-                self.xbl = True
-                tag = tag[4:]
-
-            # Find XBL elements.
-            if self.xbl:
-                if tag in UNSAFE_THEME_XBL:
-                    self.err.warning(
-                        err_id=("testcases_markup_markuptester",
-                                "handle_starttag",
-                                "unsafe_theme_xbl_element"),
-                        warning="Banned XBL element in theme.",
-                        description=["Certain XBL elements are disallowed in "
-                                     "themes.",
-                                     "Element: <xbl:%s>" % tag],
-                        filename=self.filename,
-                        line=self.line,
-                        context=self.context)
-
-                elif (tag == "property" and
-                      any(a[0] in (u"onset", u"onget") for a in attrs)):
-                    self.err.warning(
-                        err_id=("testcases_markup_markuptester",
-                                "handle_starttag",
-                                "theme_xbl_property"),
-                        warning="Themes are not allowed to use XBL properties",
-                        description="XBL properties cannot be used in themes.",
-                        filename=self.filename,
-                        line=self.line,
-                        context=self.context)
-
-        # Test for banned elements in language pack and theme markup.
-        if self.err.detected_type in (PACKAGE_LANGPACK, PACKAGE_THEME):
-            if (tag in UNSAFE_TAGS or
-                (self.err.detected_type == PACKAGE_THEME and
-                 tag in UNSAFE_THEME_TAGS)):
-                self.err.warning(
-                    err_id=("testcases_markup_markuptester",
-                            "handle_starttag",
-                            "unsafe_langpack_theme"),
-                    warning="Unsafe tag for add-on type",
-                    description=["A tag in your markup has been marked as "
-                                 "being potentially unsafe. Consider "
-                                 "alternate means of accomplishing what the "
-                                 "code executed by this tag performs.",
-                                 'Tag "%s" is disallowed.' % tag],
-                    filename=self.filename,
-                    line=self.line,
-                    context=self.context)
-                if DEBUG:  # pragma: no cover
-                    print "Unsafe Tag ------"
-
-            # Make sure all src/href attributes are local
-            for attr in attrs:
-                if attr[0].lower() in ("src", "href") and \
-                   not self._is_url_local(attr[1].lower()):
-                    self.err.warning(("testcases_markup_markuptester",
-                                      "handle_starttag",
-                                      "remote_src_href"),
-                                     "src/href attributes must be local.",
-                                     "Language packs require that all src and "
-                                     "href attributes are relative URLs.",
-                                     self.filename,
-                                     line=self.line,
-                                     context=self.context)
-
-        if tag == "prefwindow":
-            # Flag <prefwindow> elements without IDs.
-
-            if not any((key == "id") for key, val in attrs):
-                self.err.warning(
-                        err_id=("markup", "starttag", "prefwindow_id"),
-                        warning="`<prefwindow>` elements must have IDs.",
-                        description="`<prefwindow>` elements without `id` "
-                                    "attributes cause errors to be reported "
-                                    "in the error console and prevent "
-                                    "persistence of certain properties of the "
-                                    "dialog.",
-                        filename=self.filename,
-                        line=self.line,
-                        context=self.context)
-
-        elif tag in ("iframe", "browser") and self.extension == "xul":
-            # Bork if XUL iframe has no type attribute
-
-            type_ = None
-            src = None
-            for attr in attrs:
-                attr_name = attr[0].lower()
-                if attr_name == "type":
-                    type_ = attr[1].lower()
-                elif attr_name == "src":
-                    src = attr[1].lower()
-
-            # We say it's true by default to catch elements that are
-            # type="chrome" without an src="" attribute.
-            remote_src = True
-            if isinstance(src, types.StringTypes):
-                remote_src = not self._is_url_local(src)
-
-            if (type_ and
-                not (type_ in SAFE_IFRAME_TYPES or
-                     not remote_src)):
-                self.err.warning(("testcases_markup_markuptester",
-                                  "handle_starttag",
-                                  "iframe_type_unsafe"),
-                                 "iframe/browser missing 'type' attribute",
-                                 "All iframe and browser elements must have "
-                                 "either a valid `type` attribute or a `src` "
-                                 "attribute that points to a local file.",
-                                 self.filename,
-                                 line=self.line,
-                                 context=self.context)
-            elif ((not type_ or
-                   type_ not in SAFE_IFRAME_TYPES) and
-                  remote_src):
-                self.err.warning(("testcases_markup_markuptester",
-                                  "handle_starttag",
-                                  "iframe_type_unsafe"),
-                                 "Typeless iframes/browsers must be local.",
-                                 "iframe and browser elements that lack a type "
-                                 "attribute must always have src attributes "
-                                 "that reference local resources.",
-                                 self.filename,
-                                 line=self.line,
-                                 context=self.context)
-
-        elif tag == "script" and self.extension == "xul":
-            # Per the Addon Validator Spec (v2), scripts in XUL
-            # must not be remote.
-
-            src = None
-            for attr in attrs:
-                if attr[0].lower() == "src":
-                    src = attr[1].lower()
-                    break
-
-            if src:
-                if not self._is_url_local(src):
-                    self.err.warning(
-                        err_id=("testcases_markup_markuptester",
-                                "handle_starttag",
-                                "banned_remote_scripts"),
-                        warning="Scripts must not be remote in XUL",
-                        description="In XUL, <script> tags must not be "
-                                    "referenced to script files that are "
-                                    "hosted remotely.",
-                        filename=self.filename,
-                        line=self.line,
-                        context=self.context)
-                else:
-                    self.found_scripts.add(src)
-
         # Find CSS and JS attributes and handle their values like they
         # would otherwise be handled by the standard parser flow.
         for attr in attrs:
             attr_name, attr_value = attr[0].lower(), attr[1]
-
-            if (attr_name == "xmlns:xbl" and
-                attr_value == "http://www.mozilla.org/xbl"):
-                self.xbl = True
-
-            # Test that an absolute URI isn't referenced in Jetpack 1.4.
-            if (self.is_jetpack and
-                attr_value.startswith("resource://") and
-                "-data/" in attr_value):
-                self.err.warning(
-                        err_id=("testcases_markup_markuptester",
-                                "handle_starttag", "jetpack_abs_uri"),
-                        warning="Absolute URI referenced in Jetpack 1.4",
-                        description=["As of Jetpack 1.4, absolute URIs are no "
-                                     "longer allowed within add-ons.",
-                                     "See %s for more information." %
-                                         JETPACK_URI_URL],
-                        filename=self.filename,
-                        line=self.line,
-                        context=self.context,
-                        compatibility_type="error")
-
-            if (self.err.detected_type == PACKAGE_THEME and
-                attr_value.startswith(("data:", "javascript:"))):
-
-                self.err.warning(
-                        err_id=("testcases_markup_markuptester",
-                                "handle_starttag",
-                                "theme_attr_prefix"),
-                        warning="Attribute contains banned prefix",
-                        description=["A mark element's attribute contains a "
-                                     "prefix which is not allowed in themes.",
-                                     "Attribute: %s" % attr_name],
-                        filename=self.filename,
-                        line=self.line,
-                        context=self.context)
 
             if attr_name == "style":
                 csstester.test_css_snippet(self.err,
@@ -419,47 +222,6 @@ class MarkupParser(htmlparser.HTMLParser):
                                           filename=self.filename,
                                           line=self.line,
                                           context=self.context)
-
-            elif (self.extension == "xul" and
-                  attr_name in ("insertbefore", "insertafter") and
-                  any((id in attr_value) for id in ("menu_pageSource",
-                                                    "menu_pageinspect",
-                                                    "javascriptConsole",
-                                                    "webConsole"))):
-                self.err.notice(
-                    err_id=("testcases_markup_markuptester",
-                            "handle_starttag",
-                            "incompatible_menu_items"),
-                    notice="Menu item has been moved",
-                    description="Your add-on has an overlay that uses the "
-                                "insertbefore or insertafter attribute "
-                                "pointing to menuitems that have been moved "
-                                "to a different menu item. Your overlay items "
-                                "may appear in unexpected locations because "
-                                "of this. See "
-                        "https://bugzilla.mozilla.org/show_bug.cgi?id=653221"
-                                " for more information.",
-                    filename=self.filename,
-                    line=self.line,
-                    context=self.context,
-                    for_appversions=FX6_DEFINITION,
-                    compatibility_type="warning")
-
-
-            # Test for generic IDs
-            if attr_name == "id" and attr_value in GENERIC_IDS:
-                self.err.warning(
-                    err_id=("testcases_markup_markuptester",
-                            "handle_starttag", "generic_ids"),
-                    warning="Overlay contains generically-named IDs",
-                    description="An overlay is using a generically-named ID "
-                                "that could cause compatibility problems with "
-                                "other add-ons. Add-ons must namespace all IDs "
-                                "in the overlay, in the same way that "
-                                "JavaScript objects must be namespaced.",
-                    filename=self.filename,
-                    line=self.line,
-                    context=self.context)
 
         # When the dev forgets their <!-- --> on a script tag, bad
         # things happen.
@@ -626,9 +388,6 @@ class MarkupParser(htmlparser.HTMLParser):
         return " " + " ".join(output)
 
     def _is_url_local(self, url):
-
-        if url.startswith("chrome://"):
-            return True
 
         pattern = re.compile("(ht|f)tps?://")
 

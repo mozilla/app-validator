@@ -1,6 +1,6 @@
-import validator.submain as submain
-from validator.errorbundler import ErrorBundle
-from validator.constants import *
+import appvalidator.submain as submain
+from appvalidator.errorbundler import ErrorBundle
+from appvalidator.constants import *
 
 
 def test_package_pass():

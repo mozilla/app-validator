@@ -4,13 +4,9 @@ import signal
 from zipfile import BadZipfile
 from zlib import error as zlib_error
 
-from validator.typedetection import detect_type
-from validator.opensearch import detect_opensearch
-from validator.webapp import detect_webapp
-from validator.chromemanifest import ChromeManifest
-from validator.rdf import RDFException, RDFParser
-from validator.xpi import XPIManager
-from validator import decorator
+from .webapp import detect_webapp
+from .xpi import XPIManager
+from . import decorator
 
 from constants import *
 
@@ -59,9 +55,7 @@ def prepare_package(err, path, expectation=0, for_appversions=None,
     package_extension = os.path.splitext(path)[1]
     package_extension = package_extension.lower()
 
-    if package_extension == ".xml":
-        return test_search(err, path, expectation)
-    elif expectation == PACKAGE_WEBAPP:
+    if expectation == PACKAGE_WEBAPP:
         return test_webapp(err, path, expectation)
 
     # Test that the package is an XPI.
@@ -96,27 +90,6 @@ def prepare_package(err, path, expectation=0, for_appversions=None,
     return output
 
 
-def test_search(err, package, expectation=0):
-    "Tests the package to see if it is a search provider."
-
-    expected_search_provider = expectation in (PACKAGE_ANY,
-                                               PACKAGE_SEARCHPROV)
-
-    # If we're not expecting a search provider, warn the user and stop
-    # testing it like a search provider.
-    if not expected_search_provider:
-        return err.warning(("main",
-                            "test_search",
-                            "extension"),
-                           "Unexpected file extension.")
-
-    # Is this a search provider?
-    detect_opensearch(err, package, listed=err.get_resource("listed"))
-
-    if expected_search_provider and not err.failed():
-        err.set_type(PACKAGE_SEARCHPROV)
-
-
 def test_webapp(err, package, expectation=0):
     "Tests the package to see if it is a search provider."
 
@@ -140,11 +113,6 @@ def test_package(err, file_, name, expectation=PACKAGE_ANY,
     # Load up a new instance of an XPI.
     try:
         package = XPIManager(file_, mode="r", name=name)
-
-        # Test the install.rdf file to see if we can get the type that way.
-        has_install_rdf = "install.rdf" in package
-        if has_install_rdf:
-            _load_install_rdf(err, package, expectation)
     except IOError:
         # Die on this one because the file won't open.
         return err.error(("main",
@@ -167,11 +135,6 @@ def test_package(err, file_, name, expectation=PACKAGE_ANY,
                        "unexpected_type"),
                       "Unexpected package type (found theme)")
 
-    # Test the install.rdf file to see if we can get the type that way.
-    has_install_rdf = "install.rdf" in package
-    if has_install_rdf:
-        _load_install_rdf(err, package, expectation)
-
     try:
         output = test_inner_package(err, package, for_appversions)
     except ValidationTimeout as ex:
@@ -187,128 +150,8 @@ def test_package(err, file_, name, expectation=PACKAGE_ANY,
     return output
 
 
-def _load_install_rdf(err, package, expectation):
-    try:
-        install_rdf = RDFParser(err, package.read("install.rdf"))
-    except RDFException as ex:
-        err.error(
-                err_id=("main", "test_package", "parse_error"),
-                error="Could not parse `install.rdf`.",
-                description="The RDF parser was unable to parse the "
-                            "install.rdf file included with this add-on.",
-                filename="install.rdf",
-                line=ex.line())
-        return
-    else:
-        if install_rdf.rdf is None:
-            err.error(
-                    err_id=("main", "test_package", "cannot_parse_installrdf"),
-                    error="Cannot read `install.rdf`",
-                    description="The install.rdf file could not be parsed.",
-                    filename="install.rdf")
-            return
-        else:
-            err.save_resource("has_install_rdf", True, pushable=True)
-            err.save_resource("install_rdf", install_rdf, pushable=True)
-
-    # Load up the results of the type detection
-    results = detect_type(err, install_rdf, package)
-    if results is None:
-        err.error(
-                err_id=("main", "test_package", "undeterminable_type"),
-                error="Unable to determine add-on type",
-                description="The type detection algorithm could not determine "
-                            "the type of the add-on.")
-        return
-    else:
-        err.set_type(results)
-
-    # Compare the results of the low-level type detection to
-    # that of the expectation and the assumption.
-    if not expectation in (PACKAGE_ANY, results):
-        err.warning(("main",
-                     "test_package",
-                     "extension_type_mismatch"),
-                    "Extension Type Mismatch",
-                    ["We detected that the add-on's type does not match the "
-                     "expected type.",
-                     'Type "%s" expected, found "%s")' %
-                         (types[expectation], types[results])])
-
-
-def populate_chrome_manifest(err, xpi_package):
-    "Loads the chrome.manifest if it's present"
-
-    if "chrome.manifest" in xpi_package:
-        chrome_data = xpi_package.read("chrome.manifest")
-        chrome = ChromeManifest(chrome_data, "chrome.manifest")
-
-        chrome_recursion_buster = set()
-
-        # Handle the case of manifests linked from the manifest.
-        def get_linked_manifest(path, from_path, from_chrome, from_triple):
-
-            if path in chrome_recursion_buster:
-                err.warning(
-                    err_id=("submain", "populate_chrome_manifest",
-                            "recursion"),
-                    warning="Linked manifest recursion detected.",
-                    description="A chrome registration file links back to "
-                                "itself. This can cause a multitude of "
-                                "issues.",
-                    filename=path)
-                return
-
-            # Make sure the manifest is properly linked
-            if path not in xpi_package:
-                err.notice(
-                    err_id=("submain", "populate_chrome_manifest", "linkerr"),
-                    notice="Linked manifest could not be found.",
-                    description=["A linked manifest file could not be found "
-                                 "in the package.",
-                                 "Path: %s" % path],
-                    filename=from_path,
-                    line=from_triple["line"],
-                    context=from_chrome.context)
-                return
-
-            chrome_recursion_buster.add(path)
-
-            manifest = ChromeManifest(xpi_package.read(path), path)
-            for triple in manifest.triples:
-                yield triple
-
-                if triple["subject"] == "manifest":
-                    for subtriple in get_linked_manifest(
-                            triple["predicate"], path, manifest, triple):
-                        yield subtriple
-
-            chrome_recursion_buster.discard(path)
-
-        chrome_recursion_buster.add("chrome.manifest")
-
-        # Search for linked manifests in the base manifest.
-        for extra_manifest in chrome.get_triples(subject="manifest"):
-            # When one is found, add its triples to our own.
-            for triple in get_linked_manifest(extra_manifest["predicate"],
-                                              "chrome.manifest", chrome,
-                                              extra_manifest):
-                chrome.triples.append(triple)
-
-        chrome_recursion_buster.discard("chrome.manifest")
-
-        # Create a reference so we can get the chrome manifest later, but make
-        # it pushable so we don't run chrome manifests in JAR files.
-        err.save_resource("chrome.manifest", chrome, pushable=True)
-        # Create a non-pushable reference for tests that need to access the
-        # chrome manifest from within JAR files.
-        err.save_resource("chrome.manifest_nopush", chrome, pushable=False)
-
-
 def test_inner_package(err, xpi_package, for_appversions=None):
     "Tests a package's inner content."
-
-    populate_chrome_manifest(err, xpi_package)
 
     # Iterate through each tier.
     for tier in sorted(decorator.get_tiers()):

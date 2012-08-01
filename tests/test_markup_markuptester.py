@@ -1,9 +1,9 @@
 ﻿# -*- coding: utf-8 -*-
 from nose.tools import eq_
 
-import validator.testcases.markup.markuptester as markuptester
-from validator.errorbundler import ErrorBundle
-from validator.constants import *
+import appvalidator.testcases.markup.markuptester as markuptester
+from appvalidator.errorbundler import ErrorBundle
+from appvalidator.constants import *
 
 
 def _test_xul(path, should_fail=False, type_=None):
@@ -158,40 +158,6 @@ def test_html_css_inline():
     _test_xul("tests/resources/markup/markuptester/css_inline.html", True)
 
 
-def test_xul_evil():
-    "Tests for evil kinds of scripts and iframes in XUL."
-    _test_xul("tests/resources/markup/markuptester/remote_src.xul", True)
-    _test_xul("tests/resources/markup/markuptester/bad_iframe_remote.xul", True)
-    _test_xul("tests/resources/markup/markuptester/bad_iframe_chrome.xul", True)
-    _test_xul("tests/resources/markup/markuptester/"
-              "bad_iframe_remote_missing.xul",
-              True)
-
-
-def test_lp_passing():
-    """Test a valid language pack or theme file."""
-    _test_xul("tests/resources/markup/markuptester/_langpack/lp_safe.html",
-              False, PACKAGE_LANGPACK)
-    _test_xul("tests/resources/markup/markuptester/_langpack/lp_safe.html",
-              False, PACKAGE_THEME)
-
-
-def test_lp_unsafe():
-    """Test a language pack or theme file that contains unsafe elements."""
-    _test_xul("tests/resources/markup/markuptester/_langpack/lp_unsafe.html",
-              True, PACKAGE_LANGPACK)
-    _test_xul("tests/resources/markup/markuptester/_langpack/lp_unsafe.html",
-              True, PACKAGE_THEME)
-
-
-def test_lp_remote():
-    """Test a language pack file that contains remote references."""
-    _test_xul("tests/resources/markup/markuptester/_langpack/lp_remote.html",
-              True, PACKAGE_LANGPACK)
-    _test_xul("tests/resources/markup/markuptester/_langpack/lp_remote.html",
-              True, PACKAGE_THEME)
-
-
 def test_invalid_markup():
     "Tests an markup file that is simply broken."
 
@@ -223,7 +189,7 @@ def test_self_closing_scripts():
 
 
 def test_generic_ids():
-    """Tests that generic IDs are caught by the validator.."""
+    """Tests that generic IDs are caught by the validator."""
 
     # Test that string bundles don't affect validation.
     _test_xul_raw("""
@@ -253,64 +219,6 @@ def test_generic_ids():
         <stringbundleset id="string-bundle" />
     </foo>
     """, "foo.xul", should_fail=True)
-
-
-def test_theme_attribute_prefixes():
-    """Test that javascript and data URIs are flagged in themes."""
-
-    _test_xul_raw("""
-    <foo><bar foo="http://bar" /></foo>
-    """, "foo.xul", type_=PACKAGE_THEME)
-
-    _test_xul_raw("""
-    <foo><bar foo="data:bar" /></foo>
-    """, "foo.xul", type_=PACKAGE_THEME, should_fail=True)
-
-    _test_xul_raw("""
-    <foo><bar foo="javascript:bar" /></foo>
-    """, "foo.xul", type_=PACKAGE_THEME, should_fail=True)
-
-
-def test_theme_xbl():
-    """Test that markup within script tags does not raise errors."""
-
-    # Borrowed from http://bugs.python.org/file22767/hp_fix.diff
-    _test_xul_raw("""
-    <script> <a href="" /> <p> <span></span> </p> </script>
-    <script> foo = "</scr" + "ipt>"; </script>
-    """, "foo.xul", type_=PACKAGE_THEME)
-
-
-def test_theme_xbl():
-    """Test that themes ban a good chunk of XBL."""
-
-    _test_xul_raw("""
-    <foo><xbl:foo /></foo>
-    """, "foo.xul", type_=PACKAGE_THEME)
-
-    _test_xul_raw("""
-    <foo><xbl:constructor /></foo>
-    """, "foo.xul", type_=PACKAGE_THEME, should_fail=True)
-
-    _test_xul_raw("""
-    <foo><xbl:property /></foo>
-    """, "foo.xul", type_=PACKAGE_THEME)
-
-    _test_xul_raw("""
-    <foo><xbl:property onset="foo()" /></foo>
-    """, "foo.xul", type_=PACKAGE_THEME, should_fail=True)
-
-    _test_xul_raw("""
-    <foo xmlns:xbl="http://www.mozilla.org/xbl">
-        <property onset="" onget="" />
-    </foo>
-    """, "foo.xul")
-
-    _test_xul_raw("""
-    <foo xmlns:xbl="http://www.mozilla.org/xbl">
-        <property onset="" onget="" />
-    </foo>
-    """, "foo.xul", type_=PACKAGE_THEME, should_fail=True)
 
 
 def test_dom_mutation():
@@ -370,16 +278,4 @@ def test_script_scraping():
     eq_(parser.found_scripts,
         set(["/relative.js", "chrome://namespace/absolute.js",
              "very_relative.js"]))
-
-
-def test_prefwindow_ids():
-    """Test that `<prefwindow>` tags without IDs are flagged."""
-
-    err = _test_xul_raw("""<foo>
-    <prefwindow></prefwindow>
-    </foo>""", "foo.xul", should_fail=True)
-
-    err = _test_xul_raw("""<foo>
-    <prefwindow id="foobar"></prefwindow>
-    </foo>""", "foo.xul", should_fail=False)
 

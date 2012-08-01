@@ -5,7 +5,7 @@ from zipfile import BadZipfile, ZipFile
 
 from nose.tools import eq_
 
-from validator.xpi import XPIManager
+from appvalidator.xpi import XPIManager
 
 RESOURCES_PATH = os.path.join(os.path.dirname(__file__), 'resources')
 

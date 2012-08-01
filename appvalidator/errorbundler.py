@@ -42,10 +42,6 @@ class ErrorBundle(object):
         self.message_count = 0
         self.message_tree = {}
 
-        self.compat_summary = {"errors": 0,
-                               "warnings": 0,
-                               "notices": 0}
-
         self.ending_tier = 1
         self.tier = 1
 
@@ -81,8 +77,7 @@ class ErrorBundle(object):
 
     def error(self, err_id, error,
               description='', filename='', line=None, column=None,
-              context=None, tier=None, for_appversions=None,
-              compatibility_type=None):
+              context=None, tier=None, for_appversions=None):
         "Stores an error message for the validation process"
         self._save_message(self.errors,
                            "errors",
@@ -93,15 +88,13 @@ class ErrorBundle(object):
                             "line": line,
                             "column": column,
                             "tier": tier,
-                            "for_appversions": for_appversions,
-                            "compatibility_type": compatibility_type},
+                            "for_appversions": for_appversions},
                            context=context)
         return self
 
     def warning(self, err_id, warning,
                 description='', filename='', line=None, column=None,
-                context=None, tier=None, for_appversions=None,
-                compatibility_type=None):
+                context=None, tier=None, for_appversions=None):
         "Stores a warning message for the validation process"
         self._save_message(self.warnings,
                            "warnings",
@@ -112,15 +105,13 @@ class ErrorBundle(object):
                             "line": line,
                             "column": column,
                             "tier": tier,
-                            "for_appversions": for_appversions,
-                            "compatibility_type": compatibility_type},
+                            "for_appversions": for_appversions},
                            context=context)
         return self
 
     def notice(self, err_id, notice,
                description="", filename="", line=None, column=None,
-               context=None, tier=None, for_appversions=None,
-               compatibility_type=None):
+               context=None, tier=None, for_appversions=None):
         "Stores an informational message about the validation"
         self._save_message(self.notices,
                            "notices",
@@ -131,8 +122,7 @@ class ErrorBundle(object):
                             "line": line,
                             "column": column,
                             "tier": tier,
-                            "for_appversions": for_appversions,
-                            "compatibility_type": compatibility_type},
+                            "for_appversions": for_appversions},
                            context=context)
         return self
 
@@ -185,10 +175,6 @@ class ErrorBundle(object):
         # Mark the tier that the error occurred at.
         if message["tier"] is None:
             message["tier"] = self.tier
-
-        # Build out the compatibility summary if possible.
-        if message["compatibility_type"]:
-            self.compat_summary["%ss" % message["compatibility_type"]] += 1
 
         # Build out the message tree entry.
         if message["id"]:
@@ -311,8 +297,7 @@ class ErrorBundle(object):
                      column=message["column"],
                      context=message["context"],
                      tier=message["tier"],
-                     for_appversions=message["for_appversions"],
-                     compatibility_type=message["compatibility_type"])
+                     for_appversions=message["for_appversions"])
 
     def render_json(self):
         "Returns a JSON summary of the validation operation."
@@ -332,7 +317,6 @@ class ErrorBundle(object):
                   "warnings": len(self.warnings),
                   "notices": len(self.notices),
                   "message_tree": self.message_tree,
-                  "compatibility_summary": self.compat_summary,
                   "metadata": self.metadata}
 
         messages = output["messages"]
@@ -357,12 +341,6 @@ class ErrorBundle(object):
         "Prints a summary of the validation process so far."
 
         types = {0: "Unknown",
-                 1: "Extension/Multi-Extension",
-                 2: "Theme",
-                 3: "Dictionary",
-                 4: "Language Pack",
-                 5: "Search Provider",
-                 7: "Subpackage",
                  8: "App"}
         detected_type = types[self.detected_type]
 
@@ -393,22 +371,6 @@ class ErrorBundle(object):
                 self._print_message(prefix="<<WHITE>>Notice:<<NORMAL>>\t",
                                     message=notice,
                                     verbose=verbose)
-
-        if "is_jetpack" in self.metadata and verbose:
-            self.handler.write("\n")
-            self.handler.write("<<GREEN>>Jetpack add-on detected.<<NORMAL>>\n"
-                               "Identified files:")
-            if "jetpack_identified_files" in self.metadata:
-                for filename, data in \
-                    self.metadata["jetpack_identified_files"].items():
-                    self.handler.write((" %s\n" % filename) +
-                                       ("  %s : %s" % data))
-
-            if "jetpack_unknown_files" in self.metadata:
-                self.handler.write("Unknown files:")
-                for filename in self.metadata["jetpack_unknown_files"]:
-                    self.handler.write(" %s" % filename)
-
 
         self.handler.write("\n")
         if self.unfinished:
@@ -486,35 +448,6 @@ class ErrorBundle(object):
         # Send the final output to the handler to be rendered.
         self.handler.write(u''.join(map(unicodehelper.decode, output)))
 
-    def supports_version(self, guid_set):
-        """
-        Returns whether a GUID set in for_appversions format is compatbile with
-        the current supported applications list.
-        """
-
-        # Don't let the test run if we haven't parsed install.rdf yet.
-        if self.supported_versions is None:
-            raise Exception("Early compatibility test run before install.rdf "
-                            "was parsed.")
-
-        return self._compare_version(requirements=guid_set,
-                                     support=self.supported_versions)
-
-    def _compare_version(self, requirements, support):
-        """
-        Return whether there is an intersection between a support applications
-        GUID set and a set of supported applications.
-        """
-
-        for guid in requirements:
-            # If we support any of the GUIDs in the guid_set, test if any of
-            # the provided versions for the GUID are supported.
-            if (guid in support and
-                any((detected_version in requirements[guid]) for
-                    detected_version in
-                    support[guid])):
-                return True
-
     def discard_unused_messages(self, ending_tier):
         """
         Delete messages from errors, warnings, and notices whose tier is
@@ -526,4 +459,3 @@ class ErrorBundle(object):
             for message in stack:
                 if message["tier"] > ending_tier:
                     stack.remove(message)
-

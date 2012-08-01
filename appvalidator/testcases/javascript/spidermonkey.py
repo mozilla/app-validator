@@ -6,9 +6,9 @@ import subprocess
 import tempfile
 from cStringIO import StringIO
 
-from validator.constants import SPIDERMONKEY_INSTALLATION
-from validator.contextgenerator import ContextGenerator
-import validator.unicodehelper as unicodehelper
+from appvalidator.constants import SPIDERMONKEY_INSTALLATION
+from appvalidator.contextgenerator import ContextGenerator
+import appvalidator.unicodehelper as unicodehelper
 
 JS_ESCAPE = re.compile("\\\\+[ux]", re.I)
 
@@ -23,8 +23,7 @@ def get_tree(code, err=None, filename=None, shell=None):
     code = prepare_code(code, err, filename)
 
     try:
-        tree = _get_tree(code,
-                         shell if shell else SPIDERMONKEY_INSTALLATION)
+        tree = _get_tree(code, shell or SPIDERMONKEY_INSTALLATION)
         return tree
     except JSReflectException as exc:
         str_exc = str(exc).strip("'\"")
@@ -61,7 +60,7 @@ def get_tree(code, err=None, filename=None, shell=None):
 
 
 class JSReflectException(Exception):
-    "An exception to indicate that tokenization has failed"
+    """An exception to indicate that tokenization has failed."""
 
     def __init__(self, value):
         self.value = value
@@ -77,7 +76,8 @@ class JSReflectException(Exception):
 
 
 def prepare_code(code, err, filename):
-    "Prepares code for tree generation"
+    """Prepares code for tree generation."""
+
     # Acceptable unicode characters still need to be stripped. Just remove the
     # slash: a character is necessary to prevent bad identifier errors
     code = JS_ESCAPE.sub("u", code)
@@ -87,7 +87,7 @@ def prepare_code(code, err, filename):
 
 
 def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
-    "Returns an AST tree of the JS passed in `code`."
+    """Returns an AST tree of the JS passed in `code`."""
 
     if not code:
         return None

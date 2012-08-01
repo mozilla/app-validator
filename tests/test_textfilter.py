@@ -1,4 +1,4 @@
-import validator.textfilter as textfilter
+import appvalidator.textfilter as textfilter
 
 
 def test_is_ctrl_char():

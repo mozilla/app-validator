@@ -2,10 +2,9 @@ import time
 
 from nose.tools import eq_, raises
 
-import validator.submain as submain
-from validator.errorbundler import ErrorBundle
-from validator.chromemanifest import ChromeManifest
-from validator.constants import *
+import appvalidator.submain as submain
+from appvalidator.errorbundler import ErrorBundle
+from appvalidator.constants import *
 from helper import MockXPI
 
 
@@ -33,17 +32,6 @@ def test_validation_timeout():
     assert len(err.errors) == 1
 
 
-def test_prepare_package_extension():
-    "Tests that bad extensions get outright rejections"
-
-    assert submain.prepare_package(None, "foo/bar/test.foo") == False
-
-    ts = submain.test_search
-    submain.test_search = lambda x, y, z: True
-    assert submain.prepare_package(None, "foo/bar/test.xml") == True
-    submain.test_search = ts
-
-
 def test_prepare_package_missing():
     "Tests that the prepare_package function fails when file is not found"
 
@@ -60,24 +48,6 @@ def test_prepare_package_bad_file():
     submain.prepare_package(err, "tests/resources/main/foo.bar")
 
     assert err.failed()
-
-
-def test_prepare_package_xml():
-    "Tests that the prepare_package function passes with search providers"
-
-    smts = submain.test_search
-    submain.test_search = lambda err, y, z: True
-
-    err = ErrorBundle()
-    submain.prepare_package(err, "tests/resources/main/foo.xml")
-
-    assert not err.failed()
-
-    submain.test_search = lambda err, y, z: err.error(("x"), "Failed")
-    submain.prepare_package(err, "tests/resources/main/foo.xml")
-
-    assert err.failed()
-    submain.test_search = smts
 
 
 def test_prepare_package_webapp():
@@ -121,97 +91,6 @@ def test_test_inner_package_failtier():
 
     assert err.failed()
     submain.decorator = smd
-
-
-# Test chrome.manifest populator
-def test_populate_chrome_manifest():
-    """Ensure that the chrome manifest is populated if available."""
-
-    err = MockErrorHandler(None)
-    package_contents = {"chrome.manifest":
-            "tests/resources/chromemanifest/chrome.manifest"}
-    package = MockXPI(package_contents)
-
-    submain.populate_chrome_manifest(err, MockXPI())
-    assert not err.pushable_resources
-
-    submain.populate_chrome_manifest(err, package)
-    assert err.pushable_resources
-    assert "chrome.manifest" in err.pushable_resources
-    print err.pushable_resources
-    assert isinstance(err.pushable_resources["chrome.manifest"],
-                      ChromeManifest)
-
-    assert err.resources
-    assert "chrome.manifest_nopush" in err.resources
-    print err.resources
-    assert isinstance(err.resources["chrome.manifest_nopush"], ChromeManifest)
-
-
-def test_proper_linked_manifest():
-    """Test that linked manifests are imported properly."""
-
-    err = ErrorBundle()
-    package = MockXPI({
-        "chrome.manifest": "tests/resources/submain/linkman/base1.manifest",
-        "submanifest.manifest":
-            "tests/resources/submain/linkman/base2.manifest"})
-
-    submain.populate_chrome_manifest(err, package)
-    chrome = err.get_resource("chrome.manifest")
-    assert chrome
-
-    assert not err.failed() or err.notices
-
-    # From the base file:
-    assert list(chrome.get_triples(subject="foo"))
-    # From the linked manifest:
-    zaps = list(chrome.get_triples(subject="zap"))
-    assert zaps
-    eq_(zaps[0]["filename"], "submanifest.manifest")
-    eq_(zaps[0]["context"].data, ["zap baz", ""])
-
-
-def test_missing_manifest_link():
-    """Test that missing linked manifests are properly flagged."""
-
-    err = ErrorBundle()
-    package = MockXPI({
-        "chrome.manifest": "tests/resources/submain/linkman/base1.manifest"})
-
-    submain.populate_chrome_manifest(err, package)
-    chrome = err.get_resource("chrome.manifest")
-    assert chrome
-
-    assert not err.failed()
-    assert err.notices
-
-    # From the base file:
-    assert list(chrome.get_triples(subject="foo"))
-    # From the linked manifest:
-    assert not list(chrome.get_triples(subject="zap"))
-
-
-def test_linked_manifest_recursion():
-    """Test that recursive linked manifests are flagged properly."""
-
-    err = ErrorBundle()
-    package = MockXPI({
-        "chrome.manifest": "tests/resources/submain/linkman/base1.manifest",
-        "submanifest.manifest":
-            "tests/resources/submain/linkman/recurse.manifest"})
-
-    submain.populate_chrome_manifest(err, package)
-    chrome = err.get_resource("chrome.manifest")
-    assert chrome
-
-    assert err.failed()
-    assert not err.notices
-
-    # From the base file:
-    assert list(chrome.get_triples(subject="foo"))
-    # From the linked manifest:
-    assert not list(chrome.get_triples(subject="zap"))
 
 
 # Test determined modes

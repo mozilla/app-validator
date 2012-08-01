@@ -1,10 +1,9 @@
 from fnmatch import fnmatch as fnm
 
-from validator.constants import (FF4_MIN, FIREFOX_GUID, FENNEC_GUID,
-                                 THUNDERBIRD_GUID as TB_GUID, ANDROID_GUID,
-                                 PACKAGE_DICTIONARY, )
-import validator.decorator as decorator
-from validator.decorator import version_range
+from ..constants import (FIREFOX_GUID, FENNEC_GUID,
+                         THUNDERBIRD_GUID as TB_GUID, ANDROID_GUID,
+                         PACKAGE_DICTIONARY, )
+from .. import decorator
 
 # Detect blacklisted files based on their extension.
 blacklisted_extensions = ("dll", "exe", "dylib", "so",
@@ -125,40 +124,6 @@ def test_godlikea(err, xpi_package):
             filename="chrome/godlikea.jar")
 
 
-@decorator.register_test(
-        tier=5,
-        versions={FIREFOX_GUID: version_range("firefox", FF4_MIN),
-                  TB_GUID: version_range("thunderbird", "3.3a4pre"),
-                  FENNEC_GUID: version_range("fennec", "4.0"),
-                  ANDROID_GUID: version_range("android", "11.0a1"),})
-def test_compatibility_binary(err, xpi_package):
-    """
-    Flags only binary content as being incompatible with future app releases.
-    """
-
-    description = ("Add-ons with binary components must have their "
-                   "compatibility manually adjusted. Please test your add-on "
-                   "against the new version before updating your maxVersion.")
-
-    chrome = err.get_resource("chrome.manifest")
-    if not chrome:
-        return
-
-    for triple in chrome.triples:
-        if triple["subject"] == "binary-component":
-            err.metadata["binary_components"] = True
-            err.notice(
-                err_id=("testcases_packagelayout",
-                        "test_compatibility_binary",
-                        "disallowed_file_type"),
-                notice="Flagged file type found",
-                description=["A file (%s) was registered as a binary "
-                             "component." % triple["predicate"],
-                             description],
-                filename=triple["predicate"],
-                compatibility_type="error")
-
-
 @decorator.register_test(tier=1)
 def test_layout_all(err, xpi_package):
     "Tests the well-formedness of extensions."
@@ -225,88 +190,6 @@ def test_emunpack(err, xpi_package):
                         filename="install.rdf",
                         tier=1)
             return
-
-        # Covers bug 551714
-
-        # This only applies to FF4
-        if not err.get_resource("ff4"):
-            return
-
-        for file_ in xpi_package:
-            if file_.endswith(".jar"):
-                err.notice(("testcases_packagelayout",
-                            "test_emunpack",
-                            "should_be_false"),
-                           "Add-on contains JAR files, no <em:unpack>",
-                           "The add-on contains JAR files and does not set "
-                           "<em:unpack> to 'true'. This can result in "
-                           "performance issues in add-ons that target Gecko "
-                           "4. It is recommended that you consider no longer "
-                           "using JAR files to package your chrome files.",
-                           filename="install.rdf",
-                           tier=1)
-                return
-
-
-@decorator.register_test(tier=1, expected_type=3)
-def test_dictionary_layout(err, xpi_package=None):
-    """Ensures that dictionary packages contain the necessary
-    components and that there are no other extraneous files lying
-    around."""
-
-    # Define rules for the structure.
-    mandatory_files = [
-        "install.rdf",
-        "dictionaries/*.aff",
-        "dictionaries/*.dic"]
-    whitelisted_files = [
-        "install.js",
-        "icon.png",
-        "icon64.png",
-        "dictionaries/*.aff",  # List again because there must >0
-        "dictionaries/*.dic",
-        "chrome.manifest",
-        "chrome/*"]
-    whitelisted_extensions = ("txt",)
-
-    test_layout(err, xpi_package, mandatory_files,
-                whitelisted_files, whitelisted_extensions,
-                "dictionary")
-
-
-@decorator.register_test(tier=1, expected_type=4)
-def test_langpack_layout(err, xpi_package=None):
-    """Ensures that language packs only contain exactly what they
-    need and nothing more. Otherwise, somebody could sneak something
-    sneaking into them."""
-
-    # Define rules for the structure.
-    mandatory_files = [
-        "install.rdf",
-        "chrome.manifest"]
-    whitelisted_files = ["chrome/*.jar"]
-    whitelisted_extensions = ("manifest", "rdf", "jar", "dtd",
-                              "properties", "xhtml", "css")
-
-    test_layout(err, xpi_package, mandatory_files,
-                whitelisted_files, whitelisted_extensions,
-                "language pack")
-
-
-@decorator.register_test(tier=1, expected_type=2)
-def test_theme_layout(err, xpi_package=None):
-    """Ensures that themes only contain exactly what they need and
-    nothing more. Otherwise, somebody could sneak something sneaking
-    into them."""
-
-    # Define rules for the structure.
-    mandatory_files = [
-        "install.rdf",
-        "chrome.manifest"]
-    whitelisted_files = ["chrome/*.jar"]
-
-    test_layout(err, xpi_package, mandatory_files,
-                whitelisted_files, None, "theme")
 
 
 def test_layout(err, xpi, mandatory, whitelisted,

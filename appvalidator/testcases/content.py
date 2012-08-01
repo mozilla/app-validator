@@ -3,45 +3,20 @@ import hashlib
 import re
 from StringIO import StringIO
 
-from regex import run_regex_tests
-from validator.contextgenerator import ContextGenerator
-from validator import decorator
-from validator import submain as testendpoint_validator
-from validator import unicodehelper
-import validator.testcases.markup.markuptester as testendpoint_markup
-import validator.testcases.markup.csstester as testendpoint_css
-import validator.testcases.scripting as testendpoint_js
-import validator.testcases.langpack as testendpoint_langpack
-from validator.xpi import XPIManager
-from validator.constants import *
+from ..contextgenerator import ContextGenerator
+from .. import decorator
+from .. import submain as testendpoint_validator
+from .. import unicodehelper
+import markup.markuptester as testendpoint_markup
+import markup.csstester as testendpoint_css
+import scripting as testendpoint_js
+from ..xpi import XPIManager
+from ..constants import *
 
 
 FLAGGED_FILES = set([".DS_Store", "Thumbs.db"])
 FLAGGED_EXTENSIONS = set([".orig", ".old", "~"])
 OSX_REGEX = re.compile("__MACOSX")
-
-@decorator.register_test(tier=1)
-def test_xpcnativewrappers(err, xpi_package=None):
-    """Tests the chrome.manifest file to ensure that it doesn't contain
-    xpcnativewrappers objects."""
-
-    # Don't even both with the test(s) if there's no chrome.manifest.
-    chrome = err.get_resource("chrome.manifest")
-    if not chrome:
-        return None
-
-    for triple in chrome.triples:
-        # Test to make sure that the triple's subject is valid
-        if triple["subject"] == "xpcnativewrappers":
-            err.warning(("testcases_content",
-                         "test_xpcnativewrappers",
-                         "found_in_chrome_manifest"),
-                        "xpcnativewrappers not allowed in chrome.manifest",
-                        "chrome.manifest files are not allowed to contain "
-                        "xpcnativewrappers directives.",
-                        filename=triple["filename"],
-                        line=triple["line"],
-                        context=triple["context"])
 
 
 @decorator.register_test(tier=2)
@@ -142,7 +117,6 @@ def test_packed_packages(err, xpi_package=None):
             parser = testendpoint_markup.MarkupParser(err)
             parser.process(name, file_data,
                            xpi_package.info(name)["extension"])
-            run_regex_tests(file_data, err, name)
 
             # Make sure the name is prefixed with a forward slash.
             prefixed_name = name if name.startswith("/") else "/%s" % name
@@ -167,10 +141,6 @@ def test_packed_packages(err, xpi_package=None):
             # it returns None. We should respect that.
             if processed is None:
                 continue
-
-        # This is tested in test_langpack.py
-        if err.detected_type == PACKAGE_LANGPACK and not processed:
-            testendpoint_langpack.test_unsafe_html(err, name, file_data)
 
         # This aids in creating unit tests.
         processed_files += 1
@@ -240,7 +210,6 @@ def test_packed_scripts(err, xpi_package):
             else:
                 # Run the standard script tests on the scripts.
                 testendpoint_js.test_js_file(err, script, file_data)
-            run_regex_tests(file_data, err, script, is_js=True)
 
         for i in range(len(script_bundle["state"])):
             err.pop_state()
@@ -322,8 +291,6 @@ def _process_file(err, xpi_package, name, file_data, name_lower,
             is_js = True
             testendpoint_js.test_js_file(err, name, file_data,
                                          pollutable=pollutable)
-
-        run_regex_tests(file_data, err, name, is_js=is_js)
 
         return True
 

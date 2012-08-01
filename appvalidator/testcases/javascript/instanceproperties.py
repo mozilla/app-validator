@@ -1,8 +1,7 @@
 import re
 import types
 
-from validator.compat import FX10_DEFINITION, FX13_DEFINITION
-from validator.constants import BUGZILLA_BUG
+from appvalidator.constants import BUGZILLA_BUG
 import jstypes
 
 
@@ -46,8 +45,7 @@ def _set_HTML_property(function, new_value, traverser):
                 # Everything checks out, but we still want to pass it through
                 # the markup validator. Turn off strict mode so we don't get
                 # warnings about malformed HTML.
-                from validator.testcases.markup.markuptester import \
-                                                                MarkupParser
+                from ..markup.markuptester import MarkupParser
                 parser = MarkupParser(traverser.err, strict=False, debug=True)
                 parser.process(traverser.filename, literal_value, "xul")
 
@@ -85,74 +83,8 @@ def set_on_event(new_value, traverser):
             context=traverser.context)
 
 
-def get_isElementContentWhitespace(traverser):
-    traverser.err.error(
-        err_id=("testcases_javascript_instanceproperties", "get_iECW"),
-        error="isElementContentWhitespace property removed in Gecko 10.",
-        description='The "isElementContentWhitespace" property has been '
-                    'removed. See %s for more information.' %
-                        BUGZILLA_BUG % 687422,
-        filename=traverser.filename,
-        line=traverser.line,
-        column=traverser.position,
-        context=traverser.context,
-        for_appversions=FX10_DEFINITION,
-        compatibility_type="error",
-        tier=5)
-
-
-def startendMarker(*args):
-    traverser = args[0] if len(args) == 1 else args[1]
-    traverser.err.notice(
-        err_id=("testcases_javascript_instanceproperties",
-                "get_startendMarker"),
-        notice="`_startMarker` and `_endMarker` changed in Gecko 13",
-        description="The `_startMarker` and `_endMarker` variables have "
-                    "changed in a backward-incompatible way in Gecko 13. They "
-                    "are now element references instead of numeric indices. "
-                    "See %s for more information." % BUGZILLA_BUG % 731563,
-        filename=traverser.filename,
-        line=traverser.line,
-        column=traverser.position,
-        context=traverser.context,
-        for_appversions=FX13_DEFINITION,
-        compatibility_type="error",
-        tier=5)
-
-
-def _get_xml(name):
-    """Handle all of the xml* compatibility problems introduced in Gecko 10."""
-    bugs = {"xmlEncoding": 687426,
-            "xmlStandalone": 693154,
-            "xmlVersion": 693162}
-    def wrapper(traverser):
-        traverser.err.error(
-            err_id=("testcases_javascript_instanceproperties", "_get_xml",
-                    name),
-            error="%s has been removed in Gecko 10" % name,
-            description='The "%s" property has been removed. See %s for more '
-                        'information.' % (name, BUGZILLA_BUG % bugs[name]),
-            filename=traverser.filename,
-            line=traverser.line,
-            column=traverser.position,
-            context=traverser.context,
-            for_appversions=FX10_DEFINITION,
-            compatibility_type="error",
-            tier=5)
-    return {"get": wrapper}
-
-
-OBJECT_DEFINITIONS = {"_endMarker": {"get": startendMarker,
-                                     "set": startendMarker},
-                      "_startMarker": {"get": startendMarker,
-                                       "set": startendMarker},
-                      "innerHTML": {"set": set_innerHTML},
-                      "outerHTML": {"set": set_outerHTML},
-                      "isElementContentWhitespace":
-                          {"get": get_isElementContentWhitespace},
-                      "xmlEncoding": _get_xml("xmlEncoding"),
-                      "xmlStandalone": _get_xml("xmlStandalone"),
-                      "xmlVersion": _get_xml("xmlVersion"),}
+OBJECT_DEFINITIONS = {"innerHTML": {"set": set_innerHTML},
+                      "outerHTML": {"set": set_outerHTML},}
 
 
 def get_operation(mode, property):

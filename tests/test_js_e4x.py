@@ -1,4 +1,4 @@
-from validator.errorbundler import ErrorBundle
+from appvalidator.errorbundler import ErrorBundle
 
 from js_helper import TestCase
 

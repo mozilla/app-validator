@@ -1,5 +1,6 @@
-import validator.testcases.markup.csstester as csstester
-from validator.errorbundler import ErrorBundle
+import appvalidator.testcases.markup.csstester as csstester
+from appvalidator.errorbundler import ErrorBundle
+
 
 def _do_test(path, should_fail=False):
 
@@ -21,19 +22,6 @@ def test_css_file():
     "Tests a package with a valid CSS file."
 
     _do_test("tests/resources/markup/csstester/pass.css")
-
-
-def test_css_moz_binding():
-    "Tests that remote scripts in CSS are blocked."
-
-    _do_test("tests/resources/markup/csstester/mozbinding.css", True)
-    _do_test("tests/resources/markup/csstester/mozbinding-pass.css", False)
-
-
-def test_css_identitybox():
-    "Tests that the identity box isn't played with."
-
-    _do_test("tests/resources/markup/csstester/identity-box.css", True)
 
 
 def test_remote_urls():

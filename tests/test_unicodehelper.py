@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import nose
-import validator.unicodehelper as unicodehelper
+import appvalidator.unicodehelper as unicodehelper
 
 
 COMPARISON = "täst".decode("utf-8")

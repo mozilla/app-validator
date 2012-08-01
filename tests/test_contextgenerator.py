@@ -1,5 +1,5 @@
 from nose.tools import eq_
-from validator.contextgenerator import ContextGenerator
+from appvalidator.contextgenerator import ContextGenerator
 
 
 def test_load_data():

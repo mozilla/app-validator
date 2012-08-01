@@ -3,9 +3,9 @@ import nose
 import sys
 from StringIO import StringIO
 
-import validator.errorbundler as errorbundler
-from validator.errorbundler import ErrorBundle
-from validator.contextgenerator import ContextGenerator
+import appvalidator.errorbundler as errorbundler
+from appvalidator.errorbundler import ErrorBundle
+from appvalidator.contextgenerator import ContextGenerator
 
 
 def test_json():
@@ -89,9 +89,6 @@ def test_states():
     bundle.warning((), "super nested warning")
     bundle.notice((), "super nested notice")
 
-    # Test that nested compatibility messages retain their value
-    bundle.notice("comp", "Compat Test notice", compatibility_type="error")
-
     bundle.pop_state()
 
     bundle.pop_state()
@@ -113,8 +110,7 @@ def test_states():
                 "nested notice",
                 "super nested error",
                 "super nested warning",
-                "super nested notice",
-                "Compat Test notice"]
+                "super nested notice"]
 
     for message in output["messages"]:
         print message
@@ -123,9 +119,6 @@ def test_states():
         messages.remove(message["message"])
 
         assert message["message"].endswith(message["type"])
-
-        if message["id"] == "comp":
-            assert message["compatibility_type"] == "error"
 
     assert not messages
 
@@ -329,69 +322,6 @@ def test_json_constructs():
             assert m["column"] is None
 
 
-def test_json_compatibility():
-    """Test compatibility elements in the JSON output."""
-
-    err = ErrorBundle()
-    err.notice(
-        err_id="m1",
-        notice="Compat error",
-        description="Compatibility error 1",
-        compatibility_type="error")
-
-    err.notice(
-        err_id="m2",
-        notice="Compat error",
-        description="Compatibility error 2",
-        compatibility_type="error")
-
-    err.warning(
-        err_id="m3",
-        warning="Compat notice",
-        description="Compatibility notice 1",
-        compatibility_type="notice")
-
-    err.warning(
-        err_id="m4",
-        warning="Compat warning",
-        description="Compatibility warning 1",
-        compatibility_type="warning")
-
-    err.warning(
-        err_id="m5",
-        warning="Compat warning",
-        description="Compatibility warning 1",
-        compatibility_type="warning")
-
-    err.error(
-        err_id="foo",
-        error="Something else",
-        description="An error that has nothign to do with compatibility")
-
-    results = err.render_json()
-    jdata = json.loads(results)
-
-    assert "compatibility_summary" in jdata
-    nose.tools.eq_(jdata["compatibility_summary"],
-                   {"errors": 2,
-                    "warnings": 2,
-                    "notices": 1})
-    reference = {"m1": "error",
-                 "m2": "error",
-                 "m3": "notice",
-                 "m4": "warning",
-                 "m5": "warning"}
-
-    assert "messages" in jdata and len(jdata["messages"])
-    for message in jdata["messages"]:
-        if message["id"] in reference:
-            print (message["id"],
-                   reference[message["id"]],
-                   message["compatibility_type"])
-            nose.tools.eq_(reference[message["id"]],
-                           message["compatibility_type"])
-
-
 def test_pushable_resources():
     """
     Test that normal resources are preserved but pushable ones are pushed.
@@ -417,29 +347,3 @@ def test_pushable_resources():
     assert e.get_resource("nopush")
     assert e.get_resource("push")
     assert not e.get_resource("pushed")
-
-
-def test_forappversions():
-    """Test that app version information is passed to the JSON."""
-
-    app_test_data = {"guid": ["version1", "version2"]}
-
-    e = ErrorBundle()
-    e.supported_versions = {"guid": ["version1"]}
-    e.error(err_id=("foo", ), error="Test", for_appversions=app_test_data)
-    # This one should not apply.
-    e.error(err_id=("foo", ), error="Test",
-            for_appversions={"fooguid": ["bar", "baz"]})
-
-    e.warning(err_id=("foo", ), warning="Test", for_appversions=app_test_data)
-
-    # Give one its data from the decorator
-    e.version_requirements = app_test_data
-    e.notice(err_id=("foo", ), notice="Test")
-
-    j = e.render_json()
-    jdata = json.loads(j)
-    assert len(jdata["messages"]) == 3
-    for m in jdata["messages"]:
-        assert m["for_appversions"] == app_test_data
-

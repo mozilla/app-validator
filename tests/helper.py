@@ -1,15 +1,11 @@
 import sys
 
-from validator.submain import populate_chrome_manifest
-from validator.rdf import RDFParser
-from validator.xpi import XPIManager
-from validator.errorbundler import ErrorBundle
-from validator.outputhandlers.shellcolors import OutputHandler
-import validator.testcases.regex as regex
+from appvalidator.xpi import XPIManager
+from appvalidator.errorbundler import ErrorBundle
+from appvalidator.outputhandlers.shellcolors import OutputHandler
 
 
-def _do_test(path, test, failure=True,
-             require_install=False, set_type=0,
+def _do_test(path, test, failure=True, set_type=0,
              listed=False, xpi_mode="r"):
 
     package_data = open(path, "rb")
@@ -21,13 +17,6 @@ def _do_test(path, test, failure=True,
     # Populate in the dependencies.
     if set_type:
         err.set_type(set_type) # Conduit test requires type
-    if require_install:
-        err.save_resource("has_install_rdf", True)
-        rdf_data = package.read("install.rdf")
-        install_rdf = RDFParser(err, rdf_data)
-        err.save_resource("install_rdf", install_rdf)
-
-    populate_chrome_manifest(err, package)
 
     test(err, package)
 
@@ -44,7 +33,6 @@ def _do_test(path, test, failure=True,
 class TestCase(object):
     def setUp(self):
         self.err = None
-        self.is_jetpack = False
         self.is_bootstrapped = False
         self.detected_type = None
         self.listed = True
@@ -70,8 +58,6 @@ class TestCase(object):
                                listed=self.listed)
         self.err.handler = OutputHandler(sys.stdout, True)
 
-        if self.is_jetpack:
-            self.err.metadata["is_jetpack"] = True
         if self.is_bootstrapped:
             self.err.save_resource("em:bootstrap", True)
         if self.detected_type is not None:
@@ -125,8 +111,6 @@ class TestCase(object):
         assert not self.err.errors, 'Got these: %s' % self.err.errors
         assert not self.err.warnings, 'Got these: %s' % self.err.warnings
         assert not self.err.notices, 'Got these: %s' % self.err.notices
-        assert not any(self.err.compat_summary.values()), \
-                "Found compatibility messages."
 
     def assert_got_errid(self, errid):
         """
@@ -136,26 +120,6 @@ class TestCase(object):
         assert any(msg["id"] == errid for msg in
                    (self.err.errors + self.err.warnings + self.err.notices)), \
                 "%s was expected, but it was not found." % repr(errid)
-
-
-class RegexTestCase(TestCase):
-    """
-    A helper class to provide functions useful for performing tests against
-    regex test scenarios.
-    """
-
-    def run_regex(self, input):
-        """Run the standard regex tests for non-JavaScript input."""
-        if self.err is None:
-            self.setup_err()
-        input = '<input onclick="%s" />' % input
-        regex.run_regex_tests(input, self.err, "foo.txt", is_js=False)
-
-    def run_js_regex(self, input):
-        """Run the standard regex tests for JavaScript input."""
-        if self.err is None:
-            self.setup_err()
-        regex.run_regex_tests(input, self.err, "foo.txt", is_js=True)
 
 
 class MockZipFile:

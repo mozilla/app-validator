@@ -2,31 +2,25 @@ import copy
 import re
 import types
 
-import validator.testcases.javascript.actions as actions
-from validator.testcases.javascript.jstypes import *
-from validator.testcases.javascript.nodedefinitions import DEFINITIONS
-from validator.testcases.javascript.predefinedentities import \
-               GLOBAL_ENTITIES, BANNED_IDENTIFIERS
+from . import actions
+from .jstypes import *
+from .nodedefinitions import DEFINITIONS
+from .predefinedentities import GLOBAL_ENTITIES, BANNED_IDENTIFIERS
+
 
 DEBUG = False
-IGNORE_POLLUTION = False
-POLLUTION_COMPONENTS_PATH = re.compile(r"/?components/.*\.jsm?")
-POLLUTION_EXCEPTIONS = set(["Cc", "Ci", "Cu", ])
 
 
 class Traverser:
     "Traverses the AST Tree and determines problems with a chunk of JS."
 
-    def __init__(self, err, filename, start_line=0, context=None,
-                 is_jsm=False):
+    def __init__(self, err, filename, start_line=0, context=None):
         self.err = err
-        self.is_jsm = is_jsm
 
         self.contexts = []
         self.block_contexts = []
         self.filename = filename
         self.start_line = start_line
-        self.polluted = False
         self.line = 1  # Line number
         self.position = 0  # Column number
         self.context = context
@@ -72,39 +66,6 @@ class Traverser:
             # analysis during unit tests.
             if DEBUG:
                 self.err.final_context = self.contexts[0]
-
-            if self.pollutable:
-                # Ignore anything in the components/ directory
-                if POLLUTION_COMPONENTS_PATH.match(self.filename):
-                    return
-
-                # This performs the namespace pollution test.
-                final_globals = copy.deepcopy(self.contexts[0].data)
-                for global_name in self.contexts[0].data:
-                    if global_name in POLLUTION_EXCEPTIONS:
-                        del final_globals[global_name]
-
-                global_context_size = len(final_globals)
-                self._debug("Final context size: %d" % global_context_size)
-
-                if (global_context_size > 3 and not self.is_jsm and
-                    not "is_jetpack" in self.err.metadata and
-                    not self.err.get_resource("em:bootstrap") == "true"):
-                    self.err.warning(
-                        err_id=("testcases_javascript_traverser",
-                                "run",
-                                "namepsace_pollution"),
-                        warning="JavaScript namespace pollution",
-                        description=["Your add-on contains a large number of "
-                                     "global variables, which can conflict "
-                                     "with other add-ons. For more "
-                                     "information, see "
-                                "http://blog.mozilla.com/addons/2009/01/16/"
-                                "firefox-extensions-global-namespace-pollution/"
-                                     ", or use JavaScript modules.",
-                                     "List of entities: %s" %
-                                         ", ".join(self.contexts[0].data.keys())],
-                       filename=self.filename)
 
     def _traverse_node(self, node):
         "Finds a node's internal blocks and helps manage state."
