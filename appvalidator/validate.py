@@ -24,7 +24,7 @@ def validate_app(data, listed=True, market_urls=None):
     - Spidermonkey paths are not accepted by this function because we don't
       perform JavaScript validation on webapps.
     """
-    bundle = ErrorBundle(listed=listed, determined=True)
+    bundle = ErrorBundle(listed=listed)
 
     # Set the market URLs.
     set_market_urls(market_urls)

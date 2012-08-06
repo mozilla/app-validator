@@ -25,9 +25,7 @@ def detect_webapp_string(err, data):
         webapp = json.loads(u_data)
     except ValueError:
         return err.error(
-            err_id=("webapp",
-                    "detect_webapp",
-                    "parse_error"),
+            err_id=("webapp", "detect_webapp", "parse_error"),
             error="JSON Parse Error",
             description="The webapp extension could not be parsed due to a "
                         "syntax error in the JSON.")
