@@ -36,37 +36,6 @@ def test_property_members():
     assert _get_var(results, "z") == "bar"
 
 
-def test_global_overwrite():
-    "Tests that important objects cannot be overridden by JS"
-
-    err = _do_test_raw("""
-    Number.prototype = "This is the new prototype";
-    """)
-    assert err.failed()
-    assert len(err.warnings) == 1
-
-    err = _do_test_raw("""
-    Object.prototype.test = "bar";
-    """)
-    assert err.failed()
-    assert len(err.warnings) == 2
-
-    err = _do_test_raw("""
-    Object.prototype["test"] = "bar";
-    """)
-    assert err.failed()
-    assert len(err.warnings) == 2
-
-    assert _do_test_raw("""
-    Object = "asdf";
-    """).failed()
-
-    assert _do_test_raw("""
-    var x = Object.prototype;
-    x.test = "asdf";
-    """).failed()
-
-
 def test_with_statement():
     "Tests that 'with' statements work as intended"
 
@@ -114,11 +83,3 @@ def test_overwrite_readonly_false():
     assert not _do_test_raw("""
     window.innerHeight = 123;
     """).failed()
-
-
-def test_overwrite_selectedTab():
-    """Test that gBrowser.selectedTab is overwriteable."""
-    assert not _do_test_raw("""
-    gBrowser.selectedTab = 123;
-    """).failed()
-

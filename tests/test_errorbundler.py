@@ -1,7 +1,8 @@
 import json
-import nose
 import sys
 from StringIO import StringIO
+
+from nose.tools import eq_
 
 import appvalidator.errorbundler as errorbundler
 from appvalidator.errorbundler import ErrorBundle
@@ -58,71 +59,6 @@ def test_type():
 
     bundle.set_type(5)
     assert bundle.detected_type == 5
-
-
-def test_states():
-    """Test that detected type is preserved, even in subpackages."""
-
-    # Use the StringIO as an output buffer.
-    bundle = ErrorBundle()
-
-    # Populate the bundle with some test data.
-    bundle.set_type(4)
-    bundle.error((), "error")
-    bundle.warning((), "warning")
-    bundle.notice((), "notice")
-    bundle.save_resource("test", True)
-
-    # Push a state
-    bundle.push_state("test.xpi")
-
-    bundle.set_type(2)
-    bundle.error((), "nested error")
-    bundle.warning((), "nested warning")
-    bundle.notice((), "nested notice")
-
-    # Push another state
-    bundle.push_state("test2.xpi")
-
-    bundle.set_type(3)
-    bundle.error((), "super nested error")
-    bundle.warning((), "super nested warning")
-    bundle.notice((), "super nested notice")
-
-    bundle.pop_state()
-
-    bundle.pop_state()
-
-    # Load the JSON output as an object.
-    output = json.loads(bundle.render_json())
-
-    # Run some basic tests
-    assert output["detected_type"] == "langpack"
-    assert len(output["messages"]) == 10
-
-    print output
-
-    messages = ["error",
-                "warning",
-                "notice",
-                "nested error",
-                "nested warning",
-                "nested notice",
-                "super nested error",
-                "super nested warning",
-                "super nested notice"]
-
-    for message in output["messages"]:
-        print message
-
-        assert message["message"] in messages
-        messages.remove(message["message"])
-
-        assert message["message"].endswith(message["type"])
-
-    assert not messages
-
-    assert bundle.get_resource("test")
 
 
 def test_file_structure():

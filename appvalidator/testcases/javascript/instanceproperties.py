@@ -103,4 +103,3 @@ def get_operation(mode, property):
         # and funnel them through the set_on_event function.
 
         return set_on_event
-

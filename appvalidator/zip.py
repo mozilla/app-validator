@@ -8,7 +8,7 @@ def to_utf8(s):
     return s
 
 
-class XPIManager(object):
+class ZipPackage(object):
     """
     An XPI reader and management class. Allows fun things like reading,
     listing, and extracting files from an XPI without you needing to

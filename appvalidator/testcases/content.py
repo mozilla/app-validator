@@ -1,52 +1,31 @@
-import fnmatch
 import hashlib
-import re
-from StringIO import StringIO
 
+from ..constants import *
 from ..contextgenerator import ContextGenerator
 from .. import decorator
-from .. import submain as testendpoint_validator
-from .. import unicodehelper
-import markup.markuptester as testendpoint_markup
 import markup.csstester as testendpoint_css
+import markup.markuptester as testendpoint_markup
 import scripting as testendpoint_js
-from ..xpi import XPIManager
-from ..constants import *
+from .. import unicodehelper
 
 
 FLAGGED_FILES = set([".DS_Store", "Thumbs.db"])
-FLAGGED_EXTENSIONS = set([".orig", ".old", "~"])
-OSX_REGEX = re.compile("__MACOSX")
+FLAGGED_EXTENSIONS = set([".orig", ".old", ".tmp", "~"])
 
 
 @decorator.register_test(tier=2)
-def test_packed_packages(err, xpi_package=None):
+def test_packed_packages(err, package=None):
     "Tests XPI and JAR files for naughty content."
 
     processed_files = 0
     pretested_files = err.get_resource("pretested_files") or []
 
-    scripts = set()
-
     with open(os.path.join(os.path.dirname(__file__),
               "hashes.txt")) as f:
         hash_blacklist = [x[:-1] for x in f]
 
-    with open(os.path.join(os.path.dirname(__file__),
-              "whitelist_hashes.txt")) as f:
-        hash_whitelist = [x[:-1] for x in f]
-
-    overlays = set()
-    chrome = err.get_resource("chrome.manifest_nopush")
-    if chrome:
-        overlays = chrome.get_applicable_overlays(err)
-
-    marked_scripts = err.get_resource("marked_scripts")
-    if not marked_scripts:
-        marked_scripts = set()
-
     # Iterate each item in the package.
-    for name in xpi_package:
+    for name in package:
 
         # Warn for things like __MACOSX directories and .old files.
         if ("__MACOSX" in name or
@@ -74,245 +53,60 @@ def test_packed_packages(err, xpi_package=None):
                 filename=name)
             continue
 
-        # Skip the file if it's in the pre-tested files resource. This skips
-        # things like Jetpack files.
+        # Skip the file if it's in the pre-tested file resources.
         if name in pretested_files:
             continue
 
         # Read the file from the archive if possible.
         file_data = u""
         try:
-            file_data = xpi_package.read(name)
+            file_data = package.read(name)
         except KeyError:  # pragma: no cover
             pass
 
-        if not err.for_appversions:
-            # Skip over whitelisted and blacklisted hashes
-            # unless we are checking for compatibility.
-            hash = hashlib.sha1(file_data).hexdigest()
-            if hash in hash_whitelist:
-                continue
-            elif hash in hash_blacklist:
-                err.notice(
-                    err_id=("testcases_content",
-                            "test_packed_packages",
-                            "blacklisted_js_library"),
-                    notice="JS Library Detected",
-                    description=["JavaScript libraries are discouraged for "
-                                 "simple add-ons, but are generally "
-                                 "accepted.",
-                                 "File %r is a known JS library" % name],
-                    filename=name)
-                continue
+        # Skip over whitelisted hashes unless we are checking for compatibility.
+        hash = hashlib.sha1(file_data).hexdigest()
+        if hash in hash_blacklist:
+            continue
 
         # Process the file.
-        processed = False
-        name_lower = name.lower()
-        if name_lower.endswith((".js", ".jsm")):
-            # Add the scripts to a list to be processed later.
-            scripts.add(name)
-        elif name_lower.endswith((".xul", ".xml", ".html", ".xhtml", ".xbl")):
-            # Process markup files outside of _process_file so we can get
-            # access to information about linked scripts and such.
-            parser = testendpoint_markup.MarkupParser(err)
-            parser.process(name, file_data,
-                           xpi_package.info(name)["extension"])
-
-            # Make sure the name is prefixed with a forward slash.
-            prefixed_name = name if name.startswith("/") else "/%s" % name
-            # Mark scripts as pollutable if this is an overlay file and there
-            # are scripts to mark.
-            if overlays and prefixed_name in overlays and parser.found_scripts:
-                # Look up the chrome URL for the overlay
-                reversed_chrome_url = chrome.reverse_lookup(err, name)
-                for script in parser.found_scripts:
-                    # Change the URL to an absolute URL.
-                    script = _make_script_absolute(reversed_chrome_url, script)
-                    # Mark the script as potentially pollutable.
-                    marked_scripts.add(script)
-                    err.save_resource("marked_scripts", marked_scripts)
-
-        else:
-            # For all other files, simply throw it at _process_file.
-            processed = _process_file(err, xpi_package, name, file_data,
-                                      name_lower)
-            # If the file is processed, it will return True. If the process
-            # goes badly, it will return False. If the processing is skipped,
-            # it returns None. We should respect that.
-            if processed is None:
-                continue
+        print "processing", name
+        processed = _process_file(err, package, name, file_data)
+        # If the file is processed, it will return True. If the process goes
+        # badly, it will return False. If the processing is skipped, it returns
+        # None. We should respect that.
+        if processed is None:
+            continue
 
         # This aids in creating unit tests.
         processed_files += 1
 
-    # If there aren't any scripts in the package, just skip the next few bits.
-    if not scripts:
-        return processed_files
-
-    # Save the list of scripts, along with where to find them and the current
-    # validation state.
-    existing_scripts = err.get_resource("scripts")
-    if not existing_scripts:
-        existing_scripts = []
-    existing_scripts.append({"scripts": scripts,
-                             "package": xpi_package,
-                             "state": err.package_stack[:]})
-    err.save_resource("scripts", existing_scripts)
-
     return processed_files
 
 
-@decorator.register_test(tier=3)
-def test_packed_scripts(err, xpi_package):
-    """
-    Scripts must be tested separately from normal files to allow for markup
-    files to mark scripts as being potentially polluting.
-    """
-
-    # This test doesn't apply to subpackages. We keep references to the
-    # subpackage bundles so we can process everything at once in an unpushed
-    # state.
-    if err.is_nested_package():
-        return
-
-    scripts = err.get_resource("scripts")
-    if not scripts:
-        return
-
-    # Get the chrome manifest in case there's information about pollution
-    # exemptions.
-    chrome = err.get_resource("chrome.manifest_nopush")
-    marked_scripts = err.get_resource("marked_scripts")
-    if not marked_scripts:
-        marked_scripts = set()
-
-    # Process all of the scripts that were found seperately from the rest of
-    # the package contents.
-    for script_bundle in scripts:
-        package = script_bundle["package"]
-
-        # Set the error bundle's package state to what it was when we first
-        # encountered the script file during the content tests.
-        for archive in script_bundle["state"]:
-            err.push_state(archive)
-
-        for script in script_bundle["scripts"]:
-            file_data = unicodehelper.decode(package.read(script))
-
-            if marked_scripts:
-                reversed_script = chrome.reverse_lookup(script_bundle["state"],
-                                                        script)
-                # Run the standard script tests on the script, but mark the
-                # script as pollutable if its chrome URL is marked as being so.
-                testendpoint_js.test_js_file(
-                        err, script, file_data,
-                        pollutable=reversed_script in marked_scripts)
-            else:
-                # Run the standard script tests on the scripts.
-                testendpoint_js.test_js_file(err, script, file_data)
-
-        for i in range(len(script_bundle["state"])):
-            err.pop_state()
-
-
-def _process_file(err, xpi_package, name, file_data, name_lower,
-                  pollutable=False):
+def _process_file(err, package, name, file_data):
     """Process a single file's content tests."""
 
-    # If that item is a container file, unzip it and scan it.
-    if name_lower.endswith(".jar"):
-        # This is either a subpackage or a nested theme.
-        is_subpackage = not err.get_resource("is_multipackage")
-        # Unpack the package and load it up.
-        package = StringIO(file_data)
-        try:
-            sub_xpi = XPIManager(package, mode="r", name=name,
-                                 subpackage=is_subpackage)
-        except:
-            err.error(("testcases_content",
-                       "test_packed_packages",
-                       "jar_subpackage_corrupt"),
-                      "Subpackage corrupt.",
-                      "The subpackage could not be opened due to issues "
-                      "with corruption. Ensure that the file is valid.",
-                      name)
-            return None
+    name_lower = name.lower()
 
-        # Let the error bunder know we're in a sub-package.
-        err.push_state(name.lower())
-        err.set_type(PACKAGE_SUBPACKAGE if
-                     is_subpackage else
-                     PACKAGE_THEME)
-        err.set_tier(1)
-        supported_versions = (err.supported_versions.copy()
-                              if err.supported_versions
-                              else err.supported_versions)
-
-        if is_subpackage:
-            testendpoint_validator.test_inner_package(err, sub_xpi)
-        else:
-            testendpoint_validator.test_package(err, package, name)
-
-        err.pop_state()
-        err.set_tier(2)
-
-        err.supported_versions = supported_versions
-
-    elif name_lower.endswith(".xpi"):
-        # It's not a subpackage, it's a nested extension. These are
-        # found in multi-extension packages.
-
-        # Unpack!
-        package = StringIO(file_data)
-
-        err.push_state(name_lower)
-        err.set_tier(1)
-
-        # There are no expected types for packages within a multi-
-        # item package.
-        testendpoint_validator.test_package(err, package, name)
-
-        err.pop_state()
-        err.set_tier(2)  # Reset to the current tier
-
-    elif name_lower.endswith((".css", ".js", ".jsm")):
+    if name_lower.endswith((".css", ".js", ".xml", ".html", ".xhtml")):
 
         if not file_data:
             return None
 
         # Convert the file data to unicode
         file_data = unicodehelper.decode(file_data)
-        is_js = False
 
         if name_lower.endswith(".css"):
             testendpoint_css.test_css_file(err, name, file_data)
 
-        elif name_lower.endswith((".js", ".jsm")):
-            is_js = True
-            testendpoint_js.test_js_file(err, name, file_data,
-                                         pollutable=pollutable)
+        elif name_lower.endswith(".js"):
+            testendpoint_js.test_js_file(err, name, file_data)
+
+        elif name_lower.endswith((".xml", ".html", ".xhtml")):
+            p = testendpoint_markup.MarkupParser(err)
+            p.process(name, file_data, package.info(name)["extension"])
 
         return True
 
     return False
-
-
-def _make_script_absolute(xul_path, script):
-    """Returns the absolute chrome URL for a script's URL."""
-
-    if not xul_path:
-        raise Exception("Reference URL not provided for script root "
-                        "resolution.")
-
-    # Ignore absolute URLs.
-    if script.startswith("chrome://"):
-        return script
-
-    if script.startswith("/"):
-        xul_path_base = xul_path[9:]
-        return "chrome://%s%s" % (xul_path_base.split("/")[0], script)
-    else:
-        xul_path_split = xul_path.split("/")
-        xul_path_split[-1] = script
-        return "/".join(xul_path_split)
-

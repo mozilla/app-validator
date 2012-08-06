@@ -14,9 +14,8 @@ def test_no_dups():
 
     assert _do_test_raw("""
     eval = 123;
-    """).message_count == 1
+    """).message_count == 0
 
     assert _do_test_raw("""
     eval.prototype = true;
-    """).message_count == 2
-
+    """).message_count == 1

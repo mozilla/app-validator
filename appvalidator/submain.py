@@ -5,7 +5,7 @@ from zipfile import BadZipfile
 from zlib import error as zlib_error
 
 from .webapp import detect_webapp
-from .xpi import XPIManager
+from .zip import ZipPackage
 from . import decorator
 
 from constants import *
@@ -32,8 +32,7 @@ class ValidationTimeout(Exception):
         return "Validation timeout after %d seconds" % self.timeout
 
 
-def prepare_package(err, path, expectation=0, for_appversions=None,
-                    timeout=None):
+def prepare_package(err, path, timeout=None):
     """Prepares a file-based package for validation.
 
     timeout is the number of seconds before validation is aborted.
@@ -44,32 +43,20 @@ def prepare_package(err, path, expectation=0, for_appversions=None,
 
     # Test that the package actually exists. I consider this Tier 0
     # since we may not even be dealing with a real file.
-    if err and not os.path.isfile(path):
-        err.error(("main",
-                   "prepare_package",
-                   "not_found"),
-                  "The package could not be found")
+    if not os.path.isfile(path):
+        err.error(
+            err_id=("main", "prepare_package", "not_found"),
+            error="The package could not be found")
         return
 
     # Pop the package extension.
     package_extension = os.path.splitext(path)[1]
     package_extension = package_extension.lower()
 
-    if expectation == PACKAGE_WEBAPP:
-        return test_webapp(err, path, expectation)
+    if package_extension == ".webapp":
+        return test_webapp(err, path)
 
-    # Test that the package is an XPI.
-    if package_extension not in (".xpi", ".jar"):
-        if err:
-            err.error(("main",
-                       "prepare_package",
-                       "unrecognized"),
-                      "The package is not of a recognized type.")
-        return False
-
-    package = open(path, "rb")
     validation_state = {'complete': False}
-
     def timeout_handler(signum, frame):
         if validation_state['complete']:
             # There is no need for a timeout. This might be the result of
@@ -79,64 +66,44 @@ def prepare_package(err, path, expectation=0, for_appversions=None,
         log.error("%s; Package: %s" % (str(ex), path))
         raise ex
 
-    if timeout != -1:
-        signal.signal(signal.SIGALRM, timeout_handler)
-        signal.setitimer(signal.ITIMER_REAL, timeout)
-    output = test_package(err, package, path, expectation,
-                          for_appversions)
-    package.close()
+    with open(path, "rb") as package:
+        if timeout != -1:
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.setitimer(signal.ITIMER_REAL, timeout)
+        output = test_package(err, package, path)
+
     validation_state['complete'] = True
 
     return output
 
 
-def test_webapp(err, package, expectation=0):
-    "Tests the package to see if it is a search provider."
-
-    expected_webapp = expectation in (PACKAGE_ANY, PACKAGE_WEBAPP)
-    if not expected_webapp:
-        return err.warning(
-            err_id=("main", "test_webapp", "extension"),
-            warning="Unexpected file extension.",
-            description="An unexpected file extension was encountered.")
+def test_webapp(err, package):
+    "Tests the package to see if it is a webapp."
 
     detect_webapp(err, package)
-
-    if expected_webapp and not err.failed():
-        err.set_type(PACKAGE_WEBAPP)
+    err.set_type(PACKAGE_WEBAPP)
 
 
-def test_package(err, file_, name, expectation=PACKAGE_ANY,
-                 for_appversions=None):
+def test_package(err, file_, name):
     "Begins tests for the package."
 
-    # Load up a new instance of an XPI.
+    # Load up a new instance of a package.
     try:
-        package = XPIManager(file_, mode="r", name=name)
+        package = ZipPackage(file_, mode="r", name=name)
     except IOError:
         # Die on this one because the file won't open.
-        return err.error(("main",
-                          "test_package",
-                          "unopenable"),
-                         "The XPI could not be opened.")
+        return err.error(
+            err_id=("main", "test_package", "unopenable"),
+            error="The package could not be opened.")
     except (BadZipfile, zlib_error):
         # Die if the zip file is corrupt.
         return err.error(
-            ("submain", "_load_install_rdf", "badzipfile"),
-            error="Corrupt ZIP file",
-            description="We were unable to decompress the zip file.")
-
-    if package.extension in assumed_extensions:
-        assumed_type = assumed_extensions[package.extension]
-        # Is the user expecting a different package type?
-        if not expectation in (PACKAGE_ANY, assumed_type):
-            err.error(("main",
-                       "test_package",
-                       "unexpected_type"),
-                      "Unexpected package type (found theme)")
+                err_id=("submain", "_load_install_rdf", "badzipfile"),
+                error="Corrupt ZIP file",
+                description="We were unable to decompress the zip file.")
 
     try:
-        output = test_inner_package(err, package, for_appversions)
+        output = test_inner_package(err, package)
     except ValidationTimeout as ex:
         err.error(
                 err_id=("main", "test_package", "timeout"),
@@ -150,7 +117,7 @@ def test_package(err, file_, name, expectation=PACKAGE_ANY,
     return output
 
 
-def test_inner_package(err, xpi_package, for_appversions=None):
+def test_inner_package(err, package):
     "Tests a package's inner content."
 
     # Iterate through each tier.
@@ -161,23 +128,6 @@ def test_inner_package(err, xpi_package, for_appversions=None):
 
         # Iterate through each test of our detected type.
         for test in decorator.get_tests(tier, err.detected_type):
-            # Test whether the test is app/version specific.
-            if test["versions"] is not None:
-                # If the test's version requirements don't apply to the add-on,
-                # then skip the test.
-                if not err.supports_version(test["versions"]):
-                    continue
-
-                # If the user's version requirements don't apply to the test or
-                # to the add-on, then skip the test.
-                if (for_appversions and
-                    not (err._compare_version(requirements=for_appversions,
-                                              support=test["versions"]) and
-                         err.supports_version(for_appversions))):
-                    continue
-
-            # Save the version requirements to the error bundler.
-            err.version_requirements = test["versions"]
 
             test_func = test["test"]
             if test["simple"]:
@@ -186,7 +136,7 @@ def test_inner_package(err, xpi_package, for_appversions=None):
                 # Pass in:
                 # - Error Bundler
                 # - A copy of the package itself
-                test_func(err, xpi_package)
+                test_func(err, package)
 
         # Return any errors at the end of the tier if undetermined.
         if err.failed(fail_on_warnings=False) and not err.determined:

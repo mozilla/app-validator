@@ -6,4 +6,3 @@ def test_double_escaped():
 
     err = _do_test("tests/resources/bug_626878.js")
     assert not err.message_count
-

@@ -1,16 +1,13 @@
 import re
 import sys
 import types
-try:
-    import HTMLParser as htmlparser
-except ImportError:  # pragma: no cover
-    import html.parser as htmlparser
 
 from .. import scripting
 import appvalidator.unicodehelper as unicodehelper
 from . import csstester
 from appvalidator.contextgenerator import ContextGenerator
 from appvalidator.constants import *
+from patchedhtmlparser import PatchedHTMLParser
 
 
 DEBUG = False
@@ -29,11 +26,11 @@ DOM_MUTATION_HANDLERS = (
         "ondomnoderemovedfromdocument", "ondomsubtreemodified", )
 
 
-class MarkupParser(htmlparser.HTMLParser):
+class MarkupParser(PatchedHTMLParser):
     """Parse and analyze the versious components of markup files."""
 
     def __init__(self, err, strict=True, debug=False):
-        htmlparser.HTMLParser.__init__(self)
+        PatchedHTMLParser.__init__(self)
         self.err = err
         self.is_jetpack = "is_jetpack" in err.metadata  # Cache this value.
         self.line = 0
@@ -47,10 +44,6 @@ class MarkupParser(htmlparser.HTMLParser):
         self.xml_buffer = []
 
         self.reported = set()
-        self.found_scripts = set()  # A set of script URLs in the doc.
-
-        # Added as a patch for various Python HTMLParser issues.
-        self.cdata_tag = None
 
     def process(self, filename, data, extension="xul"):
         """Processes data by splitting it into individual lines, then
@@ -130,32 +123,31 @@ class MarkupParser(htmlparser.HTMLParser):
                 self.debug and "testscript" in self.xml_state):
                 if "script_comments" in self.reported or not self.strict:
                     return
-                self.err.notice(("testcases_markup_markuptester",
-                                 "_feed",
-                                 "missing_script_comments"),
-                                "Missing comments in <script> tag",
-                                "Markup parsing errors occurred while trying "
+                self.err.notice(
+                    err_id=("testcases_markup_markuptester", "_feed",
+                            "missing_script_comments"),
+                    notice="Missing comments in <script> tag",
+                    description="Markup parsing errors occurred while trying "
                                 "to parse the file. This would likely be "
                                 "mitigated by wrapping <script> tag contents "
                                 "in HTML comment tags (<!-- -->)",
-                                self.filename,
-                                line=self.line,
-                                context=self.context,
-                                tier=2)
+                    filename=self.filename,
+                    line=self.line,
+                    context=self.context,
+                    tier=2)
                 self.reported.add("script_comments")
                 return
 
             if self.strict:
-                self.err.warning(("testcases_markup_markuptester",
-                                  "_feed",
-                                  "parse_error"),
-                                 "Markup parsing error",
-                                 ["There was an error parsing a markup "
-                                  "file.",
-                                  str(inst)],
-                                 self.filename,
-                                 line=self.line,
-                                 context=self.context)
+                self.err.warning(
+                    err_id=("testcases_markup_markuptester", "_feed",
+                            "parse_error"),
+                    warning="Markup parsing error",
+                    description=["There was an error parsing a markup file.",
+                                 str(inst)],
+                    filename=self.filename,
+                    line=self.line,
+                    context=self.context)
             self.reported.add("markup")
 
     def handle_startendtag(self, tag, attrs):
@@ -166,10 +158,6 @@ class MarkupParser(htmlparser.HTMLParser):
 
         # Normalize!
         tag = tag.lower()
-        # XUL scripts are identical to normal scripts. Treat them the same.
-        if tag == "xul:script":
-            tag = "script"
-
         orig_tag = tag
 
         # Be extra sure it's not a self-closing tag.
@@ -204,11 +192,11 @@ class MarkupParser(htmlparser.HTMLParser):
             elif attr_name.startswith("on"):  # JS attribute
                 # Warn about DOM mutation event handlers.
                 if attr_name in DOM_MUTATION_HANDLERS:
-                    self.err.warning(
+                    self.err.error(
                         err_id=("testcases_markup_markuptester",
                                 "handle_starttag",
                                 "dom_manipulation_handler"),
-                        warning="DOM Mutation Events Prohibited",
+                        error="DOM Mutation Events Prohibited",
                         description="DOM mutation events are flagged because "
                                     "of their deprecated status, as well as "
                                     "their extreme inefficiency. Consider "
@@ -222,6 +210,18 @@ class MarkupParser(htmlparser.HTMLParser):
                                           filename=self.filename,
                                           line=self.line,
                                           context=self.context)
+            elif attr_name == "src" and tag == "script":
+                if not self._is_url_local(attr_value):
+                    self.err.error(
+                        err_id=("testcases_markup_markuptester",
+                                "handle_starttag",
+                                "remote_script"),
+                        error="Remote script resource detected",
+                        description="Remote scripts are not allowed within "
+                                    "markup in apps.",
+                        filename=self.filename,
+                        line=self.line,
+                        context=self.context)
 
         # When the dev forgets their <!-- --> on a script tag, bad
         # things happen.
@@ -304,21 +304,18 @@ class MarkupParser(htmlparser.HTMLParser):
 
         # If this is an XML-derived language, everything must nest
         # properly. No overlapping tags.
-        if (old_state != tag and
-            self.extension[0] == 'x' and
-            not self.strict):
-
-            self.err.warning(("testcases_markup_markuptester",
-                              "handle_endtag",
-                              "invalid_nesting"),
-                             "Markup invalidly nested",
-                             "It has been determined that the document "
-                             "invalidly nests its tags. This is not permitted "
-                             "in the specified document type.",
-                             self.filename,
-                             line=self.line,
-                             context=self.context,
-                             tier=2)
+        if (old_state != tag and self.extension[0] == 'x' and not self.strict):
+            self.err.warning(
+                err_id=("testcases_markup_markuptester", "handle_endtag",
+                        "invalid_nesting"),
+                warning="Markup invalidly nested",
+                description="It has been determined that the document "
+                            "invalidly nests its tags. This is not permitted "
+                            "in the specified document type.",
+                filename=self.filename,
+                line=self.line,
+                context=self.context,
+                tier=2)
             if DEBUG:  # pragma: no cover
                 print "Invalid markup nesting ------"
 
@@ -370,9 +367,7 @@ class MarkupParser(htmlparser.HTMLParser):
         if not self.xml_buffer:
             return
 
-        data = unicodehelper.decode(data)
-
-        self.xml_buffer[-1] += data
+        self.xml_buffer[-1] += unicodehelper.decode(data)
 
     def _format_args(self, args):
         """Formats a dict of HTML attributes to be in HTML attribute
@@ -381,93 +376,8 @@ class MarkupParser(htmlparser.HTMLParser):
         if not args:
             return ""
 
-        output = []
-        for attr in args:
-            output.append(attr[0] + '="' + attr[1] + '"')
-
-        return " " + " ".join(output)
+        return " " + " ".join('%s="%s"' % a for a in args)
 
     def _is_url_local(self, url):
-
-        pattern = re.compile("(ht|f)tps?://")
-
+        pattern = re.compile("((ht|f)tps?:)?//")
         return not pattern.match(url)
-
-    # Code to fix for Python issue 670664
-
-    def parse_starttag(self, i):
-        self.__starttag_text = None
-        endpos = self.check_for_whole_start_tag(i)
-        if endpos < 0:
-            return endpos
-        rawdata = self.rawdata
-        self.__starttag_text = rawdata[i:endpos]
-
-        # Now parse the data between i+1 and j into a tag and attrs
-        attrs = []
-        match = htmlparser.tagfind.match(rawdata, i+1)
-        assert match, 'unexpected call to parse_starttag()'
-        k = match.end()
-        self.lasttag = tag = rawdata[i+1:k].lower()
-
-        while k < endpos:
-            m = htmlparser.attrfind.match(rawdata, k)
-            if not m:
-                break
-            attrname, rest, attrvalue = m.group(1, 2, 3)
-            if not rest:
-                attrvalue = None
-            elif attrvalue[:1] == '\'' == attrvalue[-1:] or \
-                 attrvalue[:1] == '"' == attrvalue[-1:]:
-                attrvalue = attrvalue[1:-1]
-                attrvalue = self.unescape(attrvalue)
-            attrs.append((attrname.lower(), attrvalue))
-            k = m.end()
-
-        end = rawdata[k:endpos].strip()
-        if end not in (">", "/>"):
-            lineno, offset = self.getpos()
-            if "\n" in self.__starttag_text:
-                lineno = lineno + self.__starttag_text.count("\n")
-                offset = len(self.__starttag_text) \
-                         - self.__starttag_text.rfind("\n")
-            else:
-                offset = offset + len(self.__starttag_text)
-            self.error("junk characters in start tag: %r"
-                       % (rawdata[k:endpos][:20],))
-        if end.endswith('/>'):
-            # XHTML-style empty tag: <span attr="value" />
-            self.handle_startendtag(tag, attrs)
-        else:
-            self.handle_starttag(tag, attrs)
-            if tag in self.CDATA_CONTENT_ELEMENTS:
-                self.set_cdata_mode(tag)
-        return endpos
-
-    def parse_endtag(self, i):
-        rawdata = self.rawdata
-        assert rawdata[i:i+2] == "</", "unexpected call to parse_endtag"
-        match = htmlparser.endendtag.search(rawdata, i+1) # >
-        if not match:
-            return -1
-        j = match.end()
-        match = htmlparser.endtagfind.match(rawdata, i) # </ + tag + >
-        if not match:
-            if self.cdata_tag is not None:
-                self.handle_data(rawdata[i:j])
-                return j
-            self.error("bad end tag: %r" % (rawdata[i:j],))
-        tag = match.group(1).strip()
-
-        if self.cdata_tag is not None and tag.lower() != self.cdata_tag:
-            self.handle_data(rawdata[i:j])
-            return j
-
-        self.handle_endtag(tag.lower())
-        self.clear_cdata_mode()
-        return j
-
-    def set_cdata_mode(self, tag):
-        self.interesting = htmlparser.interesting_cdata
-        self.cdata_tag = None
-

@@ -21,18 +21,12 @@ class ErrorBundle(object):
         True if the add-on is destined for AMO, false if not
     **instant**
         Who knows what this does
-    **overrides**
-        dict of install.rdf values to override. Possible keys:
-        targetapp_minVersion, targetapp_maxVersion
     **spidermonkey**
         Optional path to the local spidermonkey installation
-    **for_appversions**
-        A dict of app GUIDs referencing lists of versions. Determines which
-        version-dependant tests should be run.
     """
 
     def __init__(self, determined=True, listed=True, instant=False,
-                 overrides=None, spidermonkey=None, for_appversions=None):
+                 spidermonkey=None):
 
         self.handler = None
 
@@ -53,7 +47,6 @@ class ErrorBundle(object):
 
         # TODO: Break off into resource helper
         self.resources = {}
-        self.overrides = None
         self.pushable_resources = {}
         self.final_context = None
 
@@ -64,20 +57,12 @@ class ErrorBundle(object):
             self.resources["listed"] = True
         self.instant = instant
         self.determined = determined
-
-        # TODO: Break off into version helper
-        self.version_requirements = None
-
-        if overrides:
-            self.overrides = overrides
         if spidermonkey:
             self.save_resource("SPIDERMONKEY", spidermonkey)
 
-        self.supported_versions = self.for_appversions = for_appversions
-
     def error(self, err_id, error,
               description='', filename='', line=None, column=None,
-              context=None, tier=None, for_appversions=None):
+              context=None, tier=None):
         "Stores an error message for the validation process"
         self._save_message(self.errors,
                            "errors",
@@ -87,14 +72,13 @@ class ErrorBundle(object):
                             "file": filename,
                             "line": line,
                             "column": column,
-                            "tier": tier,
-                            "for_appversions": for_appversions},
+                            "tier": tier},
                            context=context)
         return self
 
     def warning(self, err_id, warning,
                 description='', filename='', line=None, column=None,
-                context=None, tier=None, for_appversions=None):
+                context=None, tier=None):
         "Stores a warning message for the validation process"
         self._save_message(self.warnings,
                            "warnings",
@@ -104,14 +88,13 @@ class ErrorBundle(object):
                             "file": filename,
                             "line": line,
                             "column": column,
-                            "tier": tier,
-                            "for_appversions": for_appversions},
+                            "tier": tier},
                            context=context)
         return self
 
     def notice(self, err_id, notice,
                description="", filename="", line=None, column=None,
-               context=None, tier=None, for_appversions=None):
+               context=None, tier=None):
         "Stores an informational message about the validation"
         self._save_message(self.notices,
                            "notices",
@@ -121,8 +104,7 @@ class ErrorBundle(object):
                             "file": filename,
                             "line": line,
                             "column": column,
-                            "tier": tier,
-                            "for_appversions": for_appversions},
+                            "tier": tier},
                            context=context)
         return self
 
@@ -145,29 +127,13 @@ class ErrorBundle(object):
             if isinstance(context, tuple):
                 message["context"] = context
             else:
-                message["context"] = \
-                            context.get_context(line=message["line"],
-                                                column=message["column"])
+                message["context"] = context.get_context(
+                    line=message["line"], column=message["column"])
         else:
             message["context"] = None
 
         message["message"] = unicodehelper.decode(message["message"])
         message["description"] = unicodehelper.decode(message["description"])
-
-        # Test that if for_appversions is set that we're only applying to
-        # supported add-ons. THIS IS THE LAST FILTER BEFORE THE MESSAGE IS
-        # ADDED TO THE STACK!
-        if message["for_appversions"]:
-            if not self.supports_version(message["for_appversions"]):
-                if self.instant:
-                    print "(Instant error discarded)"
-                    self._print_message(type_, message, verbose=True)
-                return
-        elif self.version_requirements:
-            # If there was no for_appversions but there were version
-            # requirements detailed in the decorator, use the ones from the
-            # decorator.
-            message["for_appversions"] = self.version_requirements
 
         # Save the message to the stack.
         stack.append(message)
@@ -296,8 +262,7 @@ class ErrorBundle(object):
                      line=message["line"],
                      column=message["column"],
                      context=message["context"],
-                     tier=message["tier"],
-                     for_appversions=message["for_appversions"])
+                     tier=message["tier"])
 
     def render_json(self):
         "Returns a JSON summary of the validation operation."

@@ -1,6 +1,6 @@
 import sys
 
-from appvalidator.xpi import XPIManager
+from appvalidator.zip import ZipPackage
 from appvalidator.errorbundler import ErrorBundle
 from appvalidator.outputhandlers.shellcolors import OutputHandler
 
@@ -9,7 +9,7 @@ def _do_test(path, test, failure=True, set_type=0,
              listed=False, xpi_mode="r"):
 
     package_data = open(path, "rb")
-    package = XPIManager(package_data, mode=xpi_mode, name=path)
+    package = ZipPackage(package_data, mode=xpi_mode, name=path)
     err = ErrorBundle()
     if listed:
         err.save_resource("listed", True)
@@ -21,11 +21,7 @@ def _do_test(path, test, failure=True, set_type=0,
     test(err, package)
 
     print err.print_summary(verbose=True)
-
-    if failure:
-        assert err.failed()
-    else:
-        assert not err.failed()
+    assert err.failed() if failure else not err.failed()
 
     return err
 
@@ -54,14 +50,8 @@ class TestCase(object):
         the state that the test case was setup with.
         """
         self.err = ErrorBundle(instant=True,
-                               for_appversions=for_appversions or {},
-                               listed=self.listed)
+                               listed=getattr(self, "listed", True))
         self.err.handler = OutputHandler(sys.stdout, True)
-
-        if self.is_bootstrapped:
-            self.err.save_resource("em:bootstrap", True)
-        if self.detected_type is not None:
-            self.err.detected_Type = self.detected_type
 
     def assert_failed(self, with_errors=False, with_warnings=None):
         """

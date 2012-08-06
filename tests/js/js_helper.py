@@ -2,8 +2,8 @@ import sys
 
 from nose.tools import eq_
 
-import helper
-from helper import MockXPI
+from .. import helper
+from ..helper import MockXPI
 from appvalidator.errorbundler import ErrorBundle
 from appvalidator.outputhandlers.shellcolors import OutputHandler
 import appvalidator.testcases.content
@@ -18,29 +18,21 @@ def _do_test(path):
     return _do_test_raw(script, path)
 
 
-def _do_test_raw(script, path="foo.js", bootstrap=False, ignore_pollution=True,
-                 detected_type=None, jetpack=False):
+def _do_test_raw(script, path="foo.js"):
     "Performs a test on a JS file"
 
     err = ErrorBundle(instant=True)
-
     err.handler = OutputHandler(sys.stdout, True)
-    err.supported_versions = {}
-    if bootstrap:
-        err.save_resource("em:bootstrap", True)
-    if detected_type:
-        err.detected_type = detected_type
 
-    appvalidator.testcases.content._process_file(
-            err, MockXPI(), path, script, path.lower(), not ignore_pollution)
+    appvalidator.testcases.content._process_file(err, MockXPI(), path, script)
     if err.final_context is not None:
         print err.final_context.output()
 
     return err
 
 
-def _do_real_test_raw(script, path="foo.js", versions=None, detected_type=None,
-                      metadata=None, resources=None):
+def _do_real_test_raw(script, path="foo.js", versions=None, metadata=None,
+                      resources=None):
     """Perform a JS test using a non-mock bundler."""
 
     err = ErrorBundle(for_appversions=versions or {})
@@ -51,8 +43,7 @@ def _do_real_test_raw(script, path="foo.js", versions=None, detected_type=None,
     if resources is not None:
         err.resources = resources
 
-    appvalidator.testcases.content._process_file(err, MockXPI(), path, script,
-                                                 path.lower())
+    appvalidator.testcases.content._process_file(err, MockXPI(), path, script)
     return err
 
 
@@ -89,20 +80,16 @@ class TestCase(helper.TestCase):
         with open(path) as script_file:
             return self.run_script(script_file.read())
 
-    def run_script(self, script, expose_pollution=False):
+    def run_script(self, script):
         """
         Run the standard set of JS engine tests on the script passed via
         `script`.
         """
         if self.err is None:
             self.setup_err()
-        if self.err.supported_versions is None:
-            self.err.supported_versions = {}
 
         appvalidator.testcases.content._process_file(self.err, MockXPI(),
-                                                     self.file_path, script,
-                                                     self.file_path.lower(),
-                                                     expose_pollution)
+                                                     self.file_path, script)
         if self.err.final_context is not None:
             print self.err.final_context.output()
             self.final_context = self.err.final_context

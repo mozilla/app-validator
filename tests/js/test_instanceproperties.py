@@ -52,11 +52,6 @@ def test_outerHTML():
 def test_complex_innerHTML():
     """Tests that innerHTML can't be assigned an HTML chunk with bad code"""
 
-    assert not _do_test_raw("""
-    var x = foo();
-    x.innerHTML = "<script src=\\"chrome://foo.bar/\\"></script>";
-    """).failed()
-
     assert _do_test_raw("""
     var x = foo();
     x.innerHTML = "<script src=\\"http://foo.bar/\\"></script>";

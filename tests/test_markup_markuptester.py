@@ -18,7 +18,6 @@ def _test_xul_raw(data, path, should_fail=False, type_=None):
     extension = filename.split(".")[-1]
 
     err = ErrorBundle()
-    err.supported_versions = {}
     if type_:
         err.set_type(type_)
 
@@ -148,14 +147,17 @@ def test_html_ignore_comment():
     _test_xul("tests/resources/markup/markuptester/ignore_comments.html")
 
 
-def test_html_css_style():
-    "Tests that CSS within an element is passed to the CSS tester"
-    _test_xul("tests/resources/markup/markuptester/css_style.html", True)
+# Temporarily commented out because there are no CSS tests for the app
+# validator (yet).
 
-
-def test_html_css_inline():
-    "Tests that inline CSS is passed to the CSS tester"
-    _test_xul("tests/resources/markup/markuptester/css_inline.html", True)
+#def test_html_css_style():
+#    "Tests that CSS within an element is passed to the CSS tester"
+#    _test_xul("tests/resources/markup/markuptester/css_style.html", True)
+#
+#
+#def test_html_css_inline():
+#    "Tests that inline CSS is passed to the CSS tester"
+#    _test_xul("tests/resources/markup/markuptester/css_inline.html", True)
 
 
 def test_invalid_markup():
@@ -186,39 +188,6 @@ def test_self_closing_scripts():
         <list_item />
     </foo>
     """, "foo.xul")
-
-
-def test_generic_ids():
-    """Tests that generic IDs are caught by the validator."""
-
-    # Test that string bundles don't affect validation.
-    _test_xul_raw("""
-    <foo>
-        <stringbundleset id="whatever" />
-        <stringbundle id="whatever" />
-    </foo>
-    """, "foo.xul")
-
-    # Test that a generic ID fails.
-    _test_xul_raw("""
-    <foo>
-        <stringbundle id="strings" />
-    </foo>
-    """, "foo.xul", should_fail=True)
-
-    # Test that any element with a generic ID fails.
-    _test_xul_raw("""
-    <foo>
-        <baz id="strings" />
-    </foo>
-    """, "foo.xul", should_fail=True)
-
-    # Test that another generic ID fails with a string bundle set.
-    _test_xul_raw("""
-    <foo>
-        <stringbundleset id="string-bundle" />
-    </foo>
-    """, "foo.xul", should_fail=True)
 
 
 def test_dom_mutation():
@@ -263,19 +232,14 @@ def test_script_scraping():
     """Test that the scripts in a document are collected properly."""
 
     err = ErrorBundle()
-    err.supported_versions = {}
     parser = markuptester.MarkupParser(err, debug=True)
     parser.process("foo.xul", """
     <doc>
     <!-- One to be ignored -->
-    <script type="text/javascript"></script>
-    <script src="/relative.js"></script>
-    <script src="chrome://namespace/absolute.js"></script>
-    <script src="very_relative.js"></script>
+    <script type="text/javascript">
+    eval("asdf");
+    </script>
     </doc>
     """, "xul")
 
-    eq_(parser.found_scripts,
-        set(["/relative.js", "chrome://namespace/absolute.js",
-             "very_relative.js"]))
-
+    assert err.failed()
