@@ -5,7 +5,7 @@ from cStringIO import StringIO
 
 import javascript.traverser as traverser
 from javascript.spidermonkey import get_tree, JSReflectException
-from appvalidator.constants import PACKAGE_THEME, SPIDERMONKEY_INSTALLATION
+from appvalidator.constants import SPIDERMONKEY_INSTALLATION
 from ..contextgenerator import ContextGenerator
 from ..textfilter import *
 

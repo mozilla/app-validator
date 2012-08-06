@@ -84,7 +84,7 @@ your environment.
 
 Run the validator as follows ::
 
-    python app-validator <path to app> [-o <output type>] [-v] [--boring] [--selfhosted] [--determined]
+    python app-validator <path to app> [-o <output type>] [-v] [--boring] [--selfhosted]
 
 The path to the XPI should point to an XPI file.
 
@@ -97,10 +97,6 @@ The path to the XPI should point to an XPI file.
 --selfhosted        Disables messages that are specific to add-ons hosted on
                     AMO.
 --boring            Disables colorful shell output.
---determined        Continue validating the remaining tiers of an add-on if one
-                    tier has failed. Certain high-tiered tests may
-                    inadvertently fail when this option is enabled for badly
-                    malformed add-ons.
 
 Output Type:
 ============

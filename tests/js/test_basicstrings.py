@@ -1,47 +1,69 @@
-from js_helper import _do_test, _do_test_raw, _get_var
+from js_helper import TestCase
 
-def test_basic_concatenation():
-    "Tests that contexts work and that basic concat ops are executed properly"
-    
-    err = _do_test("tests/resources/javascript/basicstrings.js")
-    assert err.message_count == 0
-    
-    assert _get_var(err, "x") == "foo"
-    assert _get_var(err, "y") == "bar"
-    assert _get_var(err, "z") == "foobar"
-    assert _get_var(err, "a") == "5"
-    assert _get_var(err, "b") == "6"
-    assert _get_var(err, "c") == "56"
-    assert _get_var(err, "d") == 1
-    assert _get_var(err, "e") == 30
-    assert _get_var(err, "f") == 5
 
-def test_augconcat():
-    "Tests augmented concatenation operators"
-    
-    err = _do_test_raw("""
-    var x = "foo";
-    x += "bar";
-    """)
-    assert not err.message_count
-    print _get_var(err, "x")
-    assert _get_var(err, "x") == "foobar"
+class TestBasicStrings(TestCase):
+    """Test that strings and their related functions are handled properly."""
 
-    err = _do_test_raw("""
-    var x = {"xyz":"foo"};
-    x["xyz"] += "bar";
-    """)
-    assert not err.message_count
-    xyz_val = err.final_context.data["x"].get(None, "xyz").get_literal_value()
-    print xyz_val
-    assert xyz_val == "foobar"
+    def test_basic_concatenation(self):
+        """
+        Tests that contexts work and that basic concat ops are executed
+        properly.
+        """
 
-def test_typecasting():
-    "Tests that strings are treated as numbers when necessary"
-    
-    err = _do_test("tests/resources/javascript/strings_typecasting.js")
-    assert err.message_count == 0
+        self.run_script("""
+        var x = "foo";
+        var y = "bar";
+        var z = x + y; // foobar
 
-    assert _get_var(err, "x") == "44"
-    assert _get_var(err, "y") == 16
+        var a = "5";
+        var b = "6";
+        var c = a + b; // 56
+        var d = b - a; // 1
+        var e = b * a; // 30
+        var f = "10" / "2"; // 5
+        """)
+        self.assert_silent()
+        self.assert_var_eq("x", "foo")
+        self.assert_var_eq("y", "bar")
+        self.assert_var_eq("z", "foobar")
+        self.assert_var_eq("a", "5")
+        self.assert_var_eq("b", "6")
+        self.assert_var_eq("c", "56")
+        self.assert_var_eq("d", 1)
+        self.assert_var_eq("e", 30)
+        self.assert_var_eq("f", 5)
 
+    def test_augconcat(self):
+        """Tests augmented concatenation operators."""
+
+        self.run_script("""
+        var x = "foo";
+        x += "bar";
+        """)
+        self.assert_silent()
+        self.assert_var_eq("x", "foobar")
+
+    def test_ref_augconcat(self):
+        """
+        Test that augmented concatenation happens even within referenced
+        variable placeholders.
+        """
+
+        self.run_script("""
+        var x = {"xyz":"foo"};
+        x["xyz"] += "bar";
+        var y = x.xyz;
+        """)
+        self.assert_silent()
+        self.assert_var_eq("y", "foobar")
+
+    def test_typecasting(self):
+        """Tests that strings are treated as numbers when necessary."""
+
+        self.run_script("""
+        var x = "4" + 4; // "44"
+        var y = "4" * 4; // 16
+        """)
+        self.assert_silent()
+        self.assert_var_eq("x", "44")
+        self.assert_var_eq("y", 16)

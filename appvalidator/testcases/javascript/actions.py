@@ -6,7 +6,7 @@ import types
 import spidermonkey
 import instanceactions
 import instanceproperties
-from appvalidator.constants import BUGZILLA_BUG, FENNEC_GUID, FIREFOX_GUID
+from appvalidator.constants import BUGZILLA_BUG
 from jstypes import *
 
 

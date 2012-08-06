@@ -1,8 +1,5 @@
 from fnmatch import fnmatch as fnm
 
-from ..constants import (FIREFOX_GUID, FENNEC_GUID,
-                         THUNDERBIRD_GUID as TB_GUID, ANDROID_GUID,
-                         PACKAGE_DICTIONARY, )
 from .. import decorator
 
 # Detect blacklisted files based on their extension.

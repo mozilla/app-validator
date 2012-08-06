@@ -1,8 +1,13 @@
-from js_helper import _do_test
+from js_helper import TestCase
 
 
-def test_double_escaped():
-    """Test that escaped characters don't result in errors."""
+class TestDoubleEscape(TestCase):
 
-    err = _do_test("tests/resources/bug_626878.js")
-    assert not err.message_count
+    def test_double_escaped(self):
+        """Test that escaped characters don't result in errors."""
+
+        self.run_script("""
+        var x = "\u1234\x12"
+        var y = "\\u1234\\x12"
+        """)
+        self.assert_silent()

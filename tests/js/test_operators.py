@@ -1,5 +1,5 @@
 from nose.tools import eq_
-from js_helper import _do_real_test_raw, _do_test_raw, _do_test_scope, _get_var
+from js_helper import _do_test_raw, _do_test_scope, _get_var
 
 
 def test_basic_math():

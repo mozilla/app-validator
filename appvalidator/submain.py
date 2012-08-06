@@ -10,16 +10,6 @@ from . import decorator
 
 from constants import *
 
-types = {0: "Unknown",
-         1: "Extension/Multi-Extension",
-         2: "Theme",
-         3: "Dictionary",
-         4: "Language Pack",
-         5: "Search Provider"}
-
-assumed_extensions = {"jar": PACKAGE_THEME,
-                      "xml": PACKAGE_SEARCHPROV}
-
 log = logging.getLogger()
 
 
@@ -39,29 +29,30 @@ def prepare_package(err, path, timeout=None):
     If timeout is -1 then no timeout checking code will run.
     """
     if not timeout:
-        timeout = 60  # seconds
+        timeout = DEFAULT_TIMEOUT  # seconds
 
     # Test that the package actually exists. I consider this Tier 0
     # since we may not even be dealing with a real file.
     if not os.path.isfile(path):
-        err.error(
+        return err.error(
             err_id=("main", "prepare_package", "not_found"),
             error="The package could not be found")
-        return
 
     # Pop the package extension.
     package_extension = os.path.splitext(path)[1]
     package_extension = package_extension.lower()
 
     if package_extension == ".webapp":
-        return test_webapp(err, path)
+        detect_webapp(err, path)
+        err.set_type(PACKAGE_WEBAPP)
+        return err
 
     validation_state = {'complete': False}
     def timeout_handler(signum, frame):
         if validation_state['complete']:
             # There is no need for a timeout. This might be the result of
             # sequential validators, like in the test suite.
-            return
+            return err
         ex = ValidationTimeout(timeout)
         log.error("%s; Package: %s" % (str(ex), path))
         raise ex
@@ -70,18 +61,11 @@ def prepare_package(err, path, timeout=None):
         if timeout != -1:
             signal.signal(signal.SIGALRM, timeout_handler)
             signal.setitimer(signal.ITIMER_REAL, timeout)
-        output = test_package(err, package, path)
+        test_package(err, package, path)
 
     validation_state['complete'] = True
 
-    return output
-
-
-def test_webapp(err, package):
-    "Tests the package to see if it is a webapp."
-
-    detect_webapp(err, package)
-    err.set_type(PACKAGE_WEBAPP)
+    return err
 
 
 def test_package(err, file_, name):
@@ -98,27 +82,26 @@ def test_package(err, file_, name):
     except (BadZipfile, zlib_error):
         # Die if the zip file is corrupt.
         return err.error(
-                err_id=("submain", "_load_install_rdf", "badzipfile"),
-                error="Corrupt ZIP file",
-                description="We were unable to decompress the zip file.")
+            err_id=("submain", "_load_install_rdf", "badzipfile"),
+            error="Corrupt ZIP file",
+            description="We were unable to decompress the zip file.")
 
     try:
         output = test_inner_package(err, package)
     except ValidationTimeout as ex:
         err.error(
-                err_id=("main", "test_package", "timeout"),
-                error="Validation timed out",
-                description=["The validation process took too long to "
-                             "complete. Contact an addons.mozilla.org editor "
-                             "for more information.",
-                             str(ex)])
+            err_id=("main", "test_package", "timeout"),
+            error="Validation timed out",
+            description=["The validation process took too long to complete. "
+                         "Contact an addons.mozilla.org editor for more "
+                         "information.", str(ex)])
         output = None
 
     return output
 
 
 def test_inner_package(err, package):
-    "Tests a package's inner content."
+    """Tests a package's inner content."""
 
     # Iterate through each tier.
     for tier in sorted(decorator.get_tiers()):

@@ -5,7 +5,7 @@ import sys
 import zipfile
 from StringIO import StringIO
 
-from .validate import validate
+from .validate import validate_app, validate_packaged_app
 from constants import *
 
 
@@ -38,11 +38,6 @@ def main():
                         const=True,
                         help="""Activating this flag will remove color
                         support from the terminal.""")
-    parser.add_argument("--determined",
-                        action="store_const",
-                        const=True,
-                        help="""This flag will continue running tests in
-                        successive tests even if a lower tier fails.""")
     parser.add_argument("--selfhosted",
                         action="store_const",
                         const=True,
@@ -56,26 +51,14 @@ def main():
 
     args = parser.parse_args()
 
-    # We want to make sure that the output is expected. Parse out the expected
-    # type for the add-on and pass it in for validation.
-    if args.type not in expectations:
-        # Fail if the user provided invalid input.
-        print "Given expectation (%s) not valid. See --help for details" % \
-                args.type
-        sys.exit(1)
-
     try:
         timeout = int(args.timeout)
     except ValueError:
         print "Invalid timeout. Integer expected."
         sys.exit(1)
 
-    expectation = expectations[args.type]
-    error_bundle = validate(args.package,
-                            format=None,
-                            determined=args.determined,
-                            listed=not args.selfhosted,
-                            timeout=timeout)
+    error_bundle = validate_packaged_app(
+        args.package, listed=not args.selfhosted, format=None, timeout=timeout)
 
     # Print the output of the tests based on the requested format.
     if args.output == "text":

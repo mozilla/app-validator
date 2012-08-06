@@ -40,7 +40,7 @@ class TestCase(object):
         """
         self.err = None
 
-    def setup_err(self, for_appversions=None):
+    def setup_err(self):
         """
         Instantiate the error bundle object. Use the `instant` parameter to
         have it output errors as they're generated. `for_appversions` may be set
@@ -120,12 +120,11 @@ class MockZipFile:
 
 class MockXPI:
 
-    def __init__(self, data=None, subpackage=False):
+    def __init__(self, data=None):
         if not data:
             data = {}
         self.zf = MockZipFile()
         self.data = data
-        self.subpackage = subpackage
         self.filename = "mock_xpi.xpi"
 
     def test(self):
@@ -136,10 +135,8 @@ class MockXPI:
                 "extension": name.lower().split(".")[-1]}
 
     def __iter__(self):
-        def i():
-            for name in self.data.keys():
-                yield name
-        return i()
+        for name in self.data.keys():
+            yield name
 
     def __contains__(self, name):
         return name in self.data

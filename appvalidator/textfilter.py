@@ -16,4 +16,3 @@ def filter_ascii(text):
     if isinstance(text, list):
         return [filter_ascii(x) for x in text]
     return "".join((x if is_standard_ascii(x) else "?") for x in text)
-

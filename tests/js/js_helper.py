@@ -11,13 +11,6 @@ import appvalidator.testcases.scripting
 appvalidator.testcases.scripting.traverser.DEBUG = True
 
 
-def _do_test(path):
-    "Performs a test on a JS file"
-
-    script = open(path).read()
-    return _do_test_raw(script, path)
-
-
 def _do_test_raw(script, path="foo.js"):
     "Performs a test on a JS file"
 
@@ -28,22 +21,6 @@ def _do_test_raw(script, path="foo.js"):
     if err.final_context is not None:
         print err.final_context.output()
 
-    return err
-
-
-def _do_real_test_raw(script, path="foo.js", versions=None, metadata=None,
-                      resources=None):
-    """Perform a JS test using a non-mock bundler."""
-
-    err = ErrorBundle(for_appversions=versions or {})
-    if detected_type:
-        err.detected_type = detected_type
-    if metadata is not None:
-        err.metadata = metadata
-    if resources is not None:
-        err.resources = resources
-
-    appvalidator.testcases.content._process_file(err, MockXPI(), path, script)
     return err
 
 
@@ -109,5 +86,5 @@ class TestCase(helper.TestCase):
         Assert that the value of a variable from the final script context
         contains the value specified.
         """
-        self.assertEqual(self.get_var(name), value)
+        eq_(self.get_var(name), value)
 

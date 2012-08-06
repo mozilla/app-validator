@@ -15,7 +15,7 @@ class ZipPackage(object):
     worry about things like zip files or IO.
     """
 
-    def __init__(self, package, mode="r", name=None, subpackage=False):
+    def __init__(self, package, mode="r", name=None):
         "Create a new managed XPI package"
 
         self.zf = ZipFile(package, mode=mode)
@@ -23,7 +23,6 @@ class ZipPackage(object):
         # Store away the filename for future use.
         self.filename = name or package
         self.extension = self.filename.split(".")[-1]
-        self.subpackage = subpackage
 
         self.contents_cache = None
 
