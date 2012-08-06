@@ -4,9 +4,9 @@ import signal
 from zipfile import BadZipfile
 from zlib import error as zlib_error
 
+import testcases
 from .webapp import detect_webapp
 from .zip import ZipPackage
-from . import decorator
 
 from constants import *
 
@@ -104,13 +104,13 @@ def test_inner_package(err, package):
     """Tests a package's inner content."""
 
     # Iterate through each tier.
-    for tier in sorted(decorator.get_tiers()):
+    for tier in sorted(testcases._get_tiers()):
 
         # Let the error bundler know what tier we're on.
         err.set_tier(tier)
 
         # Iterate through each test of our detected type.
-        for test in decorator.get_tests(tier, err.detected_type):
+        for test in testcases._get_tests(tier, err.detected_type):
 
             test_func = test["test"]
             if test["simple"]:

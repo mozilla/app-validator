@@ -1,4 +1,4 @@
-from ..decorator import register_test
+from . import register_test
 from ..webapp import detect_webapp_string
 
 

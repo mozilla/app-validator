@@ -2,7 +2,7 @@ import hashlib
 
 from ..constants import *
 from ..contextgenerator import ContextGenerator
-from .. import decorator
+from . import register_test
 import markup.csstester as testendpoint_css
 import markup.markuptester as testendpoint_markup
 import scripting as testendpoint_js
@@ -13,7 +13,7 @@ FLAGGED_FILES = set([".DS_Store", "Thumbs.db"])
 FLAGGED_EXTENSIONS = set([".orig", ".old", ".tmp", "~"])
 
 
-@decorator.register_test(tier=2)
+@register_test(tier=2)
 def test_packed_packages(err, package=None):
     "Tests XPI and JAR files for naughty content."
 

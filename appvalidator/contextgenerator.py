@@ -17,7 +17,7 @@ class ContextGenerator:
         self.data = data.split("\n")
 
     def get_context(self, line=1, column=0):
-        "Returns a tuple containing the context for a line"
+        """Return a tuple containing the context for a line."""
 
         line -= 1  # The line is one-based
 
@@ -82,7 +82,7 @@ class ContextGenerator:
         return tuple(build)
 
     def _format_line(self, data, column=0, rel_line=1):
-        "Formats a line from the data to be the appropriate length"
+        """Formats a line from the data to be the appropriate length."""
         line_length = len(data)
 
         if line_length > 140:
@@ -106,7 +106,7 @@ class ContextGenerator:
         return data
 
     def get_line(self, position):
-        "Returns the line number that the given string position is found on"
+        """Returns the line number that the given string position is found on."""
 
         datalen = len(self.data)
         count = len(self.data[0])

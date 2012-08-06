@@ -56,7 +56,7 @@ def test_prepare_package_webapp(fake_webapp_validator):
     assert not err.failed()
 
 
-class MockDecorator:
+class MockTestcases:
 
     def __init__(self, fail_tier=None, determined=False):
         self.determined = determined
@@ -64,11 +64,11 @@ class MockDecorator:
         self.fail_tier = fail_tier
         self.last_tier = 0
 
-    def get_tiers(self):
+    def _get_tiers(self):
         "Returns unordered tiers. These must be in a random order."
         return (4, 1, 3, 5, 2)
 
-    def get_tests(self, tier, type):
+    def _get_tests(self, tier, type):
         "Should return a list of tests that occur in a certain order"
 
         self.on_tier = tier
@@ -149,42 +149,42 @@ class MockErrorHandler:
 
 
 # Test the function of the decorator iterator
-@patch("appvalidator.submain.decorator", MockDecorator())
+@patch("appvalidator.submain.testcases", MockTestcases())
 def test_inner_package():
     """Tests that the test_inner_package function works properly."""
 
-    err = MockErrorHandler(submain.decorator)
+    err = MockErrorHandler(submain.testcases)
     submain.test_inner_package(err, "foo")
     assert not err.failed()
 
 
-@patch("appvalidator.submain.decorator", MockDecorator(3))
+@patch("appvalidator.submain.testcases", MockTestcases(3))
 def test_inner_package_failtier():
     """Tests that the test_inner_package function fails at a failed tier."""
 
-    err = MockErrorHandler(submain.decorator)
+    err = MockErrorHandler(submain.testcases)
     submain.test_inner_package(err, "foo")
     assert err.failed()
 
 
 # Test determined modes
-@patch("appvalidator.submain.decorator", MockDecorator(None, True))
+@patch("appvalidator.submain.testcases", MockTestcases(None, True))
 def test_inner_package_determined():
     "Tests that the determined test_inner_package function works properly"
 
-    err = MockErrorHandler(submain.decorator, True)
+    err = MockErrorHandler(submain.testcases, True)
     submain.test_inner_package(err, "foo")
 
     assert not err.failed()
-    eq_(submain.decorator.last_tier, 5)
+    eq_(submain.testcases.last_tier, 5)
 
 
-@patch("appvalidator.submain.decorator", MockDecorator(3, True))
+@patch("appvalidator.submain.testcases", MockTestcases(3, True))
 def test_inner_package_failtier():
     "Tests the test_inner_package function in determined mode while failing"
 
-    err = MockErrorHandler(submain.decorator, True)
+    err = MockErrorHandler(submain.testcases, True)
     submain.test_inner_package(err, "foo")
 
     assert err.failed()
-    eq_(submain.decorator.last_tier, 5)
+    eq_(submain.testcases.last_tier, 5)

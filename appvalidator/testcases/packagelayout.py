@@ -1,6 +1,6 @@
 from fnmatch import fnmatch as fnm
 
-from .. import decorator
+from . import register_test
 
 # Detect blacklisted files based on their extension.
 blacklisted_extensions = ("dll", "exe", "dylib", "so", "sh", "class")
@@ -22,7 +22,7 @@ blacklisted_magic_numbers = (
 JAVA_JAR_THRESHOLD = 10
 
 
-@decorator.register_test(tier=1)
+@register_test(tier=1)
 def test_blacklisted_files(err, xpi_package=None):
     "Detects blacklisted files and extensions."
 
@@ -87,7 +87,7 @@ def test_blacklisted_files(err, xpi_package=None):
                 filename=name)
 
 
-@decorator.register_test(tier=1)
+@register_test(tier=1)
 def test_layout_all(err, xpi_package):
     """Tests the well-formedness of extensions."""
 
