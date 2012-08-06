@@ -1,5 +1,7 @@
 import time
 
+import fudge
+from mock import patch
 from nose.tools import eq_
 
 import appvalidator.submain as submain
@@ -8,27 +10,22 @@ from appvalidator.constants import *
 from helper import MockXPI
 
 
+@patch("appvalidator.submain.test_package",
+       lambda w, x, y: True)
 def test_prepare_package():
     "Tests that the prepare_package function passes for valid data"
 
-    tp = submain.test_package
-    submain.test_package = lambda w, x, y: True
-
     err = ErrorBundle()
-    assert submain.prepare_package(err, "tests/resources/main/foo.xpi") == True
-    submain.test_package = tp
+    eq_(submain.prepare_package(err, "tests/resources/main/foo.xpi"), err)
+    assert not err.failed()
 
 
+@patch("appvalidator.submain.test_inner_package",
+       lambda err, package: time.sleep(1))
 def test_validation_timeout():
-    tp = submain.test_inner_package
-    def slow(*args, **kw):
-        time.sleep(1)
-    submain.test_inner_package = slow
     err = ErrorBundle()
     submain.prepare_package(err, "tests/resources/main/foo.xpi",
                             timeout=0.1)
-    submain.test_inner_package = tp
-
     assert len(err.errors) == 1
 
 
@@ -50,77 +47,13 @@ def test_prepare_package_bad_file():
     assert err.failed()
 
 
-def test_prepare_package_webapp():
-    _orig = submain.test_webapp
-    calls = {'x': 0}
-    submain.test_webapp = lambda err, y: calls.update(x=1)
-    try:
-        err = ErrorBundle()
-        submain.prepare_package(err, "tests/resources/main/mozball.webapp")
-        assert not err.failed()
-        assert calls['x'] == 1, "test_webapp() was not called"
-    finally:
-        submain.test_webapp = _orig
+@fudge.patch("appvalidator.submain.detect_webapp")
+def test_prepare_package_webapp(fake_webapp_validator):
+    fake_webapp_validator.expects_call().with_arg_count(2)
 
-# Test the function of the decorator iterator
-
-def test_inner_package():
-    "Tests that the test_inner_package function works properly"
-
-    smd = submain.decorator
-    decorator = MockDecorator()
-    submain.decorator = decorator
-    err = MockErrorHandler(decorator)
-
-    submain.test_inner_package(err, "foo")
-
+    err = ErrorBundle()
+    submain.prepare_package(err, "tests/resources/main/mozball.webapp")
     assert not err.failed()
-    submain.decorator = smd
-
-
-def test_inner_package_failtier():
-    "Tests that the test_inner_package function fails at a failed tier"
-
-    smd = submain.decorator
-    decorator = MockDecorator(3)
-    submain.decorator = decorator
-    err = MockErrorHandler(decorator)
-
-    submain.test_inner_package(err, "foo")
-
-    assert err.failed()
-    submain.decorator = smd
-
-
-# Test determined modes
-def test_inner_package_determined():
-    "Tests that the determined test_inner_package function works properly"
-
-    smd = submain.decorator
-    decorator = MockDecorator(None, True)
-    submain.decorator = decorator
-    err = MockErrorHandler(decorator, True)
-
-    submain.test_inner_package(err, "foo")
-
-    assert not err.failed()
-    eq_(decorator.last_tier, 5)
-    submain.decorator = smd
-
-
-def test_inner_package_failtier():
-    "Tests the test_inner_package function in determined mode while failing"
-
-    smd = submain.decorator
-    decorator = MockDecorator(3, True)
-    submain.decorator = decorator
-    err = MockErrorHandler(decorator, True)
-
-    submain.test_inner_package(err, "foo")
-
-    assert err.failed()
-    eq_(decorator.last_tier, 5)
-    submain.decorator = smd
 
 
 class MockDecorator:
@@ -214,3 +147,44 @@ class MockErrorHandler:
         "Simple accessor because the standard error handler has one"
         return self.has_failed
 
+
+# Test the function of the decorator iterator
+@patch("appvalidator.submain.decorator", MockDecorator())
+def test_inner_package():
+    """Tests that the test_inner_package function works properly."""
+
+    err = MockErrorHandler(submain.decorator)
+    submain.test_inner_package(err, "foo")
+    assert not err.failed()
+
+
+@patch("appvalidator.submain.decorator", MockDecorator(3))
+def test_inner_package_failtier():
+    """Tests that the test_inner_package function fails at a failed tier."""
+
+    err = MockErrorHandler(submain.decorator)
+    submain.test_inner_package(err, "foo")
+    assert err.failed()
+
+
+# Test determined modes
+@patch("appvalidator.submain.decorator", MockDecorator(None, True))
+def test_inner_package_determined():
+    "Tests that the determined test_inner_package function works properly"
+
+    err = MockErrorHandler(submain.decorator, True)
+    submain.test_inner_package(err, "foo")
+
+    assert not err.failed()
+    eq_(submain.decorator.last_tier, 5)
+
+
+@patch("appvalidator.submain.decorator", MockDecorator(3, True))
+def test_inner_package_failtier():
+    "Tests the test_inner_package function in determined mode while failing"
+
+    err = MockErrorHandler(submain.decorator, True)
+    submain.test_inner_package(err, "foo")
+
+    assert err.failed()
+    eq_(submain.decorator.last_tier, 5)

@@ -69,7 +69,7 @@ def prepare_package(err, path, timeout=None):
 
 
 def test_package(err, file_, name):
-    "Begins tests for the package."
+    """Begins tests for the package."""
 
     # Load up a new instance of a package.
     try:

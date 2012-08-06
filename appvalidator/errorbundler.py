@@ -34,7 +34,6 @@ class ErrorBundle(object):
         self.warnings = []
         self.notices = []
         self.message_count = 0
-        self.message_tree = {}
 
         self.ending_tier = 1
         self.tier = 1
@@ -142,23 +141,6 @@ class ErrorBundle(object):
         if message["tier"] is None:
             message["tier"] = self.tier
 
-        # Build out the message tree entry.
-        if message["id"]:
-            tree = self.message_tree
-            last_id = None
-            for eid in message["id"]:
-                if last_id is not None:
-                    tree = tree[last_id]
-                if eid not in tree:
-                    tree[eid] = {"__errors": 0,
-                                 "__warnings": 0,
-                                 "__notices": 0,
-                                 "__messages": []}
-                tree[eid]["__%s" % type_] += 1
-                last_id = eid
-
-            tree[last_id]['__messages'].append(uid)
-
         # If instant mode is turned on, output the message immediately.
         if self.instant:
             self._print_message(type_, message, verbose=True)
@@ -203,14 +185,12 @@ class ErrorBundle(object):
                                  "warnings": self.warnings,
                                  "notices": self.notices,
                                  "detected_type": self.detected_type,
-                                 "message_tree": self.message_tree,
                                  "resources": self.pushable_resources,
                                  "metadata": self.metadata})
 
         self.errors = []
         self.warnings = []
         self.notices = []
-        self.message_tree = {}
         self.pushable_resources = {}
         self.metadata = {}
 
@@ -224,14 +204,12 @@ class ErrorBundle(object):
         errors = self.errors
         warnings = self.warnings
         notices = self.notices
-        # We only rebuild message_tree anyway. No need to restore.
 
         # Copy the existing state back into place
         self.errors = state["errors"]
         self.warnings = state["warnings"]
         self.notices = state["notices"]
         self.detected_type = state["detected_type"]
-        self.message_tree = state["message_tree"]
         self.pushable_resources = state["resources"]
         self.metadata = state["metadata"]
 
@@ -281,7 +259,6 @@ class ErrorBundle(object):
                   "errors": len(self.errors),
                   "warnings": len(self.warnings),
                   "notices": len(self.notices),
-                  "message_tree": self.message_tree,
                   "metadata": self.metadata}
 
         messages = output["messages"]

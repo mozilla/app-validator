@@ -226,18 +226,6 @@ def test_json_constructs():
     assert "detected_type" in j
     assert j["detected_type"] == "extension"
 
-    assert "message_tree" in j
-    tree = j["message_tree"]
-
-    assert "__errors" not in tree
-    assert not tree["a"]["__messages"]
-    assert tree["a"]["__errors"] == 4
-    assert not tree["a"]["b"]["__messages"]
-    assert tree["a"]["b"]["__errors"] == 2
-    assert not tree["a"]["b"]["__messages"]
-    assert tree["a"]["b"]["c"]["__errors"] == 1
-    assert tree["a"]["b"]["c"]["__messages"]
-
     assert "messages" in j
     for m in (m for m in j["messages"] if m["type"] == "warning"):
         assert m["context"] == ["x", "y", "z"]

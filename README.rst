@@ -140,30 +140,6 @@ sample document below.
         "notices": 1,
         "success": false,
         "ending_tier": 4,
-        "message_tree": {
-            "module": {
-                "function": {
-                    "error": {
-                        "__messages": ["123456789"],
-                        "__errors": 1,
-                        "__warnings": 0,
-                        "__notices": 0
-                    },
-                    "__messages": [],
-                    "__errors": 1,
-                    "__warnings": 0,
-                    "__notices": 0
-                },
-                "__messages": [],
-                "__errors": 1,
-                "__warnings": 0,
-                "__notices": 0
-            },
-            "__messages": [],
-            "__errors": 1,
-            "__warnings": 0,
-            "__notices": 0
-        },
         "messages": [
             {
                 "uid": "123456789",
@@ -184,21 +160,6 @@ sample document below.
             }
         ]
     }
-
-
-The ``message_tree`` element to the document above contains a series of
-JavaScript objects organized into a tree structure. The key of each element in
-the tree is the the name of each successive part of the validator that
-generated a particular message or set of messages (increasing in specificity as
-the depth of the tree increases). Each tree element also includes a series of
-additional nodes which provide extra information:
-
-::
-
-    __errors - number - The number of errors generated in this node
-    __warnings - number - The number of warnings generated in this node
-    __notices - number - The number of messages generated in this node
-    __messages - list - A list of UIDs from messages in the `messages` node
 
 
 JSON Notes:
