@@ -1,6 +1,6 @@
 import json
 
-from appvalidator.validate import validate_app
+from appvalidator import validate_app
 
 
 def test_webapp_new():
@@ -9,4 +9,3 @@ def test_webapp_new():
         out = validate_app(file_.read())
     j = json.loads(out)
     assert j["success"], "Expected not to fail"
-

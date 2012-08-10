@@ -5,7 +5,7 @@ import sys
 import zipfile
 from StringIO import StringIO
 
-from .validate import validate_app, validate_packaged_app
+from . import validate_app, validate_packaged_app
 from constants import *
 
 
