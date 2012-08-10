@@ -1,4 +1,4 @@
-from fnmatch import fnmatch as fnm
+import zlib
 
 from . import register_test
 
@@ -23,13 +23,13 @@ JAVA_JAR_THRESHOLD = 10
 
 
 @register_test(tier=1)
-def test_blacklisted_files(err, xpi_package=None):
+def test_blacklisted_files(err, package=None):
     "Detects blacklisted files and extensions."
 
     flagged_files = []
 
-    for name in xpi_package:
-        file_ = xpi_package.info(name)
+    for name in package:
+        file_ = package.info(name)
         # Simple test to ensure that the extension isn't blacklisted
         extension = file_["extension"]
         if extension in blacklisted_extensions:
@@ -40,8 +40,20 @@ def test_blacklisted_files(err, xpi_package=None):
 
         # Perform a deep inspection to detect magic numbers for known binary
         # and executable file types.
-        zip = xpi_package.zf.open(name)
-        bytes = tuple([ord(x) for x in zip.read(4)])  # Longest is 4 bytes
+        try:
+            with package.zf.open(name) as zip:
+                bytes = tuple(map(ord, zip.read(4)))  # Longest is 4 bytes
+        except zlib.error:
+            # Tell the zip that there's a broken file.
+            package.broken_files.add(name)
+            return err.error(
+                err_id=("packagelayout", "blacklisted_files", "bad_zip"),
+                error="ZIP could not be read",
+                description="Validation failed because the ZIP package does "
+                            "not seem to be valid. One or more files could not "
+                            "be successfully unzipped.",
+                filename=name)
+
         if [x for x in blacklisted_magic_numbers if bytes[0:len(x)] == x]:
             # Note that there is binary content in the metadata
             err.metadata["contains_binary_content"] = True
@@ -67,7 +79,7 @@ def test_blacklisted_files(err, xpi_package=None):
                         "java_jar"),
                 notice="Java JAR file detected.",
                 description="A Java JAR file was detected in the add-on.",
-                filename=xpi_package.filename)
+                filename=package.filename)
         else:
             err.warning(
                 err_id=("testcases_packagelayout",
@@ -88,10 +100,10 @@ def test_blacklisted_files(err, xpi_package=None):
 
 
 @register_test(tier=1)
-def test_layout_all(err, xpi_package):
+def test_layout_all(err, package):
     """Tests the well-formedness of extensions."""
 
-    package_namelist = list(xpi_package.zf.namelist())
+    package_namelist = list(package.zf.namelist())
     package_nameset = set(package_namelist)
     if len(package_namelist) != len(package_nameset):
         err.error(

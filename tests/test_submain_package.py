@@ -34,8 +34,6 @@ class TestSubmainPackage(TestCase):
 
         self.assert_failed()
 
-    @patch("appvalidator.submain.test_inner_package",
-           lambda x, z: "success")
     def test_package_corrupt(self):
         "Tests the test_package function fails with a corrupt file"
 
@@ -44,4 +42,4 @@ class TestSubmainPackage(TestCase):
         name = "tests/resources/corrupt.xpi"
         result = submain.test_package(self.err, name, name)
 
-        self.assert_failed()
+        self.assert_failed(with_errors=True, with_warnings=True)

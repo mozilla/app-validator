@@ -1,5 +1,5 @@
 import appvalidator.testcases.packagelayout as packagelayout
-from appvalidator.errorbundler import ErrorBundle
+from appvalidator.errorbundle import ErrorBundle
 from helper import _do_test, MockXPI
 
 

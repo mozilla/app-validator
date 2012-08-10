@@ -4,8 +4,8 @@ from nose.tools import eq_
 
 from .. import helper
 from ..helper import MockXPI
-from appvalidator.errorbundler import ErrorBundle
-from appvalidator.outputhandlers.shellcolors import OutputHandler
+from appvalidator.errorbundle import ErrorBundle
+from appvalidator.errorbundle.outputhandlers.shellcolors import OutputHandler
 import appvalidator.testcases.content
 import appvalidator.testcases.scripting
 appvalidator.testcases.scripting.traverser.DEBUG = True

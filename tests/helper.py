@@ -1,8 +1,8 @@
 import sys
 
 from appvalidator.zip import ZipPackage
-from appvalidator.errorbundler import ErrorBundle
-from appvalidator.outputhandlers.shellcolors import OutputHandler
+from appvalidator.errorbundle import ErrorBundle
+from appvalidator.errorbundle.outputhandlers.shellcolors import OutputHandler
 
 
 def _do_test(path, test, failure=True, set_type=0,

@@ -3,17 +3,17 @@ import sys
 import uuid
 from StringIO import StringIO
 
-from outputhandlers.shellcolors import OutputHandler
-import unicodehelper
+from .outputhandlers.shellcolors import OutputHandler
+from .. import unicodehelper
 
 
-class ErrorBundle(object):
+class BaseErrorBundle(object):
     """This class does all sorts of cool things. It gets passed around
     from test to test and collects up all the errors like the candy man
     'separating the sorrow and collecting up all the cream.' It's
     borderline magical.
 
-    Keyword Arguments
+    Keyword Arguments:
 
     **determined**
         Whether the validator should continue after a tier fails
@@ -25,8 +25,7 @@ class ErrorBundle(object):
         Optional path to the local spidermonkey installation
     """
 
-    def __init__(self, determined=True, listed=True, instant=False,
-                 spidermonkey=None):
+    def __init__(self, determined=True, instant=False, *args, **kwargs):
 
         self.handler = None
 
@@ -35,29 +34,14 @@ class ErrorBundle(object):
         self.notices = []
         self.message_count = 0
 
-        self.ending_tier = 1
-        self.tier = 1
+        self.ending_tier = self.tier = 1
 
-        self.subpackages = []
-        self.package_stack = []
-
-        self.detected_type = 0
         self.unfinished = False
 
-        # TODO: Break off into resource helper
-        self.resources = {}
-        self.pushable_resources = {}
-        self.final_context = None
-
-        self.metadata = {
-            'requires_chrome': False,
-        }
-        if listed:
-            self.resources["listed"] = True
         self.instant = instant
         self.determined = determined
-        if spidermonkey:
-            self.save_resource("SPIDERMONKEY", spidermonkey)
+
+        super(BaseErrorBundle, self).__init__(*args, **kwargs)
 
     def error(self, err_id, error,
               description='', filename='', line=None, column=None,
@@ -65,9 +49,7 @@ class ErrorBundle(object):
         "Stores an error message for the validation process"
         self._save_message(self.errors,
                            "errors",
-                           {"id": err_id,
-                            "message": error,
-                            "description": description,
+                           {"id": err_id, "message": error, "description": description,
                             "file": filename,
                             "line": line,
                             "column": column,
@@ -145,102 +127,11 @@ class ErrorBundle(object):
         if self.instant:
             self._print_message(type_, message, verbose=True)
 
-    def set_type(self, type_):
-        "Stores the type of addon we're scanning"
-        self.detected_type = type_
-
     def failed(self, fail_on_warnings=True):
         """Returns a boolean value describing whether the validation
         succeeded or not."""
 
         return bool(self.errors) or (fail_on_warnings and bool(self.warnings))
-
-    def get_resource(self, name):
-        "Retrieves an object that has been stored by another test."
-
-        if name in self.resources:
-            return self.resources[name]
-        elif name in self.pushable_resources:
-            return self.pushable_resources[name]
-        else:
-            return False
-
-    def save_resource(self, name, resource, pushable=False):
-        "Saves an object such that it can be used by other tests."
-
-        if pushable:
-            self.pushable_resources[name] = resource
-        else:
-            self.resources[name] = resource
-
-    def is_nested_package(self):
-        "Returns whether the current package is within a PACKAGE_MULTI"
-
-        return bool(self.package_stack)
-
-    def push_state(self, new_file=""):
-        "Saves the current error state to parse subpackages"
-
-        self.subpackages.append({"errors": self.errors,
-                                 "warnings": self.warnings,
-                                 "notices": self.notices,
-                                 "detected_type": self.detected_type,
-                                 "resources": self.pushable_resources,
-                                 "metadata": self.metadata})
-
-        self.errors = []
-        self.warnings = []
-        self.notices = []
-        self.pushable_resources = {}
-        self.metadata = {}
-
-        self.package_stack.append(new_file)
-
-    def pop_state(self):
-        "Retrieves the last saved state and restores it."
-
-        # Save a copy of the current state.
-        state = self.subpackages.pop()
-        errors = self.errors
-        warnings = self.warnings
-        notices = self.notices
-
-        # Copy the existing state back into place
-        self.errors = state["errors"]
-        self.warnings = state["warnings"]
-        self.notices = state["notices"]
-        self.detected_type = state["detected_type"]
-        self.pushable_resources = state["resources"]
-        self.metadata = state["metadata"]
-
-        name = self.package_stack.pop()
-
-        self._merge_messages(errors, self.error, name)
-        self._merge_messages(warnings, self.warning, name)
-        self._merge_messages(notices, self.notice, name)
-
-    def _merge_messages(self, messages, callback, name):
-        "Merges a stack of messages into another stack of messages"
-
-        # Overlay the popped warnings onto the existing ones.
-        for message in messages:
-            trace = [name]
-            # If there are sub-sub-packages, they'll be in a list.
-            if isinstance(message["file"], list):
-                trace.extend(message["file"])
-            else:
-                trace.append(message["file"])
-
-            # Write the errors with the file structure delimited by
-            # right carets.
-            callback(message["id"],
-                     message["message"],
-                     description=message["description"],
-                     filename=trace,
-                     line=message["line"],
-                     column=message["column"],
-                     context=message["context"],
-                     tier=message["tier"])
 
     def render_json(self):
         "Returns a JSON summary of the validation operation."
@@ -252,14 +143,12 @@ class ErrorBundle(object):
                  4: "langpack",
                  5: "search",
                  8: "webapp"}
-        output = {"detected_type": types[self.detected_type],
-                  "ending_tier": self.ending_tier,
+        output = {"ending_tier": self.ending_tier,
                   "success": not self.failed(),
                   "messages": [],
                   "errors": len(self.errors),
                   "warnings": len(self.warnings),
-                  "notices": len(self.notices),
-                  "metadata": self.metadata}
+                  "notices": len(self.notices)}
 
         messages = output["messages"]
 
@@ -276,6 +165,9 @@ class ErrorBundle(object):
             notice["type"] = "notice"
             messages.append(notice)
 
+        ext_output = self._extend_json()
+        output.update(ext_output)
+
         # Output the JSON.
         return json.dumps(output)
 
@@ -284,15 +176,12 @@ class ErrorBundle(object):
 
         types = {0: "Unknown",
                  8: "App"}
-        detected_type = types[self.detected_type]
 
         buffer = StringIO()
         self.handler = OutputHandler(buffer, no_color)
 
         # Make a neat little printout.
         self.handler.write("\n<<GREEN>>Summary:") \
-            .write("-" * 30) \
-            .write("Detected type: <<BLUE>>%s" % detected_type) \
             .write("-" * 30)
 
         if self.failed():

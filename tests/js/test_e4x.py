@@ -1,6 +1,5 @@
-from appvalidator.errorbundler import ErrorBundle
-
 from js_helper import TestCase
+
 
 class TestE4X(TestCase):
     """

@@ -1,7 +1,7 @@
 import json
 
 from . import constants
-from errorbundler import ErrorBundle
+from errorbundle import ErrorBundle
 import loader
 import submain
 import webapp

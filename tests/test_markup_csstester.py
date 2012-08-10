@@ -1,5 +1,5 @@
 import appvalidator.testcases.markup.csstester as csstester
-from appvalidator.errorbundler import ErrorBundle
+from appvalidator.errorbundle import ErrorBundle
 
 
 def _do_test(path, should_fail=False):

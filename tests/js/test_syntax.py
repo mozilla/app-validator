@@ -1,5 +1,6 @@
 from js_helper import _do_test_raw
 
+
 def test_array_destructuring():
     """
     Make sure that multi-level and prototype array destructuring don't cause

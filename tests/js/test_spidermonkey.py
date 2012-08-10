@@ -1,10 +1,9 @@
 import json
 import subprocess
 from js_helper import _do_test_raw
-from appvalidator.errorbundler import ErrorBundle
+from appvalidator.errorbundle import ErrorBundle
 import appvalidator.testcases.scripting as scripting
 import appvalidator.testcases.javascript.spidermonkey as spidermonkey
-from appvalidator.errorbundler import ErrorBundle
 
 
 def test_scripting_disabled():

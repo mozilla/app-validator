@@ -2,19 +2,23 @@ import json
 import sys
 from StringIO import StringIO
 
+from mock import patch
 from nose.tools import eq_
 
-import appvalidator.errorbundler as errorbundler
-from appvalidator.errorbundler import ErrorBundle
+from helper import TestCase
+
+from appvalidator.errorbundle import ErrorBundle
 from appvalidator.contextgenerator import ContextGenerator
 
+
+class TestErrorBundle(TestCase):
+    pass
 
 def test_json():
     """Test the JSON output capability of the error bundler."""
 
     # Use the StringIO as an output buffer.
     bundle = ErrorBundle() # No color since no output
-    bundle.set_type(4)
     bundle.set_tier(4)
     bundle.set_tier(3)
 
@@ -24,41 +28,22 @@ def test_json():
 
     results = json.loads(bundle.render_json())
 
-    print results
-
-    assert len(results["messages"]) == 3
-    assert results["detected_type"] == 'langpack'
+    eq_(len(results["messages"]), 3)
     assert not results["success"]
-    assert results["ending_tier"] == 4
+    eq_(results["ending_tier"], 4)
 
 
+@patch("sys.stdout", StringIO())
 def test_boring():
     """Test that boring output strips out color sequences."""
-
-    stdout = sys.stdout
-    sys.stdout = StringIO()
 
     # Use the StringIO as an output buffer.
     bundle = ErrorBundle()
     bundle.error((), "<<BLUE>><<GREEN>><<YELLOW>>")
     bundle.print_summary(no_color=True)
 
-    outbuffer = sys.stdout
-    sys.stdout = stdout
-    outbuffer.seek(0)
-
-    assert outbuffer.getvalue().count("<<GREEN>>") == 0
-
-
-def test_type():
-    """
-    Test that detected type is being stored properly in the error bundle.
-    """
-
-    bundle = ErrorBundle()
-
-    bundle.set_type(5)
-    assert bundle.detected_type == 5
+    sys.stdout.seek(0)
+    eq_(sys.stdout.getvalue().count("<<GREEN>>"), 0)
 
 
 def test_file_structure():
@@ -68,21 +53,15 @@ def test_file_structure():
     """
 
     # Use the StringIO as an output buffer.
-    bundle = ErrorBundle(True) # No color since no output
+    bundle = ErrorBundle()
 
     # Populate the bundle with some test data.
     bundle.error((), "error", "", "file1", 123)
     bundle.error((), "error", "", "file2")
-    bundle.error((), "error")
-
-    # Push a state
-    bundle.push_state("foo")
 
     bundle.warning((), "warning", "", "file4", 123)
     bundle.warning((), "warning", "", "file5")
     bundle.warning((), "warning")
-
-    bundle.pop_state()
 
     # Load the JSON output as an object.
     output = json.loads(bundle.render_json())
@@ -94,18 +73,10 @@ def test_file_structure():
     output3 = bundle.print_summary(verbose=True)
 
     # Run some basic tests
-    assert len(output["messages"]) == 6
+    eq_(len(output["messages"]), 5)
     assert len(output2) < len(output3)
 
-    print output
-    print "*" * 50
-    print output2
-    print "*" * 50
-    print output3
-    print "*" * 50
-
-    messages = ["file1", "file2", "",
-                ["foo", "file4"], ["foo", "file5"], ["foo", ""]]
+    messages = ["file1", "file2", "", "file4", "file5"]
 
     for message in output["messages"]:
         print message
@@ -193,7 +164,6 @@ def test_json_constructs():
     """This tests some of the internal JSON stuff so we don't break zamboni."""
 
     e = ErrorBundle()
-    e.set_type(1)
     e.error(("a", "b", "c"),
             "Test")
     e.error(("a", "b", "foo"),
@@ -223,9 +193,6 @@ def test_json_constructs():
     print results
     j = json.loads(results)
 
-    assert "detected_type" in j
-    assert j["detected_type"] == "extension"
-
     assert "messages" in j
     for m in (m for m in j["messages"] if m["type"] == "warning"):
         assert m["context"] == ["x", "y", "z"]
@@ -244,30 +211,3 @@ def test_json_constructs():
             assert m["column"] > -1
         else:
             assert m["column"] is None
-
-
-def test_pushable_resources():
-    """
-    Test that normal resources are preserved but pushable ones are pushed.
-    """
-
-    e = ErrorBundle()
-    e.save_resource("nopush", True)
-    e.save_resource("push", True, pushable=True)
-
-    assert e.get_resource("nopush")
-    assert e.get_resource("push")
-
-    e.push_state()
-
-    assert e.get_resource("nopush")
-    assert not e.get_resource("push")
-
-    e.save_resource("pushed", True, pushable=True)
-    assert e.get_resource("pushed")
-
-    e.pop_state()
-
-    assert e.get_resource("nopush")
-    assert e.get_resource("push")
-    assert not e.get_resource("pushed")

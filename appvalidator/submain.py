@@ -44,7 +44,6 @@ def prepare_package(err, path, timeout=None):
 
     if package_extension == ".webapp":
         detect_webapp(err, path)
-        err.set_type(PACKAGE_WEBAPP)
         return err
 
     validation_state = {'complete': False}
@@ -110,7 +109,7 @@ def test_inner_package(err, package):
         err.set_tier(tier)
 
         # Iterate through each test of our detected type.
-        for test in testcases._get_tests(tier, err.detected_type):
+        for test in testcases._get_tests(tier):
 
             test_func = test["test"]
             if test["simple"]:

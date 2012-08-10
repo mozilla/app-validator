@@ -2,6 +2,7 @@ from nose.tools import eq_
 
 from js_helper import _do_test_raw, _get_var
 
+
 def test_createElement():
     "Tests that createElement and createElementNS throw errors."
 

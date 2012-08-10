@@ -14,7 +14,7 @@ JS_ESCAPE = re.compile("\\\\+[ux]", re.I)
 
 
 def get_tree(code, err=None, filename=None, shell=None):
-    "Retrieves the parse tree for a JS snippet"
+    """Retrieve the parse tree for a JS snippet."""
 
     if not code:
         return None
@@ -23,40 +23,37 @@ def get_tree(code, err=None, filename=None, shell=None):
     code = prepare_code(code, err, filename)
 
     try:
-        tree = _get_tree(code, shell or SPIDERMONKEY_INSTALLATION)
-        return tree
+        return _get_tree(code, shell or SPIDERMONKEY_INSTALLATION)
     except JSReflectException as exc:
         str_exc = str(exc).strip("'\"")
-        if ("SyntaxError" in str_exc or
-            "ReferenceError" in str_exc):
-            err.warning(("testcases_scripting",
-                         "test_js_file",
-                         "syntax_error"),
-                         "JavaScript Compile-Time Error",
-                         ["A compile-time error in the JavaScript halted "
-                          "validation of that file.",
-                          "Message: %s" % str_exc.split(":", 1)[-1].strip()],
-                         filename=filename,
-                         line=exc.line,
-                         context=ContextGenerator(code))
+        if ("SyntaxError" in str_exc or "ReferenceError" in str_exc):
+            err.warning(
+                err_id=("testcases_scripting", "test_js_file", "syntax_error"),
+                warning="JavaScript Compile-Time Error",
+                description=["A compile-time error in the JavaScript halted "
+                             "validation of that file.",
+                             "Message: %s" % str_exc.split(":", 1)[-1].strip()],
+                filename=filename,
+                line=exc.line,
+                context=ContextGenerator(code))
         elif "InternalError: too much recursion" in str_exc:
-            err.notice(("testcases_scripting",
-                        "test_js_file",
+            err.notice(
+                err_id=("testcases_scripting", "test_js_file",
                         "recursion_error"),
-                       "JS too deeply nested for validation",
-                       "A JS file was encountered that could not be valiated "
-                       "due to limitations with Spidermonkey. It should be "
-                       "manually inspected.",
-                       filename=filename)
+                notice="JS too deeply nested for validation",
+                description="A JS file was encountered that could not be "
+                            "valiated due to limitations with Spidermonkey. "
+                            "It should be manually inspected.",
+                filename=filename)
         else:
-            err.error(("testcases_scripting",
-                       "test_js_file",
-                       "retrieving_tree"),
-                      "JS reflection error prevented validation",
-                      ["An error in the JavaScript file prevented it from "
-                       "being properly read by the Spidermonkey JS engine.",
-                       str(exc)],
-                      filename=filename)
+            err.error(
+                err_id=("testcases_scripting", "test_js_file",
+                        "retrieving_tree"),
+                error="JS reflection error prevented validation",
+                description=["An error in the JavaScript file prevented it "
+                             "from being properly read by the Spidermonkey JS "
+                             "engine.", str(exc)],
+                filename=filename)
 
 
 class JSReflectException(Exception):
@@ -76,8 +73,7 @@ class JSReflectException(Exception):
 
 
 def prepare_code(code, err, filename):
-    """Prepares code for tree generation."""
-
+    """Prepare code for tree generation."""
     # Acceptable unicode characters still need to be stripped. Just remove the
     # slash: a character is necessary to prevent bad identifier errors
     code = JS_ESCAPE.sub("u", code)
@@ -87,7 +83,7 @@ def prepare_code(code, err, filename):
 
 
 def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
-    """Returns an AST tree of the JS passed in `code`."""
+    """Return an AST tree of the JS passed in `code`."""
 
     if not code:
         return None
@@ -95,11 +91,12 @@ def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
     code = unicodehelper.decode(code)
 
     temp = tempfile.NamedTemporaryFile(mode="w+b", delete=False)
-    #temp.write(codecs.BOM_UTF8)
     temp.write(code.encode("utf_8"))
     temp.flush()
 
-    data = """try{
+    data = """
+    try{options("allow_xml");}catch(e){}
+    try{
         print(JSON.stringify(Reflect.parse(read(%s))));
     } catch(e) {
         print(JSON.stringify({
@@ -111,10 +108,10 @@ def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
 
     try:
         cmd = [shell, "-e", data, "-U"]
-        shell_obj = subprocess.Popen(cmd,
-                                     shell=False,
-                                     stderr=subprocess.PIPE,
-                                     stdout=subprocess.PIPE)
+        shell_obj = subprocess.Popen(
+            cmd, shell=False,
+            stderr=subprocess.PIPE,
+            stdout=subprocess.PIPE)
 
         data, stderr = shell_obj.communicate()
         if stderr:
@@ -125,7 +122,7 @@ def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
         try:
             temp.close()
             os.unlink(temp.name)
-        except:
+        except IOError:
             pass
 
     if not data:

@@ -20,9 +20,8 @@ def test_packed_packages(err, package=None):
     processed_files = 0
     pretested_files = err.get_resource("pretested_files") or []
 
-    with open(os.path.join(os.path.dirname(__file__),
-              "hashes.txt")) as f:
-        hash_blacklist = [x[:-1] for x in f]
+    with open(os.path.join(os.path.dirname(__file__), "hashes.txt")) as f:
+        hash_blacklist = map(str.rstrip, f)
 
     # Iterate each item in the package.
     for name in package:

@@ -1,5 +1,6 @@
-from zipfile import ZipFile
 from StringIO import StringIO
+from zipfile import ZipFile
+import zlib
 
 
 def to_utf8(s):
@@ -25,11 +26,15 @@ class ZipPackage(object):
         self.extension = self.filename.split(".")[-1]
 
         self.contents_cache = None
+        self.broken_files = set()
 
     def __iter__(self):
-        return (name for name in self.zf.namelist())
+        return (name for name in self.zf.namelist() if
+                name not in self.broken_files)
 
     def __contains__(self, item):
+        if item in self.broken_files:
+            return False
         return item in self.zf.namelist()
 
     def info(self, name):
@@ -37,9 +42,9 @@ class ZipPackage(object):
         return self.package_contents()[name]
 
     def package_contents(self):
-        "Returns a dictionary of file information"
+        """Return a dictionary of file information."""
 
-        if self.contents_cache:
+        if self.contents_cache and not self.broken_files:
             return self.contents_cache
 
         # Get a list of ZipInfo objects.
@@ -48,6 +53,8 @@ class ZipPackage(object):
 
         # Iterate through each file in the XPI.
         for file_ in files:
+            if file_.filename in self.broken_files:
+                continue
 
             file_doc = {"name": file_.filename,
                         "size": file_.file_size,
@@ -63,8 +70,11 @@ class ZipPackage(object):
     def read(self, filename):
         "Reads a file from the archive and returns a string."
 
-        data = self.zf.read(filename)
-        return data
+        try:
+            return self.zf.read(filename)
+        except zlib.error:
+            self.broken_files.add(filename)
+            raise
 
     def write(self, name, data):
         """Write a blob of data to the XPI manager."""

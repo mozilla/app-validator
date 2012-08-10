@@ -5,7 +5,7 @@ from mock import patch
 from nose.tools import eq_
 
 import appvalidator.submain as submain
-from appvalidator.errorbundler import ErrorBundle
+from appvalidator.errorbundle import ErrorBundle
 from appvalidator.constants import *
 from helper import MockXPI
 
@@ -68,7 +68,7 @@ class MockTestcases:
         "Returns unordered tiers. These must be in a random order."
         return (4, 1, 3, 5, 2)
 
-    def _get_tests(self, tier, type):
+    def _get_tests(self, tier):
         "Should return a list of tests that occur in a certain order"
 
         self.on_tier = tier

@@ -2,7 +2,7 @@
 from nose.tools import eq_
 
 import appvalidator.testcases.markup.markuptester as markuptester
-from appvalidator.errorbundler import ErrorBundle
+from appvalidator.errorbundle import ErrorBundle
 from appvalidator.constants import *
 
 

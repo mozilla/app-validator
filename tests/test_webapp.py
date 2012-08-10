@@ -8,7 +8,7 @@ from nose.tools import eq_
 
 from helper import TestCase
 import appvalidator.constants
-from appvalidator.errorbundler import ErrorBundle
+from appvalidator.errorbundle import ErrorBundle
 from appvalidator.specs.webapps import WebappSpec
 import appvalidator.webapp
 

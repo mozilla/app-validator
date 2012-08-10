@@ -1,5 +1,6 @@
 from js_helper import _do_test_raw
 
+
 def test_settimeout_fail():
     "Test cases in which setTimeout should fail"
 
