@@ -1,4 +1,8 @@
 import sys
-from validator.validate import validate
+from appvalidator import validate_app, validate_packaged_app
 
-print validate(sys.argv[1], format="json")
+path = sys.argv[1]
+if path.endswith(".webapp"):
+    print validate_app(path, format="json")
+else:
+    print validate_packaged_app(path, format="json")
