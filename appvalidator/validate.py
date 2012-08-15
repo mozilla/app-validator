@@ -34,7 +34,7 @@ def validate_app(data, listed=True, market_urls=None):
 
 
 def validate_packaged_app(path, listed=True, format="json", market_urls=None,
-                          timeout=None):
+                          timeout=None, spidermonkey=False):
     """
     A handy function for validating apps.
 
@@ -50,8 +50,13 @@ def validate_packaged_app(path, listed=True, format="json", market_urls=None,
     `timeout`:
         The amount of time (in seconds) that the validation process may take.
         When this value is `None`, timeouts are disabled.
+    `spidermonkey`:
+        Path to the local spidermonkey installation. Defaults to `False`, which
+        uses the validator's built-in detection of Spidermonkey. Specifying
+        `None` will disable JavaScript tests. Any other value is treated as the
+        path.
     """
-    bundle = ErrorBundle(listed=listed)
+    bundle = ErrorBundle(listed=listed, spidermonkey=spidermonkey)
 
     # Set the market URLs.
     set_market_urls(market_urls)
