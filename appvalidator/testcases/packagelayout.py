@@ -41,8 +41,9 @@ def test_blacklisted_files(err, package=None):
         # Perform a deep inspection to detect magic numbers for known binary
         # and executable file types.
         try:
-            with package.zf.open(name) as zip:
-                bytes = tuple(map(ord, zip.read(4)))  # Longest is 4 bytes
+            z = package.zf.open(name)
+            bytes = tuple(map(ord, z.read(4)))  # Longest is 4 bytes
+            z.close()
         except zlib.error:
             # Tell the zip that there's a broken file.
             package.broken_files.add(name)

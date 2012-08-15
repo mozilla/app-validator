@@ -69,7 +69,6 @@ def test_packed_packages(err, package=None):
             continue
 
         # Process the file.
-        print "processing", name
         processed = _process_file(err, package, name, file_data)
         # If the file is processed, it will return True. If the process goes
         # badly, it will return False. If the processing is skipped, it returns
