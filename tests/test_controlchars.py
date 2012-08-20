@@ -1,11 +1,11 @@
+from simplejson import JSONDecodeError
 import sys
 
-from nose.tools import eq_, nottest
+from nose.tools import eq_, nottest, raises
 
-from appvalidator.errorbundle import ErrorBundle
-from appvalidator.errorbundle.outputhandlers.shellcolors import OutputHandler
-import appvalidator.unicodehelper
+from appvalidator.specs.webapps import WebappSpec
 import appvalidator.testcases.scripting
+import appvalidator.unicodehelper
 from helper import TestCase
 
 
@@ -50,3 +50,14 @@ class TestControlChars(TestCase):
         self.run_test("tests/resources/controlchars/controlchars_utf-8_warn.js")
         self.assert_failed(with_warnings=True)
         eq_(self.err.warnings[0]["id"][2], "syntax_error")
+
+    @raises(JSONDecodeError)
+    def test_controlchar_in_webapp(self):
+        """
+        Test that unescaped control characters cause parse errors in the webapp
+        spec.
+        """
+
+        data = '''{"foo":"%s"}''' % chr(7)  # Bell!
+        self.setup_err()
+        webapp = WebappSpec(data, self.err)

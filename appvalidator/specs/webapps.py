@@ -1,5 +1,5 @@
 import copy
-import json
+import simplejson as json
 import types
 import urlparse
 
@@ -267,7 +267,7 @@ class WebappSpec(Spec):
 
     def parse(self, data):
         if isinstance(data, types.StringTypes):
-            return json.loads(data)
+            return json.loads(data, strict=True)
         return data
 
     def validate_root_node(self, root):
