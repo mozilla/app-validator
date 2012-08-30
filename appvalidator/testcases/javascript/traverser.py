@@ -4,7 +4,7 @@ import types
 
 from . import actions
 from .jstypes import *
-from .nodedefinitions import DEFINITIONS
+from .nodedefinitions import DEFINITIONS, E4X_NODES
 from .predefinedentities import GLOBAL_ENTITIES, BANNED_IDENTIFIERS
 
 
@@ -89,6 +89,17 @@ class Traverser:
         if "loc" in node and node["loc"] is not None:
             self.line = self.start_line + int(node["loc"]["start"]["line"])
             self.position = int(node["loc"]["start"]["column"])
+
+        if node["type"] in E4X_NODES:
+            self.err.error(
+                err_id=("js", "traverser", "e4x"),
+                error="E4X banned from app use.",
+                description="E4X has been deprecated and removed from Gecko. "
+                            "It may not be used in apps.",
+                filename=self.filename,
+                line=self.line,
+                column=self.position,
+                context=self.context)
 
         # Extract properties about the node that we're traversing
         (branches, establish_context, action, returns,

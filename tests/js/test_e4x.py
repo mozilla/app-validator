@@ -9,22 +9,26 @@ class TestE4X(TestCase):
     def test_pass(self):
         """Test that E4X isn't immediately rejected."""
         self.run_script("""var x = <foo a={x}><bar /><{zap} /></foo>;""")
-        self.assert_silent()
+        self.assert_failed(with_errors=True)
 
     def test_default_declaration(self):
         """
         Test that the E4X default declaration is tested as an expression.
         """
         self.run_script("""default xml namespace = eval("alert();");""");
-        self.assert_failed(with_warnings=True)
+        self.assert_failed(with_errors=True, with_warnings=True)
 
     def test_xmlescape(self):
         """Test that XMLEscape nodes are evaluated."""
         self.run_script("""var x = <foo a={x}><bar /><{eval("X")} /></foo>;""")
-        self.assert_failed(with_warnings=True)
+        self.assert_failed(with_errors=True, with_warnings=True)
 
     def test_xmlname_string(self):
-        """Test that XMLName nodes with a string "contents" works."""
+        """
+        Test that XMLName nodes with a string "contents" works.
+
+        This test is present solely to test for tracebacks.
+        """
         self.run_script("""
         let reportData =
         	<report>
@@ -49,7 +53,6 @@ class TestE4X(TestCase):
         		<errors/>
         	</report>;
         """)
-        self.assert_silent()
 
     def test_xmlattributeselector(self):
         """Test that XMLAttributeSelectors don't throw tracebacks."""
@@ -57,7 +60,6 @@ class TestE4X(TestCase):
         var x = <foo zip="zap"><bar /></foo>;
         var y = x.@zip;
         """)
-        self.assert_silent()
 
     def test_double_colon(self):
         """
@@ -69,5 +71,3 @@ class TestE4X(TestCase):
                       xmlns:nsTypes={nsTypes}/>;
         req::asdf.oijaewr::aasdf = "foo";
         """)
-        self.assert_silent()
-
