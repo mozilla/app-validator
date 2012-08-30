@@ -53,6 +53,40 @@ class TestOverwrite(TestCase):
         yield test, self, 'Number.prototype["test"] = "foo"'
         yield test, self, 'x = Number.prototype; x.test = "foo"'
 
+    def test_reduced_overwrite_messages(self):
+        """
+        Test that there are no messages for overwrites that occur in local
+        scopes only.
+        """
+
+        self.run_script("""
+        function foo() {
+            let eval = function() {};
+            eval('asdf');
+
+            var Function = function() {};
+            Function("asdf");
+        }
+        """)
+        self.assert_silent()
+
+    def test_reduced_overwrite_messages_block(self):
+        """
+        Test that there are no messages for overwrites that occur in block
+        scope.
+        """
+
+        self.run_script("""
+        if(true) {
+            let eval = function() {};
+            eval('asdf');
+
+            var Function = function() {};
+            Function("asdf");
+        }
+        """)
+        self.assert_silent()
+
     def test_with_statement_pass(self):
         """Tests that 'with' statements work as intended."""
 
