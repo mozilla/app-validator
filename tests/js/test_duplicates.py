@@ -1,21 +1,22 @@
-from js_helper import _do_test_raw
+from nose.tools import eq_
+
+from js_helper import TestCase
 
 
-def test_no_dups():
-    """Test that errors are not duplicated."""
+class TestDuplicates(TestCase):
+    def test_no_dups(self):
+        """Test that errors are not duplicated."""
 
-    assert _do_test_raw("""
-    eval("test");
-    """).message_count == 1
+        def test(self, script, message_count):
+            self.setUp()
+            self.run_script(script)
+            if not message_count:
+                self.assert_silent()
+            else:
+                self.assert_failed(with_warnings=True)
+                eq_(self.err.message_count, message_count)
 
-    assert _do_test_raw("""
-    var x = eval();
-    """).message_count == 1
-
-    assert _do_test_raw("""
-    eval = 123;
-    """).message_count == 0
-
-    assert _do_test_raw("""
-    eval.prototype = true;
-    """).message_count == 1
+        yield test, self, 'eval("test");', 1
+        yield test, self, 'var x = eval();', 1
+        yield test, self, 'eval = 123;', 0
+        yield test, self, 'eval.prototype = true;', 0
