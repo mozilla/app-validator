@@ -1,88 +1,92 @@
-from js_helper import _do_test_raw
+from js_helper import _do_test_raw, TestCase
 
 
-def test_innerHTML():
-    """Tests that the dev can't define event handlers in innerHTML."""
+class TestHTML(TestCase):
 
-    assert not _do_test_raw("""
-    var x = foo();
-    x.innerHTML = "<div></div>";
-    """).failed()
+    def test_innerHTML(self):
+        """Tests that the dev can't define event handlers in innerHTML."""
 
-    assert _do_test_raw("""
-    var x = foo();
-    x.innerHTML = "<div onclick=\\"foo\\"></div>";
-    """).failed()
+        def test(self, declaration, script, fails):
+            self.setUp()
+            self.run_script(("var x = foo();" if declaration else "") +
+                             "x.innerHTML = %s;" % script)
+            if fails:
+                self.assert_failed()
+            else:
+                self.assert_silent()
 
-    # Test without declaration
-    assert _do_test_raw("""
-    x.innerHTML = "<div onclick=\\"foo\\"></div>";
-    """).failed()
+        for decl in (True, False, ):
+            yield test, self, decl, '"<div></div>"', False
+            yield test, self, decl, '"<div onclick=\\"foo\\"></div>"', True
+            yield test, self, decl, '"x" + y', True
 
-    assert _do_test_raw("""
-    var x = foo();
-    x.innerHTML = "x" + y;
-    """).failed()
+    def test_outerHTML(self):
+        """Test that the dev can't define event handler in outerHTML."""
 
+        def test(self, declaration, script, fails):
+            self.setUp()
+            self.run_script(("var x = foo();" if declaration else "") +
+                             "x.outerHTML = %s;" % script)
+            if fails:
+                self.assert_failed()
+            else:
+                self.assert_silent()
 
-def test_outerHTML():
-    """Test that the dev can't define event handler in outerHTML."""
+        for decl in (True, False, ):
+            yield test, self, decl, '"<div></div>"', False
+            yield test, self, decl, '"<div onclick=\\"foo\\"></div>"', True
+            yield test, self, decl, '"x" + y', True
 
-    assert not _do_test_raw("""
-    var x = foo();
-    x.outerHTML = "<div></div>";
-    """).failed()
+    def test_complex_innerHTML(self):
+        """
+        Tests that innerHTML can't be assigned an HTML chunk with bad code.
+        """
 
-    assert _do_test_raw("""
-    var x = foo();
-    x.outerHTML = "<div onclick=\\"foo\\"></div>";
-    """).failed()
-
-    # Test without declaration
-    assert _do_test_raw("""
-    x.outerHTML = "<div onclick=\\"foo\\"></div>";
-    """).failed()
-
-    assert _do_test_raw("""
-    var x = foo();
-    x.outerHTML = "x" + y;
-    """).failed()
-
-
-def test_complex_innerHTML():
-    """Tests that innerHTML can't be assigned an HTML chunk with bad code"""
-
-    assert _do_test_raw("""
-    var x = foo();
-    x.innerHTML = "<script src=\\"http://foo.bar/\\"></script>";
-    """).failed()
+        self.run_script("""
+        var x = foo();
+        x.innerHTML = "<script src=\\"http://foo.bar/\\"></script>";
+        """)
+        self.assert_failed(with_errors=True)
 
 
-def test_on_event():
-    """Tests that on* properties are not assigned strings."""
+class TestOnProperties(TestCase):
 
-    assert not _do_test_raw("""
-    var x = foo();
-    x.fooclick = "bar";
-    """).failed()
+    def test_on_event(self):
+        """Tests that on* properties are not assigned strings."""
 
-    assert not _do_test_raw("""
-    var x = foo();
-    x.onclick = function() {};
-    """).failed()
+        def test(self, declaration, script, prefix, fails):
+            self.setUp()
+            self.run_script(("var x = foo();" if declaration else "") +
+                             "x.%s = %s;" % (script, prefix))
+            if fails:
+                self.assert_failed()
+            else:
+                self.assert_silent()
 
-    assert _do_test_raw("""
-    var x = foo();
-    x.onclick = "bar";
-    """).failed()
+        for decl in (True, False, ):
+            yield test, self, decl, 'fooclick', '"bar"', False
+            yield test, self, decl, 'onclick', 'function() {}', False
+            yield test, self, decl, 'onclick', '"bar"', True
 
 
-def test_on_event_null():
-    """Null should not trigger on* events."""
+    def test_on_event_null(self):
+        """Null should not trigger on* events."""
 
-    assert not _do_test_raw("""
-    var x = foo(),
-        y = null;
-    x.onclick = y;
-    """).failed()
+        self.run_script("""
+        var x = foo(),
+            y = null;
+        x.onclick = y;
+        """)
+        self.assert_silent()
+
+    def test_on_event_handleEvent_fail(self):
+        """
+        Objects with `handleEvent` methods should be flagged as errors when add-ons
+        target Gecko version 18.
+        """
+
+        self.run_script("""
+        foo.onclick = {handleEvent: function() {alert("bar");}};
+        """)
+        self.assert_failed(with_errors=True)
 
