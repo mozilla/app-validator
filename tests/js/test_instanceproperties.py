@@ -68,7 +68,6 @@ class TestOnProperties(TestCase):
             yield test, self, decl, 'onclick', 'function() {}', False
             yield test, self, decl, 'onclick', '"bar"', True
 
-
     def test_on_event_null(self):
         """Null should not trigger on* events."""
 
@@ -81,12 +80,11 @@ class TestOnProperties(TestCase):
 
     def test_on_event_handleEvent_fail(self):
         """
-        Objects with `handleEvent` methods should be flagged as errors when add-ons
-        target Gecko version 18.
+        Objects with `handleEvent` methods should be flagged as errors when
+        add-ons target Gecko version 18.
         """
 
         self.run_script("""
         foo.onclick = {handleEvent: function() {alert("bar");}};
         """)
         self.assert_failed(with_errors=True)
-
