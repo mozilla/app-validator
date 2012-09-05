@@ -3,13 +3,14 @@
 import sys
 import os
 
-from validator.errorbundler import ErrorBundle
-from validator.outputhandlers.shellcolors import OutputHandler
-import validator.testcases.scripting as scripting
-import validator.testcases.javascript.traverser
-from validator.testcases.javascript.predefinedentities import GLOBAL_ENTITIES
-import validator.testcases.javascript.spidermonkey as spidermonkey
-validator.testcases.javascript.traverser.DEBUG = True
+from appvalidator.constants import SPIDERMONKEY_INSTALLATION
+from appvalidator.errorbundler import ErrorBundle
+from appvalidator.outputhandlers.shellcolors import OutputHandler
+import appvalidator.testcases.scripting as scripting
+import appvalidator.testcases.javascript.traverser
+from appvalidator.testcases.javascript.predefinedentities import GLOBAL_ENTITIES
+import appvalidator.testcases.javascript.spidermonkey as spidermonkey
+appvalidator.testcases.javascript.traverser.DEBUG = True
 
 if __name__ == '__main__':
     err = ErrorBundle(instant=True)
@@ -22,7 +23,7 @@ if __name__ == '__main__':
                                filename=path,
                                data=script)
     else:
-        trav = validator.testcases.javascript.traverser.Traverser(err, "stdin")
+        trav = appvalidator.testcases.javascript.traverser.Traverser(err, "stdin")
         trav._push_context()
 
         def do_inspect(wrapper, arguments, traverser):
@@ -50,8 +51,7 @@ if __name__ == '__main__':
         GLOBAL_ENTITIES[u"exit"] = {"return": do_exit}
 
         while True:
-            line = sys.stdin.readline()
-
+            line = raw_input("js> ")
             if line == "enable bootstrap\n":
                 err.save_resource("em:bootstrap", True)
                 continue
@@ -73,7 +73,7 @@ if __name__ == '__main__':
                     print actions[vars[0]](wrap)
                 continue
 
-            tree = spidermonkey.get_tree(line, err)
+            tree = spidermonkey.get_tree(line, err, shell=SPIDERMONKEY_INSTALLATION)
             if tree is None:
                 continue
             tree = tree["body"]

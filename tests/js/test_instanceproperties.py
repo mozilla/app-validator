@@ -1,4 +1,10 @@
+from mock import patch
+
 from js_helper import _do_test_raw, TestCase
+
+
+def _mock_html_error(self, *args, **kwargs):
+    self.err.error(("foo", "bar"), "Does not pass validation.")
 
 
 class TestHTML(TestCase):
@@ -19,6 +25,8 @@ class TestHTML(TestCase):
             yield test, self, decl, '"<div></div>"', False
             yield test, self, decl, '"<div onclick=\\"foo\\"></div>"', True
             yield test, self, decl, '"x" + y', True
+            yield test, self, decl, '<a href="javascript:alert();">', True
+            yield test, self, decl, '"<script>"', True
 
     def test_outerHTML(self):
         """Test that the dev can't define event handler in outerHTML."""
@@ -37,6 +45,8 @@ class TestHTML(TestCase):
             yield test, self, decl, '"<div onclick=\\"foo\\"></div>"', True
             yield test, self, decl, '"x" + y', True
 
+    @patch("appvalidator.testcases.markup.markuptester.MarkupParser.process",
+           _mock_html_error)
     def test_complex_innerHTML(self):
         """
         Tests that innerHTML can't be assigned an HTML chunk with bad code.
@@ -44,9 +54,19 @@ class TestHTML(TestCase):
 
         self.run_script("""
         var x = foo();
-        x.innerHTML = "<script src=\\"http://foo.bar/\\"></script>";
+        x.innerHTML = "<b></b>";
         """)
         self.assert_failed(with_errors=True)
+
+    def test_function_return(self):
+        """
+        Test that the return value of a function is considered a dynamic value.
+        """
+
+        self.run_script("""
+        x.innerHTML = foo();
+        """)
+        self.assert_failed()
 
 
 class TestOnProperties(TestCase):
