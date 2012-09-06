@@ -21,7 +21,8 @@ class WebappSpec(Spec):
         "allowed_once_nodes": ["launch_path", "icons", "locales",
                                "default_locale", "installs_allowed_from",
                                "version", "screen_size", "required_features",
-                               "orientation", "fullscreen", "appcache_path"],
+                               "orientation", "fullscreen", "appcache_path",
+                               "type"],
         "allowed_nodes": ["developer"],
         "disallowed_nodes": ["widget"],
         "child_nodes": {
@@ -79,6 +80,8 @@ class WebappSpec(Spec):
                            "values": ["true", "false"]},
             "appcache_path": {"expected_type": types.StringTypes,
                               "process": lambda s: s.process_appcache_path},
+            "type": {"expected_type": types.StringTypes,
+                     "process": lambda s: s.process_type},
         }
     }
 
@@ -263,6 +266,17 @@ class WebappSpec(Spec):
                 description=["The `appcache_path` must be a full, absolute URL "
                              "to the application cache manifest.",
                              "Found: %s" % node,
+                             self.MORE_INFO])
+
+    def process_type(self, node):
+        if unicode(node) not in (u"web", u"trusted", u"certified", ):
+            self.err.error(
+                err_id=("spec", "webapp", "type_not_known"),
+                error="`type` is not a recognized value",
+                description=["The `type` key does not contain a recognized "
+                             "value. `type` may only contain 'web', 'trusted', "
+                             "or 'certified'.",
+                             "Found value: '%s'" % node,
                              self.MORE_INFO])
 
     def parse(self, data):

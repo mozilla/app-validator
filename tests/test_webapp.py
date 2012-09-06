@@ -480,3 +480,22 @@ class TestWebapps(TestCase):
         self.analyze()
         self.assert_failed(with_errors=True)
 
+    def test_type_failed(self):
+        """Test that the `type` element must be a recognized value."""
+
+        self.data["type"] = "foo"
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_type_valid(self):
+        """Test that the `type` element doesn't fail with valid values."""
+
+        def wrap(self, value):
+            self.setUp()
+            self.data["type"] = value
+            self.analyze()
+            self.assert_silent()
+
+        for key in ("web", "trusted", "certified", ):
+            yield wrap, self, key
+
