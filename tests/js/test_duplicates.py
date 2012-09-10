@@ -19,4 +19,4 @@ class TestDuplicates(TestCase):
         yield test, self, 'eval("test");', 1
         yield test, self, 'var x = eval();', 1
         yield test, self, 'eval = 123;', 0
-        yield test, self, 'eval.prototype = true;', 0
+        yield test, self, 'eval.prototype = true;', 1

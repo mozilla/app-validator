@@ -3,10 +3,10 @@ import math
 import re
 import types
 
+from appvalidator.constants import BUGZILLA_BUG
 import spidermonkey
 import instanceactions
 import instanceproperties
-from appvalidator.constants import BUGZILLA_BUG
 from jstypes import *
 
 
@@ -70,9 +70,8 @@ def trace_member(traverser, node, instantiate=False):
         test_identifier(traverser, identifier)
 
         traverser._debug("MEMBER_EXP>>PROPERTY: %s" % identifier)
-        output = base.get(traverser=traverser,
-                          instantiate=instantiate,
-                          name=identifier)
+        output = base.get(
+            traverser=traverser, instantiate=instantiate, name=identifier)
         output.context = base.context
         return output
 
@@ -82,23 +81,17 @@ def trace_member(traverser, node, instantiate=False):
 
         # If we're supposed to instantiate the object and it doesn't already
         # exist, instantitate the object.
-        if (instantiate and not (traverser._is_global(node["name"]) and
-                                 traverser._is_local_variable(node["name"]))):
+        if instantiate and not traverser._is_defined(node["name"]):
             output = JSWrapper(JSObject(), traverser=traverser)
             traverser.contexts[0].set(node["name"], output)
         else:
             output = traverser._seek_variable(node["name"])
 
-        output = _expand_globals(traverser, output)
-
-        return output
+        return _expand_globals(traverser, output)
     else:
         traverser._debug("MEMBER_EXP>>ROOT:EXPRESSION")
         # It's an expression, so just try your damndest.
-        traversed = traverser._traverse_node(node)
-        if not isinstance(traversed, JSWrapper):
-            return JSWrapper(traversed, traverser=traverser)
-        return traversed
+        return traverser._traverse_node(node)
 
 
 def test_identifier(traverser, name):
@@ -176,12 +169,11 @@ def _function(traverser, node):
 def _define_function(traverser, node):
     me = _function(traverser, node)
     traverser._peek_context(2).set(node["id"]["name"], me)
+    return me
 
-    return True
 
-
-def _func_expr(traverser, node):
-    return _function(traverser, node)
+# Just make it a refernce to the function that it aliases.
+_func_expr = _function
 
 
 def _define_with(traverser, node):
@@ -296,10 +288,7 @@ def _define_obj(traverser, node):
     for prop in node["properties"]:
         var_name = ""
         key = prop["key"]
-        if key["type"] == "Literal":
-            var_name = key["value"]
-        else:
-            var_name = key["name"]
+        var_name = key["value" if key["type"] == "Literal" else "name"]
         var_value = traverser._traverse_node(prop["value"])
         var.set(var_name, var_value, traverser)
 
@@ -353,7 +342,6 @@ def _call_expression(traverser, node):
             column=traverser.position,
             context=traverser.context)
 
-
     if (member.is_global and
         "dangerous" in member.value and
         isinstance(member.value["dangerous"], types.LambdaType)):
@@ -362,26 +350,26 @@ def _call_expression(traverser, node):
         t = traverser._traverse_node
         result = dangerous(a=args, t=t, e=traverser.err)
         if result and "name" in member.value:
-            # Generate a string representation of the params
-            params = u", ".join([_get_as_str(t(p).get_literal_value()) for
-                                 p in args])
-            traverser.err.warning(("testcases_javascript_actions",
-                                   "_call_expression",
-                                   "called_dangerous_global"),
-                                  "'%(name)s' function called in potentially dangerous manner"
-                                    % member.value,
-                                  result if
-                                    isinstance(result, (types.StringTypes, list, tuple)) else
-                                  "The global %(name)s function was called using a set "
-                                  "of dangerous parameters. %(name)s calls of this nature "
-                                  "are deprecated." % member.value,
-                                  filename=traverser.filename,
-                                  line=traverser.line,
-                                  column=traverser.position,
-                                  context=traverser.context)
+            ## Generate a string representation of the params
+            #params = u", ".join([_get_as_str(t(p).get_literal_value()) for
+            #                     p in args])
+            traverser.err.warning(
+                err_id=("testcases_javascript_actions", "_call_expression",
+                        "called_dangerous_global"),
+                warning="`%s` called in potentially dangerous manner" %
+                            member.value["name"],
+                description=result if isinstance(result, (types.StringTypes,
+                                                          list, tuple)) else
+                            "The global `%s` function was called using a set "
+                            "of dangerous parameters. Calls of this nature "
+                            "are deprecated." % member.value["name"],
+                filename=traverser.filename,
+                line=traverser.line,
+                column=traverser.position,
+                context=traverser.context)
 
-    elif node["callee"]["type"] == "MemberExpression" and \
-         node["callee"]["property"]["type"] == "Identifier":
+    elif (node["callee"]["type"] == "MemberExpression" and
+          node["callee"]["property"]["type"] == "Identifier"):
 
         # If we can identify the function being called on any member of any
         # instance, we can use that to either generate an output value or test
@@ -395,7 +383,7 @@ def _call_expression(traverser, node):
     if member.is_global and "return" in member.value:
         return member.value["return"](wrapper=member, arguments=args,
                                       traverser=traverser)
-    return JSWrapper(traverser=traverser)
+    return JSWrapper(JSObject(), dirty=True, traverser=traverser)
 
 
 def _call_settimeout(a, t, e):
@@ -447,11 +435,11 @@ def _call_create_pref(a, t, e):
 
 
 def _expression(traverser, node):
-    "Evaluates an expression and returns the result"
-    result = traverser._traverse_node(node["expression"])
-    if not isinstance(result, JSWrapper):
-        return JSWrapper(result, traverser=traverser)
-    return result
+    """
+    This is a helper method that allows node definitions to point at
+    `_traverse_node` without needing a reference to a traverser.
+    """
+    return traverser._traverse_node(node["expression"])
 
 
 def _get_this(traverser, node):
@@ -493,11 +481,8 @@ def _ident(traverser, node):
     # Ban bits like "newThread"
     test_identifier(traverser, name)
 
-    if (traverser._is_local_variable(name) or
-        traverser._is_global(name)):
-        # This function very nicely wraps with JSWrapper for us :)
-        found = traverser._seek_variable(name)
-        return found
+    if traverser._is_defined(name):
+        return traverser._seek_variable(name)
 
     return JSWrapper(JSObject(), traverser=traverser, dirty=True)
 
@@ -848,4 +833,3 @@ def _get_as_str(value):
         except (ValueError, TypeError):
             pass
     return unicode(value)
-

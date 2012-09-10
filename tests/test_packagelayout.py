@@ -1,3 +1,7 @@
+from itertools import repeat
+
+from mock import MagicMock
+
 import appvalidator.testcases.packagelayout as packagelayout
 from appvalidator.errorbundle import ErrorBundle
 from helper import _do_test, MockXPI
@@ -21,11 +25,8 @@ def test_java_jar_detection():
     """
 
     classes = ("c%d.class" % i for i in xrange(1000))
-    def strings():  # Look at how functional this is. How functional!
-        while 1:
-            yield ""
-    mock_xpi = MockXPI(dict(zip(classes, strings())))
-    err = ErrorBundle(None, True)
+    mock_xpi = MockXPI(dict(zip(classes, repeat(""))))
+    err = ErrorBundle()
     packagelayout.test_blacklisted_files(err, mock_xpi)
 
     assert not err.failed()
@@ -42,27 +43,16 @@ def test_blacklisted_magic_numbers():
     assert "binary_components" not in err.metadata
 
 
-class MockDupeZipFile(object):
-    """Mock a ZipFile class, simulating duplicate filename entries."""
-
-    def namelist(self):
-        return ["foo.bar", "foo.bar"]
-
-
-class MockDupeXPI(object):
-    """Mock the XPIManager class, simulating duplicate filename entries."""
-
-    def __init__(self):
-        self.zf = MockDupeZipFile()
-        self.subpackage = False
-
-
 def test_duplicate_files():
     """Test that duplicate files in a package are caught."""
 
+    package = MagicMock()
+    package.subpackage = False
+    zf = MagicMock()
+    zf.namelist.return_value = ["foo.bar", "foo.bar"]
+    package.zf = zf
+
     err = ErrorBundle()
     err.save_resource("has_install_rdf", True)
-    packagelayout.test_layout_all(err, MockDupeXPI())
+    packagelayout.test_layout_all(err, package)
     assert err.failed()
-
-

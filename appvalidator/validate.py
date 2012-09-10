@@ -1,6 +1,6 @@
 import json
 
-from . import constants
+import constants
 from errorbundle import ErrorBundle
 import loader
 import submain

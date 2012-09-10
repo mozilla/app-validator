@@ -1,4 +1,3 @@
-import copy
 import re
 import types
 
@@ -206,63 +205,45 @@ class Traverser(object):
 
         return self.contexts[len(self.contexts) - depth]
 
-    def _seek_variable(self, variable, depth=-1):
+    def _seek_variable(self, variable):
         "Returns the value of a variable that has been declared in a context"
 
-        self._debug("SEEK>>%s>>%d" % (variable, depth))
+        self._debug("SEEK>>%s" % variable)
 
         # Look for the variable in the local contexts first
-        local_variable = self._seek_local_variable(variable, depth)
+        local_variable = self._seek_local_variable(variable)
         if local_variable is not None:
-            if not isinstance(local_variable, JSWrapper):
-                return JSWrapper(local_variable, traverser=self)
             return local_variable
 
-        self._debug("SEEK_FAIL>>TRYING GLOBAL")
-
         # Seek in globals for the variable instead.
-        return self._get_global(variable)
+        self._debug("SEEK_GLOBAL>>%s" % variable)
+        if self._is_global(variable):
+            self._debug("SEEK_GLOBAL>>FOUND>>%s" % variable)
+            return self._build_global(variable, GLOBAL_ENTITIES[variable])
+
+        self._debug("SEEK_GLOBAL>>FAILED")
+        # If we can't find a variable, we always return a dummy object.
+        return JSWrapper(JSObject(), traverser=self)
+
+    def _is_defined(self, variable):
+        return variable in GLOBAL_ENTITIES or self._is_local_variable(variable)
 
     def _is_local_variable(self, variable):
         """Return whether a variable is defined in the current scope."""
         return any(ctx.has_var(variable) for ctx in self.contexts)
 
-    def _seek_local_variable(self, variable, depth=-1):
+    def _seek_local_variable(self, variable):
         # Loop through each context in reverse order looking for the defined
         # variable.
-        context_count = len(self.contexts)
-        for c in range(context_count):
-            context = self.contexts[context_count - c - 1]
-
+        for context in reversed(self.contexts):
             # If it has the variable, return it
             if context.has_var(variable):
-                self._debug("SEEK>>FOUND AT DEPTH %d" % c)
-                var = context.get(variable, traverser=self)
-                if not isinstance(var, JSWrapper):
-                    return JSWrapper(var, traverser=self)
-                return var
-
-            # Decrease the level that's being searched through. If we've
-            # reached the bottom (relative to where the user defined it to be),
-            # end the search.
-            depth -= 1
-            if depth == -1:
-                return JSWrapper(JSObject(), traverser=self)
+                self._debug("SEEK>>FOUND")
+                return context.get(variable, traverser=self)
 
     def _is_global(self, name):
         "Returns whether a name is a global entity"
         return not self._is_local_variable(name) and name in GLOBAL_ENTITIES
-
-    def _get_global(self, name):
-        "Gets a variable from the predefined variable context."
-        self._debug("SEEK_GLOBAL>>%s" % name)
-        if not self._is_global(name):
-            self._debug("SEEK_GLOBAL>>FAILED")
-            # If we can't find a variable, we always return a dummy object.
-            return JSWrapper(JSObject(), traverser=self)
-
-        self._debug("SEEK_GLOBAL>>FOUND>>%s" % name)
-        return self._build_global(name, GLOBAL_ENTITIES[name])
 
     def _build_global(self, name, entity):
         "Builds an object based on an entity from the predefined entity list"
@@ -272,12 +253,11 @@ class Traverser(object):
             if dang and not isinstance(dang, types.LambdaType):
                 self._debug("DANGEROUS")
                 self.err.warning(
-                    err_id=("js", "_build_global", "dangerous_global"),
-                    warning="Illegal or deprecated access to the '%s' global" % name,
-                    description=[dang if isinstance(
-                                     dang, (types.StringTypes, list, tuple)) else
-                                 "Access to the '%s' property is deprecated "
-                                 "for security or other reasons." % name],
+                    ("js", "traverser", "dangerous_global"),
+                    "Illegal or deprecated access to the `%s` global" % name,
+                    [dang if isinstance(dang, (types.StringTypes, list, tuple))
+                     else "Access to the `%s` property is deprecated "
+                          "for security or other reasons." % name],
                     filename=self.filename,
                     line=self.line,
                     column=self.position,
