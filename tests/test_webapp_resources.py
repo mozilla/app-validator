@@ -184,6 +184,17 @@ class TestResourcePolling(TestCase):
         self.setup_manifest()["appcache_path"] = "fizz"
         appbase.test_app_resources(self.err, None)
         eq_(tgr.call_args[0][2], "fizz")
+        # Test that we don't warn the dev that their appcache exceeds a size
+        # limit.
+        eq_(tgr.call_args[1]["max_size"], False)
+
+    @patch("appvalidator.testcases.webappbase.try_get_resource")
+    def test_launch_path(self, tgr):
+        self.setup_manifest()["launch_path"] = "fizz"
+        appbase.test_app_resources(self.err, None)
+        eq_(tgr.call_args[0][2], "fizz")
+        # Test that we don't warn the dev that their origin exceeds a size
+        # limit.
         eq_(tgr.call_args[1]["max_size"], False)
 
     @patch("appvalidator.testcases.webappbase.try_get_resource")

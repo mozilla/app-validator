@@ -219,6 +219,11 @@ def test_app_resources(err, package):
 
         test_icon(err, data=StringIO(icon_data), url=url, size=icon_size)
 
+    if "launch_path" in manifest:
+        try_get_resource(err, package, manifest["launch_path"],
+                         filename="webapp.manifest", resource_type="origin",
+                         max_size=False)
+
     if "appcache_path" in manifest:
         try_get_resource(err, package, manifest["appcache_path"],
                          filename="webapp.manifest", resource_type="manifest",
