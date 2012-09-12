@@ -1,4 +1,7 @@
+from functools import wraps
 import sys
+
+from mock import MagicMock, Mock, patch
 
 from appvalidator.zip import ZipPackage
 from appvalidator.errorbundle import ErrorBundle
@@ -24,6 +27,32 @@ def _do_test(path, test, failure=True, set_type=0,
     assert err.failed() if failure else not err.failed()
 
     return err
+
+
+def safe(func):
+    """
+    Make sure that a test does not access external resources.
+
+    Note: This will mock `requests.get`. If you are mocking it yourself
+    already, this will throw an assertion error.
+    """
+    @patch("appvalidator.testcases.webappbase.test_icon")
+    @wraps(func)
+    def wrap(test_icon, *args, **kwargs):
+        # Assert that we're not double-mocking `requests.get`.
+        from requests import get as _r_g
+        assert not isinstance(_r_g, (MagicMock, Mock)), (
+            "`requests.get` already mocked")
+
+        with patch("requests.get") as r_g:
+            request = Mock()
+            request.text = "foo bar"
+            # The first bit is the return value. The second bit tells whatever
+            # is requesting the data that there's no more data.
+            request.raw.read.side_effect = [request.text, ""]
+            r_g.return_value = request
+            return func(*args, **kwargs)
+    return wrap
 
 
 class TestCase(object):

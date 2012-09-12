@@ -11,14 +11,12 @@ def to_utf8(s):
 
 class ZipPackage(object):
     """
-    An XPI reader and management class. Allows fun things like reading,
-    listing, and extracting files from an XPI without you needing to
-    worry about things like zip files or IO.
+    A ZIP reader and management class. Allows fun things like reading, listing,
+    and extracting files from a ZIP file without you needing to worry about
+    things like zip files or IO.
     """
 
     def __init__(self, package, mode="r", name=None):
-        "Create a new managed XPI package"
-
         self.zf = ZipFile(package, mode=mode)
 
         # Store away the filename for future use.
@@ -27,6 +25,8 @@ class ZipPackage(object):
 
         self.contents_cache = None
         self.broken_files = set()
+
+        self.file_cache = {}
 
     def __iter__(self):
         return (name for name in self.zf.namelist() if
@@ -51,7 +51,7 @@ class ZipPackage(object):
         files = self.zf.infolist()
         out_files = {}
 
-        # Iterate through each file in the XPI.
+        # Iterate through each file in the ZIP.
         for file_ in files:
             if file_.filename in self.broken_files:
                 continue
@@ -70,21 +70,27 @@ class ZipPackage(object):
     def read(self, filename):
         "Reads a file from the archive and returns a string."
 
+        if filename in self.file_cache:
+            return self.file_cache[filename]
+
         try:
-            return self.zf.read(filename)
+            output = self.zf.read(filename)
         except zlib.error:
             self.broken_files.add(filename)
             raise
+        else:
+            self.file_cache[filename] = output
+            return output
 
     def write(self, name, data):
-        """Write a blob of data to the XPI manager."""
+        """Write a blob of data to the ZIP manager."""
         if isinstance(data, StringIO):
             self.zf.writestr(name, data.getvalue())
         else:
             self.zf.writestr(name, to_utf8(data))
 
     def write_file(self, name, path=None):
-        """Write the contents of a file from the disk to the XPI."""
+        """Write the contents of a file from the disk to the ZIP."""
 
         if path is None:
             path = name

@@ -171,11 +171,13 @@ class WebappSpec(Spec):
 
         if not self._path_valid(node, can_be_absolute=True,
                                 can_have_protocol=True,
-                                can_be_data=True):
+                                can_be_data=True,
+                                can_be_relative=True):
             self.err.error(
                 err_id=("spec", "webapp", "icon_path"),
                 error="`icons` paths must be absolute paths.",
-                description=["Paths to icons must be absolute URLs.",
+                description=["Paths to icons must be absolute paths, relative "
+                             "URIs, or data URIs.",
                              "Found: %s" % node,
                              self.MORE_INFO])
 

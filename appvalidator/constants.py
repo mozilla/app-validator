@@ -16,6 +16,8 @@ BUGZILLA_BUG = "https://bugzilla.mozilla.org/show_bug.cgi?id=%d"
 
 DEFAULT_TIMEOUT = 60
 
+MAX_RESOURCE_SIZE = 2 * 1024 * 1024
+
 # Graciously provided by @kumar in bug 614574
 if (not SPIDERMONKEY_INSTALLATION or
     not os.path.exists(SPIDERMONKEY_INSTALLATION)):

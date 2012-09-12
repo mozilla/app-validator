@@ -57,6 +57,7 @@ def validate_packaged_app(path, listed=True, format="json", market_urls=None,
         path.
     """
     bundle = ErrorBundle(listed=listed, spidermonkey=spidermonkey)
+    bundle.save_resource("packaged", True)
 
     # Set the market URLs.
     set_market_urls(market_urls)

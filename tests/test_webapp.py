@@ -166,17 +166,23 @@ class TestWebapps(TestCase):
         self.analyze()
         self.assert_failed(with_errors=True)
 
-    def test_icons_data_url(self):
-        """Test that webapp icons can be data URLs."""
-        self.data["icons"]["asdf"] = "data:foo/bar.png"
+    def test_icons_size(self):
+        """Test that webapp icon sizes must be integers."""
+        self.data["icons"]["foo"] = "/foo.png"
         self.analyze()
         self.assert_failed(with_errors=True)
+
+    def test_icons_data_url(self):
+        """Test that webapp icons can be data URLs."""
+        self.data["icons"]["128"] = "data:foo/bar.png"
+        self.analyze()
+        self.assert_silent()
 
     def test_icons_relative_url(self):
         """Test that webapp icons cannot be relative URLs."""
         self.data["icons"]["128"] = "foo/bar"
         self.analyze()
-        self.assert_failed(with_errors=True)
+        self.assert_silent()
 
     def test_icons_absolute_url(self):
         """Test that webapp icons can be absolute URLs."""

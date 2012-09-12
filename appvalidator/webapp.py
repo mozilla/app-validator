@@ -1,7 +1,4 @@
-import json
-import re
-import types
-import urlparse
+import simplejson as json
 
 from unicodehelper import decode
 from .specs.webapps import WebappSpec
@@ -12,7 +9,7 @@ def detect_webapp(err, package):
 
     # Parse the file.
     with open(package, mode="r") as f:
-        detect_webapp_string(err, f.read())
+        return detect_webapp_string(err, f.read())
 
 
 def detect_webapp_string(err, data):
@@ -31,6 +28,7 @@ def detect_webapp_string(err, data):
                         "syntax error in the JSON.")
     else:
         detect_webapp_raw(err, webapp)
+        return webapp
 
 
 def detect_webapp_raw(err, webapp):
