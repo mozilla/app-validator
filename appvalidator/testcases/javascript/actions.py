@@ -821,7 +821,7 @@ def _get_as_num(value):
             return value
         else:
             return int(value)
-    except ValueError, TypeError:
+    except (ValueError, TypeError):
         return 0
 
 
@@ -845,7 +845,7 @@ def _get_as_str(value):
         try:
             if int(value) == value:
                 return unicode(int(value))
-        except ValueError, TypeError:
+        except (ValueError, TypeError):
             pass
     return unicode(value)
 
