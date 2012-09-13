@@ -1,25 +1,25 @@
 import json
-import subprocess
+
+from mock import MagicMock, patch
+
 from js_helper import _do_test_raw
 from appvalidator.errorbundle import ErrorBundle
 import appvalidator.testcases.scripting as scripting
 import appvalidator.testcases.javascript.spidermonkey as spidermonkey
 
 
-def test_scripting_disabled():
-    "Ensures that Spidermonkey is not run if it is set to be disabled"
+def test_scripting_enabled():
 
     err = ErrorBundle()
     err.save_resource("SPIDERMONKEY", None)
     assert scripting.test_js_file(err, "abc def", "foo bar") is None
 
+
+@patch("appvalidator.testcases.scripting.SPIDERMONKEY_INSTALLATION", None)
+def test_scripting_disabled():
+    "Ensures that Spidermonkey is not run if it is set to be disabled"
     err = ErrorBundle()
-    si = scripting.SPIDERMONKEY_INSTALLATION
-    scripting.SPIDERMONKEY_INSTALLATION = None
-
     assert scripting.test_js_file(err, "abc def", "foo bar") is None
-
-    scripting.SPIDERMONKEY_INSTALLATION = si
 
 
 def test_scripting_snippet():
@@ -34,23 +34,26 @@ def test_scripting_snippet():
     assert err.failed()
 
 
-def test_reflectparse_presence():
+@patch("subprocess.Popen")
+def test_reflectparse_presence(Popen):
     "Tests that when Spidermonkey is too old, a proper error is produced"
 
-    spidermonkey.subprocess = MockSubprocess()
+    SPObj = MagicMock()
+    SPObj.communicate.return_value = (
+        json.dumps({"error": True,
+                    "error_message": "ReferenceError: Reflect is not defined",
+                    "line_number": 0}),
+        ""
+    )
+    Popen.return_value = SPObj
 
     try:
         spidermonkey._get_tree("foo bar", "[path]")
     except RuntimeError as err:
-        print str(err)
         assert (str(err) ==
             "Spidermonkey version too old; 1.8pre+ required; "
             "error='ReferenceError: Reflect is not defined'; "
             "spidermonkey='[path]'")
-    except:
-        raise
-
-    spidermonkey.subprocess = subprocess
 
 
 def test_compiletime_errors():
@@ -61,25 +64,4 @@ def test_compiletime_errors():
 
     # Reference error
     assert _do_test_raw("x - y = 4;").failed()
-
-
-class MockSubprocess(object):
-    "A class to mock subprocess"
-
-    def __init__(self):
-        self.PIPE = True
-
-    def Popen(self, command, shell, stderr, stdout):
-        return MockSubprocessObject()
-
-
-class MockSubprocessObject(object):
-    "A class to mock a subprocess object and implement the communicate method"
-
-    def communicate(self):
-        data = json.dumps({"error": True,
-                           "error_message": "ReferenceError: Reflect is not defined",
-                           "line_number": 0})
-        return data, ""
-
 
