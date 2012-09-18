@@ -7,6 +7,9 @@ from ..constants import DEFAULT_WEBAPP_MRKT_URLS
 from ..specprocessor import Spec, LITERAL_TYPE
 
 
+LIST_OR_STR = types.StringTypes + (list, tuple, )
+
+
 class WebappSpec(Spec):
     """This object parses and subsequently validates webapp manifest files."""
 
@@ -22,7 +25,7 @@ class WebappSpec(Spec):
                                "default_locale", "installs_allowed_from",
                                "version", "screen_size", "required_features",
                                "orientation", "fullscreen", "appcache_path",
-                               "type"],
+                               "type", "activities"],
         "allowed_nodes": ["developer"],
         "disallowed_nodes": ["widget"],
         "child_nodes": {
@@ -82,6 +85,31 @@ class WebappSpec(Spec):
                               "process": lambda s: s.process_appcache_path},
             "type": {"expected_type": types.StringTypes,
                      "process": lambda s: s.process_type},
+            "activities":
+                {"expected_type": dict,
+                 "allowed_nodes": ["*"],
+                 "child_nodes":
+                     {"*": {"expected_type": dict,
+                            "required_nodes": ["href"],
+                            "allowed_once_nodes": ["disposition", "filters"],
+                            "child_nodes": {
+                                "href":
+                                    {"expected_type": types.StringTypes,
+                                     "process": lambda s: s.process_act_href,
+                                     "not_empty": True},
+                                "disposition":
+                                    {"expected_type": types.StringTypes,
+                                     "process": lambda s: s.process_act_disp,
+                                     "not_empty": True},
+                                "filters":
+                                    {"expected_type": dict,
+                                     "allowed_nodes": ["*"],
+                                     "child_nodes":
+                                         {"*": {"expected_type": LIST_OR_STR,
+                                                "process": lambda s:
+                                                    s.process_act_type,
+                                                "not_empty": True}}}
+                            }}}}
         }
     }
 
@@ -279,6 +307,38 @@ class WebappSpec(Spec):
                              "value. `type` may only contain 'web', 'trusted', "
                              "or 'certified'.",
                              "Found value: '%s'" % node,
+                             self.MORE_INFO])
+
+    def process_act_href(self, node):
+        if not self._path_valid(node, can_be_absolute=True,
+                                can_be_relative=True):
+            self.err.error(
+                err_id=("spec", "webapp", "act_href_path"),
+                error="Activity `href` is not a valid path.",
+                description=["The `href` value for an activity must be a an "
+                             "absolute URL to the application cache manifest.",
+                             "Found: %s" % node,
+                             self.MORE_INFO])
+
+    def process_act_disp(self, node):
+        if node not in ("window", "inline"):
+            self.err.error(
+                err_id=("spec", "webapp", "act_disp"),
+                error="Activity `disposition` is not valid.",
+                description=["The `disposition` value for an activity must be "
+                             "either `window` or `inline`.",
+                             "Found: %s" % node,
+                             self.MORE_INFO])
+
+    def process_act_type(self, node):
+        if (isinstance(node, list) and
+            not all(isinstance(s, types.StringTypes) for s in node)):
+            self.err.error(
+                err_id=("spec", "webapp", "act_type"),
+                error="Activity `type` is not valid.",
+                description=["The `type` value for an activity must either be "
+                             "a string or array of strings.",
+                             "Found: [%s]" % ", ".join(map(str, node)),
                              self.MORE_INFO])
 
     def parse(self, data):

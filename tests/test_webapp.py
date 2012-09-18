@@ -505,3 +505,86 @@ class TestWebapps(TestCase):
         for key in ("web", "trusted", "certified", ):
             yield wrap, self, key
 
+    def test_act_base(self):
+        """Test that the most basic web activity passes."""
+
+        self.data["activities"] = {
+            "foo": {"href": "/foo/bar"}
+        }
+        self.analyze()
+        self.assert_silent()
+
+    def test_act_full(self):
+        """Test that the fullest web activity passes."""
+
+        self.data["activities"] = {
+            "foo": {"href": "/foo/bar",
+                    "disposition": "window",
+                    "filters": {"type": "foo"}},
+            "bar": {"href": "foo/bar",
+                    "disposition": "inline",
+                    "filters": {"whatever": ["foo", "bar"]}}
+        }
+        self.analyze()
+        self.assert_silent()
+
+    def test_act_bad_href(self):
+        """Test that bad activity hrefs are disallowed."""
+
+        self.data["activities"] = {
+            "foo": {"href": "http://foo.bar/asdf",
+                    "disposition": "window",
+                    "filters": {"type": "foo"}}
+        }
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_act_bad_disp(self):
+        """Test that the disposition of an activity is correct."""
+
+        self.data["activities"] = {
+            "foo": {"href": "/foo/bar",
+                    "disposition": "lol not a disposition",
+                    "filters": {"type": "foo"}}
+        }
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_act_bad_filter_type(self):
+        """Test that the filter values are correct."""
+
+        self.data["activities"] = {
+            "foo": {"href": "/foo/bar",
+                    "disposition": "window",
+                    "filters": {"type": 2}}
+        }
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_act_bad_filter_base_type(self):
+        """Test that the filter values are correct."""
+
+        self.data["activities"] = {
+            "foo": {"href": "/foo/bar",
+                    "disposition": "window",
+                    "filters": "this is not a dict"}
+        }
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_act_missing_href(self):
+        """Test that activities require an href."""
+
+        self.data["activities"] = {
+            "foo": {"disposition": "window",
+                    "filters": {"type": "foo"}}
+        }
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_act_root_type(self):
+        """Test that the most basic web activity passes."""
+
+        self.data["activities"] = "wrong type"
+        self.analyze()
+        self.assert_failed(with_errors=True)
