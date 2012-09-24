@@ -415,6 +415,12 @@ class TestWebapps(TestCase):
         self.analyze()
         self.assert_silent()
 
+    def test_orientation_list(self):
+        """Test that the 'orientation' property can be absent."""
+        self.data["orientation"] = ["portrait", "portrait-secondary"]
+        self.analyze()
+        self.assert_silent()
+
     def test_orientation_is_string(self):
         """Test that the 'orientation' property must be a string."""
         self.data["orientation"] = {}
@@ -445,9 +451,27 @@ class TestWebapps(TestCase):
         self.analyze()
         self.assert_failed(with_errors=True)
 
-    def test_orientation_empty_value(self):
-        """Test that 'orientation' cannot have an empty value."""
-        self.data["orientation"] = ""
+    def test_orientation_empty_list(self):
+        """Test that 'orientation' cannot be an empty list."""
+        self.data["orientation"] = []
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_orientation_list_invalid(self):
+        """Test that 'orientation' cannot be a list with invalid values."""
+        self.data["orientation"] = ["fart"]
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_orientation_list_mixed(self):
+        """Test that 'orientation' cannot be a list with mixed values."""
+        self.data["orientation"] = ["portrait", "fart", "landscape"]
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_orientation_list_type(self):
+        """Test that 'orientation' cannot be a list with non-strings."""
+        self.data["orientation"] = ["portrait", 4]
         self.analyze()
         self.assert_failed(with_errors=True)
 

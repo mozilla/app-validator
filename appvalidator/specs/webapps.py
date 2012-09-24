@@ -75,10 +75,8 @@ class WebappSpec(Spec):
                           {"expected_type": LITERAL_TYPE,
                            "process": lambda s: s.process_screen_size}}},
             "required_features": {"expected_type": list},
-            "orientation": {"expected_type": types.StringTypes,
-                            "values": ["portrait", "landscape",
-                                       "portrait-secondary",
-                                       "landscape-secondary"]},
+            "orientation": {"expected_type": LIST_OR_STR,
+                            "process": lambda s: s.process_orientation},
             "fullscreen": {"expected_type": types.StringTypes,
                            "values": ["true", "false"]},
             "appcache_path": {"expected_type": types.StringTypes,
@@ -99,8 +97,7 @@ class WebappSpec(Spec):
                                      "not_empty": True},
                                 "disposition":
                                     {"expected_type": types.StringTypes,
-                                     "process": lambda s: s.process_act_disp,
-                                     "not_empty": True},
+                                     "values": ["window", "inline"]},
                                 "filters":
                                     {"expected_type": dict,
                                      "allowed_nodes": ["*"],
@@ -320,16 +317,6 @@ class WebappSpec(Spec):
                              "Found: %s" % node,
                              self.MORE_INFO])
 
-    def process_act_disp(self, node):
-        if node not in ("window", "inline"):
-            self.err.error(
-                err_id=("spec", "webapp", "act_disp"),
-                error="Activity `disposition` is not valid.",
-                description=["The `disposition` value for an activity must be "
-                             "either `window` or `inline`.",
-                             "Found: %s" % node,
-                             self.MORE_INFO])
-
     def process_act_type(self, node):
         if (isinstance(node, list) and
             not all(isinstance(s, types.StringTypes) for s in node)):
@@ -340,6 +327,68 @@ class WebappSpec(Spec):
                              "a string or array of strings.",
                              "Found: [%s]" % ", ".join(map(str, node)),
                              self.MORE_INFO])
+
+    def process_orientation(self, node):
+        values = [u"portrait", u"landscape", u"portrait-secondary",
+                  u"landscape-secondary"]
+        message = ("The value provided for a webapp's orientation should be "
+                   "either a string or an array of strings.")
+
+        if isinstance(node, types.StringTypes):
+            # The top-level conditional is going to be the type detection.
+            # We don't want to trip our other conditions by mixing
+            # conditionals.
+            if unicode(node) in values:
+                return
+            self.err.error(
+                err_id=("spec", "webapp", "orientation", "str"),
+                error="Webapp `orientation` is not a valid value.",
+                description=[message,
+                             "The value provided was not a recognized value.",
+                             "Recognized values: %s" % ", ".join(values),
+                             self.MORE_INFO])
+        elif isinstance(node, list):
+            if not node:
+                self.err.error(
+                    err_id=("spec", "webapp", "orientation", "listempty"),
+                    error="Webapp `orientation` must contain at least one "
+                          "valid orientation.",
+                    description=["If `orientation` is defined as an array, it "
+                                 "must contain at least one valid value.",
+                                 "Recognized values: %s" % ", ".join(values),
+                                 self.MORE_INFO])
+            for value in node:
+                if not isinstance(value, types.StringTypes):
+                    self.err.error(
+                        err_id=("spec", "webapp", "orientation", "listtype"),
+                        error="Webapp `orientation` array does not contain "
+                              "string values.",
+                        description=[message,
+                                     "When `orientation` is provided as an "
+                                     "array, all of its values must be "
+                                     "strings.",
+                                     "Found value: %s" % value,
+                                     self.MORE_INFO])
+                elif unicode(value) not in values:
+                    self.err.error(
+                        err_id=("spec", "webapp", "orientation", "listval"),
+                        error="Webapp `orientation` array contains invalid "
+                              "values.",
+                        description=[message,
+                                     "The value provided was not a recognized "
+                                     "value.",
+                                     "Recognized values: %s" %
+                                         ", ".join(values),
+                                     self.MORE_INFO])
+        else:
+            self.err.error(
+                err_id=("spec", "webapp", "orientation", "type"),
+                error="Webapp `orientation` is not a valid type.",
+                description=[message,
+                             "The value provided was not a string or an "
+                             "array.",
+                             self.MORE_INFO])
+
 
     def parse(self, data):
         if isinstance(data, types.StringTypes):
@@ -371,4 +420,3 @@ class WebappSpec(Spec):
 
     def get_children(self, node):
         return node.items()
-
