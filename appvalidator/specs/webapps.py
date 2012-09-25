@@ -62,7 +62,8 @@ class WebappSpec(Spec):
                                       "process": lambda s: s.process_iaf,
                                       "not_empty": True},
             "version": {"expected_type": types.StringTypes,
-                        "not_empty": True},
+                        "not_empty": True,
+                        "value_matches": r"^[a-zA-Z0-9_,\*\-\.]+$"},
             "screen_size":
                 {"expected_type": dict,
                  "allowed_once_nodes": ["min_height", "min_width"],

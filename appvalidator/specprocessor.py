@@ -1,3 +1,4 @@
+import re
 import types
 
 
@@ -37,8 +38,10 @@ class Spec(object):
         A boolean value describing whether the string/list/dict can be empty.
     values:
         A list of possible values for the node. Only applies to lists and
-        literal nodes. For lists, each element of the list must belong to the
-        list of possible values.
+        literal nodes.
+    value_matches:
+        If `values` is not set, the value must match this regex. Only applies
+        to string nodes.
     process:
         A lambda function that returns a function to process the node. The
         lambda accepts one parameter (self) and should return a function that
@@ -123,13 +126,30 @@ class Spec(object):
             if "values" in spec_branch and branch not in spec_branch["values"]:
                 self.err.error(
                     err_id=("spec", "iterate", "bad_value"),
-                    error="`%s` contains invalid value in %s" %
-                            (branch_name, self.SPEC_NAME),
+                    error="`%s` contains an invalid value in %s" %
+                          (branch_name, self.SPEC_NAME),
                     description=["A `%s` was encountered while validating a "
                                  "%s containing the value '%s'. This value is "
                                  "not appropriate for this type of element." %
                                      (branch_name, self.SPEC_NAME, branch),
                                  self.MORE_INFO])
+            elif ("value_matches" in spec_branch and
+                  isinstance(branch, types.StringTypes)):
+                raw_pattern = spec_branch.get("value_matches")
+                pattern = re.compile(raw_pattern)
+                if not pattern.match(branch):
+                    self.err.error(
+                        err_id=("spec", "iterate", "value_pattern_fail"),
+                        error="`%s` contains an invalid value in %s" %
+                              (branch_name, self.SPEC_NAME),
+                        description=["A `%s` was encountered while validating "
+                                     "a %s. Its value does not match the "
+                                     "pattern required for `%s`s." %
+                                         (branch_name, self.SPEC_NAME,
+                                          branch_name),
+                                     "Found value: %s" % branch,
+                                     "Pattern: %s" % raw_pattern,
+                                     self.MORE_INFO])
 
             if ("max_length" in spec_branch and
                 len(branch) > spec_branch["max_length"]):

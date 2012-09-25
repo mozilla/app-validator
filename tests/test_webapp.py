@@ -612,3 +612,27 @@ class TestWebapps(TestCase):
         self.data["activities"] = "wrong type"
         self.analyze()
         self.assert_failed(with_errors=True)
+
+    def test_version(self):
+        """Test that the version matches the format that we require."""
+        def wrap(version, passes):
+            self.setUp()
+            self.data["version"] = version
+            self.analyze()
+            if passes:
+                self.assert_silent()
+            else:
+                self.assert_failed(with_errors=True)
+
+        yield wrap, "1.0", True
+        yield wrap, "1.0.1", True
+        yield wrap, "Poop", True
+        yield wrap, "1.0b", True
+        yield wrap, "*.*", True
+        yield wrap, "1.5-alpha", True
+        yield wrap, "1.5_windows", True
+        yield wrap, "1.5_windows,x64", True
+        yield wrap, "Mountain Lion", False
+        yield wrap, "", False
+        for char in "`~!@#$%^&()+=/|\\<>":
+            yield wrap, char * 3, False
