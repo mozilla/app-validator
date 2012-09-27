@@ -1,127 +1,89 @@
 from nose.tools import eq_
-from js_helper import _do_test_raw, _get_var
+
+from js_helper import TestCase
 
 
-def test_boolean_comparison():
-    """Test that true/false are properly compared."""
+class TestBinaryOperators(TestCase):
+    """Test that all of the binary operators in JS work as expected."""
 
-    scope = _do_test_raw("""
-    var a = false < true,
-        b = true > false,
-        c = false > true,
-        d = true < false,
-        e = false < false,
-        f = true < true,
-        g = true == true,
-        h = false == false,
-        i = true > 0,
-        j = true == 1,
-        k = false < 1,
-        l = false == 0;
-    """)
-    eq_(_get_var(scope, "a"), True)
-    eq_(_get_var(scope, "b"), True)
-    eq_(_get_var(scope, "c"), False)
-    eq_(_get_var(scope, "d"), False)
-    eq_(_get_var(scope, "e"), False)
-    eq_(_get_var(scope, "f"), False)
-    eq_(_get_var(scope, "g"), True)
-    eq_(_get_var(scope, "h"), True)
-    eq_(_get_var(scope, "i"), True)
-    eq_(_get_var(scope, "j"), True)
-    eq_(_get_var(scope, "k"), True)
-    eq_(_get_var(scope, "l"), True)
+    def do_expr(self, expr, output):
+        self.setUp()
+        self.run_script("var x = %s" % expr)
+        self.assert_var_eq("x", output)
 
+    def test_boolean_comp(self):
 
-def test_string_comparison():
-    """Test that strings are properly compared."""
+        yield self.do_expr, "false < true", True
+        yield self.do_expr, "true > false", True
+        yield self.do_expr, "false > true", False
+        yield self.do_expr, "true < false", False
+        yield self.do_expr, "false < false", False
+        yield self.do_expr, "true < true", False
+        yield self.do_expr, "true == true", True
+        yield self.do_expr, "false == false", True
+        yield self.do_expr, "true > 0", True
+        yield self.do_expr, "true == 1", True
+        yield self.do_expr, "false < 1", True
+        yield self.do_expr, "false == 0", True
 
-    scope = _do_test_raw("""
-    var a = "string" < "string",
-        b = "astring" < "string",
-        c = "strings" < "stringy",
-        d = "strings" < "stringier",
-        e = "string" < "astring",
-        f = "string" < "strings";
-    """)
-    eq_(_get_var(scope, "a"), False)
-    eq_(_get_var(scope, "b"), True)
-    eq_(_get_var(scope, "c"), True)
-    eq_(_get_var(scope, "d"), False)
-    eq_(_get_var(scope, "e"), False)
-    eq_(_get_var(scope, "f"), True)
+    def test_string_comp(self):
+        yield self.do_expr, '"string" < "string"', False
+        yield self.do_expr, '"astring" < "string"', True
+        yield self.do_expr, '"strings" < "stringy"', True
+        yield self.do_expr, '"strings" < "stringier"', False
+        yield self.do_expr, '"string" < "astring"', False
+        yield self.do_expr, '"string" < "strings"', True
 
-    # We can assume that the converses are true; Spidermonkey makes that easy.
+        # We can assume that the converses are true; Spidermonkey makes that
+        # easy.
 
+    def test_signed_zero_comp(self):
+        yield self.do_expr, "false < true", True
+        yield self.do_expr, "true > false", True
+        yield self.do_expr, "false > true", False
 
-def test_signed_zero():
-    """Test that signed zeroes are compared properly."""
+    def test_signed_zero(self):
+        yield self.do_expr, "0 == 0", True
+        yield self.do_expr, "0 != 0", False
+        yield self.do_expr, "0 == -0", True
+        yield self.do_expr, "0 != -0", False
+        yield self.do_expr, "-0 == 0", True
+        yield self.do_expr, "-0 != 0", False
 
-    scope = _do_test_raw("""
-    var a = 0 == 0,
-        b = 0 != 0,
-        c = 0 == -0,
-        d = 0 != -0,
-        e = -0 == 0,
-        f = -0 != 0;
-    """)
-    eq_(_get_var(scope, "a"), True)
-    eq_(_get_var(scope, "b"), False)
-    eq_(_get_var(scope, "c"), True)
-    eq_(_get_var(scope, "d"), False)
-    eq_(_get_var(scope, "e"), True)
-    eq_(_get_var(scope, "f"), False)
+    def test_typecasting(self):
+        yield self.do_expr, "1 == '1'", True
+        yield self.do_expr, "255 == '0xff'", True
+        yield self.do_expr, "0 == '\\r'", True
 
+    def test_additive_typecasting(self):
+        self.run_script("""
+        var first = true,
+            second = "foo",
+            third = 345;
+        var a = first + second,
+            b = second + first,
+            c = Boolean(true) + String("foo"),
+            d = String("foo") + Boolean(false),
+            e = second + third,
+            f = String("foo") + Number(-100);
+        """)
+        self.assert_var_eq("a", "truefoo")
+        self.assert_var_eq("b", "footrue")
+        self.assert_var_eq("c", "truefoo")
+        self.assert_var_eq("d", "foofalse")
+        self.assert_var_eq("e", "foo345")
+        self.assert_var_eq("f", "foo-100")
 
-def test_typecasting():
-    """Test that types are properly casted."""
-
-    scope = _do_test_raw("""
-    var a = 1 == '1',
-        b = 255 == '0xff',
-        c = 0 == '\\r';
-    """)
-    eq_(_get_var(scope, "a"), True)
-    eq_(_get_var(scope, "b"), True)
-    eq_(_get_var(scope, "c"), True)
-
-
-def test_additive_typecasting():
-    """
-    Test than additive and multiplicative expressions are evaluated properly.
-    """
-    scope = _do_test_raw("""
-    var first = true,
-        second = "foo",
-        third = 345;
-    var a = first + second,
-        b = second + first,
-        c = Boolean(true) + String("foo"),
-        d = String("foo") + Boolean(false),
-        e = second + third,
-        f = String("foo") + Number(-100);
-    """)
-    eq_(_get_var(scope, "a"), "truefoo")
-    eq_(_get_var(scope, "b"), "footrue")
-    eq_(_get_var(scope, "c"), "truefoo")
-    eq_(_get_var(scope, "d"), "foofalse")
-    eq_(_get_var(scope, "e"), "foo345")
-    eq_(_get_var(scope, "f"), "foo-100")
-
-
-def test_addition_expressions():
-    """Test that varying types are added correctly."""
-
-    scope = _do_test_raw("""
-    var a = true + false,
-        b = Boolean(true) + Boolean(false);
-    var x = 100,
-        y = -1;
-    var c = x + y,
-        d = Number(x) + Number(y);
-    """)
-    eq_(_get_var(scope, "a"), 1)
-    eq_(_get_var(scope, "b"), 1)
-    eq_(_get_var(scope, "c"), 99)
-    eq_(_get_var(scope, "d"), 99)
-
+    def test_addition_expressions(self):
+        self.run_script("""
+        var a = true + false,
+            b = Boolean(true) + Boolean(false);
+        var x = 100,
+            y = -1;
+        var c = x + y,
+            d = Number(x) + Number(y);
+        """)
+        self.assert_var_eq("a", 1)
+        self.assert_var_eq("b", 1)
+        self.assert_var_eq("c", 99)
+        self.assert_var_eq("d", 99)

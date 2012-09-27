@@ -2,14 +2,13 @@ import json
 
 from mock import MagicMock, patch
 
-from js_helper import _do_test_raw
+from js_helper import TestCase
 from appvalidator.errorbundle import ErrorBundle
 import appvalidator.testcases.scripting as scripting
 import appvalidator.testcases.javascript.spidermonkey as spidermonkey
 
 
 def test_scripting_enabled():
-
     err = ErrorBundle()
     err.save_resource("SPIDERMONKEY", None)
     assert scripting.test_js_file(err, "abc def", "foo bar") is None
@@ -17,21 +16,23 @@ def test_scripting_enabled():
 
 @patch("appvalidator.testcases.scripting.SPIDERMONKEY_INSTALLATION", None)
 def test_scripting_disabled():
-    "Ensures that Spidermonkey is not run if it is set to be disabled"
+    """Ensures that Spidermonkey is not run if it is set to be disabled."""
     err = ErrorBundle()
     assert scripting.test_js_file(err, "abc def", "foo bar") is None
 
 
-def test_scripting_snippet():
-    "Asserts that JS snippets are treated equally"
+class TestSnippets(TestCase):
+    """Test that JS snippets are treated as first-class citizens."""
 
-    err = ErrorBundle()
-    scripting.test_js_snippet(err, "alert(1 + 1 == 2)", "bar.zap")
-    assert not err.failed()
+    def test_scripting_snippet(self):
+        self.setup_err()
+        scripting.test_js_snippet(self.err, "alert(1 + 1 == 2)", "bar.zap")
+        self.assert_silent()
 
-    err = ErrorBundle()
-    scripting.test_js_snippet(err, "eval('foo');", "bar.zap")
-    assert err.failed()
+    def test_scripting_snippet(self):
+        self.setup_err()
+        scripting.test_js_snippet(self.err, "eval('foo');", "bar.zap")
+        self.assert_failed()
 
 
 @patch("subprocess.Popen")
@@ -54,14 +55,3 @@ def test_reflectparse_presence(Popen):
             "Spidermonkey version too old; 1.8pre+ required; "
             "error='ReferenceError: Reflect is not defined'; "
             "spidermonkey='[path]'")
-
-
-def test_compiletime_errors():
-    "Tests that compile time errors don't break the validator"
-
-    # Syntax error
-    assert _do_test_raw("var x =;").failed()
-
-    # Reference error
-    assert _do_test_raw("x - y = 4;").failed()
-

@@ -55,3 +55,10 @@ class TestSyntax(TestCase):
         yield test, 0.1, "0.1"
         yield test, None, ""
 
+    def test_syntax_error(self):
+        self.run_script("var x =;")
+        self.assert_failed()
+
+    def test_reference_error(self):
+        self.run_script("x - y = 4;")
+        self.assert_failed()

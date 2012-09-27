@@ -1,94 +1,97 @@
 from nose.tools import eq_
-from js_helper import _do_test_raw, _get_var
+
+from js_helper import TestCase
 
 
-def test_multiple_assignments():
-    "Tests that multiple variables can be assigned in one sitting"
+class TestAssignments(TestCase):
 
-    results = _do_test_raw("""
-    var x = 1, y = 2, z = 3;
-    """)
-    assert not results.failed()
-    assert _get_var(results, "x") == 1
-    assert _get_var(results, "y") == 2
-    assert _get_var(results, "z") == 3
+    def test_multiple_assignments(self):
+        """Tests that multiple variables can be assigned in one sitting."""
 
+        self.run_script("""
+        var x = 1, y = 2, z = 3;
+        """)
+        self.assert_silent()
+        self.assert_var_eq("x", 1)
+        self.assert_var_eq("y", 2)
+        self.assert_var_eq("z", 3)
 
-def test_arraypattern_assignment():
-    "Tests that array patterns can be used to assign variables"
+    def test_arraypattern_assignment(self):
+        """Tests that array patterns can be used to assign variables."""
 
-    results = _do_test_raw("""
-    var [x, y, z] = [1, 2, 3];
-    """)
-    assert not results.failed()
-    assert _get_var(results, "x") == 1
-    assert _get_var(results, "y") == 2
-    assert _get_var(results, "z") == 3
+        self.run_script("""
+        var [x, y, z] = [1, 2, 3];
+        """)
+        self.assert_silent()
+        self.assert_var_eq("x", 1)
+        self.assert_var_eq("y", 2)
+        self.assert_var_eq("z", 3)
 
+    def test_objectpattern_assignment(self):
+        """Tests that ObjectPatterns are respected."""
 
-def test_objectpattern_assignment():
-    "Tests that ObjectPatterns are respected"
+        self.run_script("""
+        var foo = {a:3,b:4,c:5};
+        var {a:x, b:y, c:z} = foo;
+        """)
+        self.assert_silent()
+        self.assert_var_eq("x", 3)
+        self.assert_var_eq("y", 4)
+        self.assert_var_eq("z", 5)
 
-    results = _do_test_raw("""
-    var foo = {a:3,b:4,c:5};
-    var {a:x, b:y, c:z} = foo;
-    """)
-    assert not results.failed()
-    assert _get_var(results, "x") == 3
-    assert _get_var(results, "y") == 4
-    assert _get_var(results, "z") == 5
+    def test_objectpattern_nested(self):
+        """Test that nested ObjectPattern assignments are respected."""
 
-    results = _do_test_raw("""
-    var foo = {
-        a:1,
-        b:2,
-        c:{
-            d:4
-        }
-    };
-    var {a:x, c:{d:y}} = foo;
-    """)
-    assert not results.failed()
-    assert _get_var(results, "x") == 1
-    assert _get_var(results, "y") == 4
-
-
-def test_lazy_object_member_assgt():
-    """
-    Test that members of lazy objects can be assigned, even if the lazy object
-    hasn't yet been created.
-    """
-
-    results = _do_test_raw("""
-    foo.bar = "asdf";
-    zap.fizz.buzz = 123;
-    var a = foo.bar,
-        b = zap.fizz.buzz;
-    """)
-    assert not results.failed()
-    eq_(_get_var(results, "a"), "asdf")
-    eq_(_get_var(results, "b"), 123)
+        self.run_script("""
+        var foo = {
+            a:1,
+            b:2,
+            c:{
+                d:4
+            }
+        };
+        var {a:x, c:{d:y}} = foo;
+        """)
+        self.assert_silent()
+        self.assert_var_eq("x", 1)
+        self.assert_var_eq("y", 4)
 
 
-def test_prototype_array_instantiation():
-    """
-    Test that JSPrototypes and JSArrays handle deep instantiation properly.
-    """
+class TestNestedAssignments(TestCase):
 
-    results = _do_test_raw("""
-    var x = {};
-    x.prototype.foo.bar = "asdf";
-    var y = [];
-    y.a.b.c.d = 123;
-    """)
-    # Don't care about the output, just testing for tracebacks.
+    def test_lazy_object_member_assgt(self):
+        """
+        Test that members of lazy objects can be assigned, even if the lazy
+        object hasn't yet been created.
+        """
 
+        self.run_script("""
+        foo.bar = "asdf";
+        zap.fizz.buzz = 123;
+        var a = foo.bar,
+            b = zap.fizz.buzz;
+        """)
+        self.assert_silent()
+        self.assert_var_eq("a", "asdf")
+        self.assert_var_eq("b", 123)
 
-def test_this_tracebacks():
-    """Test to make sure `this` doesn't generate tracebacks."""
+    def test_prototype_array_instantiation(self):
+        """
+        Test that JSPrototypes and JSArrays handle deep instantiation properly.
+        """
 
-    results = _do_test_raw("""
-    var x = this;
-    """);
-    # The output is irrelevant for now.
+        self.run_script("""
+        var x = {};
+        x.prototype.foo.bar = "asdf";
+        var y = [];
+        y.a.b.c.d = 123;
+        """)
+        # Don't care about the output, just testing for tracebacks.
 
+    def test_this_tracebacks(self):
+        """Test to make sure `this` doesn't generate tracebacks."""
+
+        self.run_script("""
+        var x = this;
+        """);
+        # The output is irrelevant for now.

@@ -1,260 +1,170 @@
 import math
 
-from js_helper import _do_test_scope, _do_test_raw
+from js_helper import TestCase
 
 
 INFINITY = float('inf')
 NEG_INFINITY = float('-inf')
 
 
-def test_abs():
-    """Test that the abs() function works properly."""
-    _do_test_scope("""
-    var a = Math.abs(-5),
-        b = Math.abs(5),
-        c = Math.abs(-Infinity);
-    """, {"a": 5,
-          "b": 5,
-          "c": INFINITY})
+class TestMathFuncs(TestCase):
 
-def test_exp():
-    """Test that the exp() function works properly."""
-    _do_test_scope("""
-    var a = Math.exp(null),
-        b = Math.exp(1) == Math.E,
-        c = Math.exp(false),
-        d = Math.exp('1') == Math.E,
-        e = Math.exp('0'),
-        f = Math.exp(0),
-        g = Math.exp(-0),
-        h = Math.exp(Infinity) == Infinity,
-        i = Math.exp(-Infinity) == 0;
+    def do_func(self, func):
+        def wrap(params, output):
+            self.do_expr("Math.%s(%s)" % (func, params), output)
+        return wrap
 
-    """, {"a": 1,
-          "b": True,
-          "c": 1,
-          "d": True,
-          "e": 1,
-          "f": 1,
-          "g": 1,
-          "h": True,
-          "i": True})
+    def do_expr(self, expr, output):
+        self.setUp()
+        self.run_script("var x = %s" % expr)
+        self.assert_var_eq("x", output)
 
+    def test_abs(self):
+        """Test that the abs() function works properly."""
 
-def test_ceil():
-    """Test that the feil() function works properly."""
-    _do_test_scope("""
-    var a = Math.ceil(null),
-        b = Math.ceil(void 0),
-        c = Math.ceil(true),
-        d = Math.ceil(false),
-        e = Math.ceil('1.1'),
-        f = Math.ceil('-1.1'),
-        g = Math.ceil('0.1'),
-        h = Math.ceil('-0.1'),
-        i = Math.ceil(0),
-        // j = Math.ceil(-0),
-        k = Math.ceil(-0) == -Math.floor(0),
-        l = Math.ceil(Infinity),
-        m = Math.ceil(Infinity) == -Math.floor(-Infinity),
-        n = Math.ceil(-Infinity),
-        o = Math.ceil(0.0000001),
-        p = Math.ceil(-0.0000001);
-    """, {"a": 0,
-          "b": 0,
-          "c": 1,
-          "d": 0,
-          "e": 2,
-          "f": -1,
-          "g": 1,
-          "h": 0,
-          "i": 0,
-          # "j": -0,
-          "k": True,
-          "l": INFINITY,
-          "m": True,
-          "n": NEG_INFINITY,
-          "o": 1,
-          "p": 0})
+        yield self.do_func("abs"), "-5", 5
+        yield self.do_func("abs"), "5", 5
+        yield self.do_func("abs"), "-Infinity", INFINITY
 
+    def test_exp(self):
+        """Test that the exp() function works properly."""
 
-def test_floor():
-    """Test that the floor() function works properly."""
-    _do_test_scope("""
-    var a = Math.floor(null),
-        b = Math.floor(void 0),
-        c = Math.floor(true),
-        d = Math.floor(false),
-        e = Math.floor('1.1'),
-        f = Math.floor('-1.1'),
-        g = Math.floor('0.1'),
-        h = Math.floor('-0.1'),
-        i = Math.floor(0),
-        // j = Math.floor(-0),
-        k = Math.floor(-0) == -Math.ceil(0),
-        l = Math.floor(Infinity),
-        m = Math.floor(Infinity) == -Math.ceil(-Infinity),
-        n = Math.floor(-Infinity),
-        o = Math.floor(0.0000001),
-        p = Math.floor(-0.0000001);
-    """, {"a": 0,
-          "b": 0,
-          "c": 1,
-          "d": 0,
-          "e": 1,
-          "f": -2,
-          "g": 0,
-          "h": -1,
-          "i": 0,
-          # "j": -0,
-          "k": True,
-          "l": INFINITY,
-          "m": True,
-          "n": NEG_INFINITY,
-          "o": 0,
-          "p": -1})
+        yield self.do_func("exp"), "null", 1
+        yield self.do_func("exp"), "false", 1
+        yield self.do_expr, "Math.exp(1) == Math.E", True
+        yield self.do_expr, "Math.exp('1') == Math.E", True
+        yield self.do_func("exp"), "'0'", 1
+        yield self.do_func("exp"), "0", 1
+        yield self.do_func("exp"), "-0", 1
+        yield self.do_expr, "Math.exp(Infinity) == Infinity", True
+        yield self.do_expr, "Math.exp(-Infinity) == 0", True
 
+    def test_ceil(self):
+        """Test that the ceil() function works properly."""
 
-def test_trig():
-    """Test the trigonometric functions."""
+        yield self.do_func("ceil"), "null", 0
+        yield self.do_func("ceil"), "void 0", 0
+        yield self.do_func("ceil"), "true", 1
+        yield self.do_func("ceil"), "false", 0
+        yield self.do_func("ceil"), "'1.1'", 2
+        yield self.do_func("ceil"), "'-1.1'", -1
+        yield self.do_func("ceil"), "'0.1'", 1
+        yield self.do_func("ceil"), "'-0.1'", 0
+        yield self.do_func("ceil"), "0", 0
+        # "j": -0,
+        yield self.do_expr, "Math.ceil(-0) == -Math.floor(0)", True
+        yield self.do_func("ceil"), "Infinity", INFINITY
+        yield (self.do_expr, "Math.ceil(Infinity) == -Math.floor(-Infinity)",
+               True)
+        yield self.do_func("ceil"), "-Infinity", NEG_INFINITY
+        yield self.do_func("ceil"), "0.0000001", 1
+        yield self.do_func("ceil"), "-0.0000001", 0
 
-    _do_test_scope("""
-    var pi = Math.PI;
-    var cos_a = Math.cos(0),
-        cos_b = Math.cos(Math.PI);
-    var sin_a = Math.sin(0),
-        sin_b = Math.sin(Math.PI);
-    var tan_a = Math.tan(0),
-        tan_b = Math.tan(Math.PI / 4);
-    var acos_a = Math.acos(0) == Math.PI / 2,
-        acos_b = Math.acos(1),
-        acos_c = Math.acos(-1) == Math.PI;
-    var asin_a = Math.asin(0),
-        asin_b = Math.asin(1) == Math.PI / 2,
-        asin_c = Math.asin(-1) == Math.PI / -2;
-    var atan_a = Math.atan(0),
-        atan_b = Math.atan(1) == Math.PI / 4,
-        atan_c = Math.atan(Infinity) == Math.PI / 2;
-    var atan2_a = Math.atan2(1, 0) == Math.PI / 2,
-        atan2_b = Math.atan2(0, 0),
-        atan2_c = Math.atan2(0, -1) == Math.PI;
-    """, {"cos_a": 1,
-          "cos_b": -1,
-          "sin_a": 0,
-          "sin_b": 0,
-          "tan_a": 0,
-          "tan_b": 1,
-          "acos_a": True,
-          "acos_b": 0,
-          "acos_c": True,
-          "asin_a": 0,
-          "asin_b": True,
-          "asin_c": True,
-          "atan_a": 0,
-          "atan_b": True,
-          "atan_c": True,
-          "atan2_a": True,
-          "atan2_b": 0,
-          "atan2_c": True})
+    def test_floor(self):
+        """Test that the floor() function works properly."""
 
+        yield self.do_func("floor"), "null", 0
+        yield self.do_func("floor"), "void 0", 0
+        yield self.do_func("floor"), "true", 1
+        yield self.do_func("floor"), "false", 0
+        yield self.do_func("floor"), "'1.1'", 1
+        yield self.do_func("floor"), "'-1.1'", -2
+        yield self.do_func("floor"), "'0.1'", 0
+        yield self.do_func("floor"), "'-0.1'", -1
+        yield self.do_func("floor"), "0", 0
+        # "j": -0,
+        yield self.do_expr, "Math.floor(-0) == -Math.ceil(0)", True
+        yield self.do_func("floor"), "Infinity", INFINITY
+        yield (self.do_expr, "Math.floor(Infinity) == -Math.ceil(-Infinity)",
+               True)
+        yield self.do_func("floor"), "-Infinity", NEG_INFINITY
+        yield self.do_func("floor"), "0.0000001", 0
+        yield self.do_func("floor"), "-0.0000001", -1
 
-def test_sqrt():
-    """Test that the sqrt() function works properly."""
+    def test_trig(self):
+        """Test the trigonometric functions."""
 
-    _do_test_scope("""
-    var a = Math.sqrt(10),
-        b = Math.sqrt(4),
-        c = Math.sqrt(3*3 + 4*4) == 5;
-    """, {"a": round(math.sqrt(10), 5),
-          "b": 2,
-          "c": True})
+        yield self.do_func("cos"), "0", 1
+        yield self.do_func("cos"), "Math.PI", -1
+        yield self.do_func("sin"), "0", 0
+        yield self.do_func("sin"), "Math.PI", 0
+        yield self.do_func("tan"), "0", 0
+        yield self.do_func("tan"), "Math.PI / 4", 1
 
+        yield self.do_func("acos"), "1", 0
+        yield self.do_func("asin"), "0", 0
+        yield self.do_func("atan"), "0", 0
 
-def test_round():
-    """Test that the round() function works properly."""
+        yield self.do_expr, "Math.acos(0) == Math.PI / 2", True
+        yield self.do_expr, "Math.acos(-1) == Math.PI", True
+        yield self.do_expr, "Math.asin(1) == Math.PI / 2", True
+        yield self.do_expr, "Math.asin(-1) == Math.PI / -2", True
+        yield self.do_expr, "Math.atan(1) == Math.PI / 4", True
+        yield self.do_expr, "Math.atan(Infinity) == Math.PI / 2", True
 
-    _do_test_scope("""
-    var a = Math.round('0.99999'),
-        b = Math.round(0),
-        c = Math.round(0.49),
-        d = Math.round(0.5),
-        e = Math.round(0.51),
-        f = Math.round(-0.49),
-        g = Math.round(-0.5),
-        h = Math.round(-0.51),
-        i = Math.round(Infinity) == Infinity,
-        j = Math.round(-Infinity) == -Infinity;
-    """, {"a": 1,
-          "b": 0,
-          "c": 0,
-          "d": 1,
-          "e": 1,
-          "f": 0,
-          "g": 0,
-          "h": -1,
-          "i": True,
-          "j": True})
+        yield self.do_expr, "Math.atan2(1, 0) == Math.PI / 2", True
+        yield self.do_func("atan2"), "0, 0", 0
+        yield self.do_expr, "Math.atan2(0, -1) == Math.PI", True
 
+    def test_sqrt(self):
+        """Test that the sqrt() function works properly."""
 
-def test_random():
-    """Test that the random() function works "properly"."""
+        yield self.do_func("sqrt"), "10", round(math.sqrt(10), 5)
+        yield self.do_func("sqrt"), "4", 2
+        yield self.do_func("sqrt"), "3 * 3 + 4 * 4", 5
 
-    _do_test_scope("""
-    var r = Math.random();
-    """, {"r": 0.5})
+    def test_round(self):
+        """Test that the round() function works properly."""
 
+        yield self.do_func("round"), "'0.99999'", 1
+        yield self.do_func("round"), "0", 0
+        yield self.do_func("round"), "0.49", 0
+        yield self.do_func("round"), "0.5", 1
+        yield self.do_func("round"), "0.51", 1
+        yield self.do_func("round"), "-0.49", 0
+        yield self.do_func("round"), "-0.5", 0
+        yield self.do_func("round"), "-0.51", -1
+        yield self.do_expr, "Math.round(Infinity) == Infinity", True
+        yield self.do_expr, "Math.round(-Infinity) == -Infinity", True
 
-def test_pow():
-    """Test that the pow() function works properly."""
+    def test_random(self):
+        """Test that the random() function works "properly"."""
 
-    _do_test_scope("""
-    var a = Math.pow(true, false),
-        b = Math.pow(2, 32),
-        c = Math.pow(1.0000001, Infinity),
-        d = Math.pow(1.0000001, -Infinity),
-        e = Math.pow(123, 0);
-    """, {"a": 1,
-          "b": 4294967296,
-          "c": INFINITY,
-          "d": 0,
-          "e": 1})
+        yield self.do_func("random"), "", 0.5
 
+    def test_pow(self):
+        """Test that the pow() function works properly."""
 
-def test_log():
-    """Test that the log() function works properly."""
+        yield self.do_func("pow"), "true, false", 1
+        yield self.do_func("pow"), "2, 32", 4294967296
+        yield self.do_func("pow"), "1.0000001, Infinity", INFINITY
+        yield self.do_func("pow"), "1.0000001, -Infinity", 0
+        yield self.do_func("pow"), "123, 0", 1
 
-    _do_test_scope("""
-    var a = Math.log(1),
-        b = Math.log(0),
-        c = Math.log(Infinity),
-        d = Math.log(-1);
-    """, {"a": 0,
-          "b": NEG_INFINITY,
-          "c": INFINITY,
-          "d": None})
+    def test_log(self):
+        """Test that the log() function works properly."""
 
+        yield self.do_func("log"), "1", 0
+        yield self.do_func("log"), "0", NEG_INFINITY
+        yield self.do_func("log"), "Infinity", INFINITY
+        yield self.do_func("log"), "-1", None
 
-def test_min_max():
-    """Test that the min() and max() function works properly."""
+    def test_min_max(self):
+        """Test that the min() and max() function works properly."""
 
-    _do_test_scope("""
-    var min_a = Math.min(Infinity, -Infinity),
-        min_b = Math.min(1, -1);
-    var max_a = Math.max(Infinity, -Infinity),
-        max_b = Math.max(1, -1);
-    """, {"min_a": NEG_INFINITY,
-          "min_b": -1,
-          "max_a": INFINITY,
-          "max_b": 1})
+        yield self.do_func("min"), "Infinity, -Infinity", NEG_INFINITY
+        yield self.do_func("min"), "1, -1", -1
+        yield self.do_func("max"), "Infinity, -Infinity", INFINITY
+        yield self.do_func("max"), "1, -1", 1
 
+    def test_math_infinity(self):
+        """Test for known tracebacks regarding math."""
 
-def test_math_infinity():
-    """Test for known tracebacks regarding math."""
-    _do_test_raw("""
-    var x = Infinity;
-    x >>= 10;
-    var y = Infinity;
-    var z = 10 >> y;
-    """)
-    # We really don't care about the output here.
+        self.run_script("""
+        var x = Infinity;
+        x >>= 10;
+        var y = Infinity;
+        var z = 10 >> y;
+        """)
 
+        # We really don't care about the output here.

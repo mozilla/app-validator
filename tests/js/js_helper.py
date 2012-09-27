@@ -86,5 +86,10 @@ class TestCase(helper.TestCase):
         Assert that the value of a variable from the final script context
         contains the value specified.
         """
-        eq_(self.get_var(name), value)
+        val = self.get_var(name)
+        if isinstance(val, float):
+            val *= 100000
+            val = round(val)
+            val /= 100000
 
+        eq_(val, value)

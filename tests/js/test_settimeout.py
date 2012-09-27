@@ -1,44 +1,28 @@
-from js_helper import _do_test_raw
+from js_helper import TestCase
 
 
-def test_settimeout_fail():
-    "Test cases in which setTimeout should fail"
+class TestSetTimeout(TestCase):
 
-    assert _do_test_raw("""
-    setTimeout("abc.def()", 1000);
-    """).failed()
+    def do_run(self, script, fails):
+        self.setUp()
+        self.run_script(script)
+        if fails:
+            self.assert_failed()
+        else:
+            self.assert_silent()
 
-    assert _do_test_raw("""
-    window["set" + "Timeout"]("abc.def()", 1000);
-    """).failed()
+    def test_failures(self):
+        yield self.do_run, 'setTimeout("abc.def()", 1000);', True
+        yield (self.do_run, 'window["set" + "Timeout"]("abc.def()", 1000);',
+               True)
+        yield self.do_run, 'var x = "foo.bar()";setTimeout(x, 1000);', True
+        yield (self.do_run,
+               'var x = "foo.bar()";window["set" + "Timeout"](x, 1000);', True)
 
-    assert _do_test_raw("""
-    var x = "foo.bar()";
-    setTimeout(x, 1000);
-    """).failed()
-
-    assert _do_test_raw("""
-    var x = "foo.bar()";
-    window["set" + "Timeout"](x, 1000);
-    """).failed()
-
-
-def test_settimeout_pass():
-    "Test cases in which setTimeout should be allowed"
-
-    assert not _do_test_raw("""
-    setTimeout(function(){foo.bar();}, 1000);
-    """).failed()
-
-    assert not _do_test_raw("""
-    window["set" + "Timeout"](function(){foo.bar();}, 1000);
-    """).failed()
-
-    assert not _do_test_raw("""
-    setTimeout();
-    """).failed()
-
-    assert not _do_test_raw("""
-    window["set" + "Timeout"]();
-    """).failed()
-
+    def test_successes(self):
+        yield self.do_run, 'setTimeout(function(){foo.bar();}, 1000);', False
+        yield (self.do_run,
+               'window["set" + "Timeout"](function(){foo.bar();}, 1000);',
+               False)
+        yield self.do_run, 'setTimeout();', False
+        yield self.do_run, 'window["set" + "Timeout"]();', False

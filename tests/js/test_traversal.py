@@ -70,4 +70,3 @@ class TestFunctionTraversal(TestCase):
         }
         """)
         self.assert_var_eq("foo", "second")
-
