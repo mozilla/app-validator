@@ -1,5 +1,5 @@
 import appvalidator.testcases.javascript.jstypes as jstypes
-from js_helper import _do_test_raw
+from js_helper import TestCase
 
 
 def test_jsarray_output():
@@ -48,26 +48,31 @@ def test_jsarray_recursion():
     assert "(recursion)" in ja.get_literal_value()
 
 
-def test_jsliteral_regex():
-    """
-    Test that there aren't tracebacks from JSLiterals that perform raw binary
-    operations.
-    """
-    assert not _do_test_raw("""
-    var x = /foo/gi;
-    var y = x + " ";
-    var z = /bar/i + 0;
-    """).failed()
+class TestTracebacks(TestCase):
+    """Run all the things that use to make stuff crash."""
+
+    def test_jsliteral_regex(self):
+        """
+        Test that there aren't tracebacks from JSLiterals that perform raw binary
+        operations.
+        """
+        self.run_script("""
+        var x = /foo/gi;
+        var y = x + " ";
+        var z = /bar/i + 0;
+        """)
+        self.assert_silent()
 
 
-def test_jsarray_contsructor():
-    """
-    Test for tracebacks that were caused by JSArray not calling it's parent's
-    constructor.
-    """
-    assert not _do_test_raw("""
-    var x = [];
-    x.foo = "bar";
-    x["zap"] = "foo";
-    baz("zap" in x);
-    """).failed()
+    def test_jsarray_contsructor(self):
+        """
+        Test for tracebacks that were caused by JSArray not calling it's parent's
+        constructor.
+        """
+        self.run_script("""
+        var x = [];
+        x.foo = "bar";
+        x["zap"] = "foo";
+        baz("zap" in x);
+        """)
+        self.assert_silent()

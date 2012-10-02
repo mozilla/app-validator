@@ -6,7 +6,7 @@ from nose.tools import eq_, nottest, raises
 from appvalidator.specs.webapps import WebappSpec
 import appvalidator.testcases.scripting
 import appvalidator.unicodehelper
-from helper import TestCase
+from js.js_helper import TestCase
 
 
 class TestControlChars(TestCase):

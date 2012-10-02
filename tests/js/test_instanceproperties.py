@@ -1,6 +1,6 @@
 from mock import patch
 
-from js_helper import _do_test_raw, TestCase
+from js_helper import TestCase
 
 
 def _mock_html_error(self, *args, **kwargs):

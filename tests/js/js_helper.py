@@ -1,48 +1,46 @@
 import sys
+import types
 
+from nose import SkipTest
 from nose.tools import eq_
 
 from .. import helper
 from ..helper import MockXPI
+from appvalidator.constants import SPIDERMONKEY_INSTALLATION
 from appvalidator.errorbundle import ErrorBundle
 from appvalidator.errorbundle.outputhandlers.shellcolors import OutputHandler
 import appvalidator.testcases.content
-import appvalidator.testcases.scripting
-appvalidator.testcases.scripting.traverser.DEBUG = True
+import appvalidator.testcases.scripting as scripting
+
+scripting.traverser.DEBUG = True
 
 
-def _do_test_raw(script, path="foo.js"):
-    "Performs a test on a JS file"
+def uses_js(func):
+    if SPIDERMONKEY_INSTALLATION is None:
+        raise SkipTest("Not running JS tests.")
 
-    err = ErrorBundle(instant=True)
-    err.handler = OutputHandler(sys.stdout, True)
+    if func:
+        try:
+            setattr(func, "js", True)
+        except Exception:
+            # If Python >2.7 squaks about methods being bound, just work around
+            # the nonsense.
+            setattr(func.__func__, "js", True)
 
-    appvalidator.testcases.content._process_file(err, MockXPI(), path, script)
-    if err.final_context is not None:
-        print err.final_context.output()
-
-    return err
-
-
-def _get_var(err, name):
-    return err.final_context.data[name].get_literal_value()
-
-
-def _do_test_scope(script, vars):
-    """Test the final scope of a script against a set of variables."""
-    scope = _do_test_raw(script)
-    for var, value in vars.items():
-        print "Testing %s" % var
-        var_val = _get_var(scope, var)
-        if isinstance(var_val, float):
-            var_val *= 100000
-            var_val = round(var_val)
-            var_val /= 100000
-        eq_(var_val, value)
+    return func
 
 
 class TestCase(helper.TestCase):
     """A TestCase object with specialized functions for JS testing."""
+
+    def __init__(self, *args, **kwargs):
+        super(TestCase, self).__init__(*args, **kwargs)
+        for method in filter(callable, (getattr(self, m) for m in dir(self))):
+            if not method.__name__.startswith("test_"):
+                continue
+            uses_js(method)
+
+        uses_js(None)
 
     def setUp(self):
         self.file_path = "foo.js"

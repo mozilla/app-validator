@@ -1,9 +1,12 @@
 ﻿# -*- coding: utf-8 -*-
+from mock import patch
 from nose.tools import eq_
 
 import appvalidator.testcases.markup.markuptester as markuptester
 from appvalidator.errorbundle import ErrorBundle
 from appvalidator.constants import *
+
+from js.js_helper import uses_js
 
 
 def _test_xul(path, should_fail=False, type_=None):
@@ -213,6 +216,8 @@ def test_dom_mutation():
     <foo><bar ondomattrmodified="" /></foo>
     """, "foo.xul", should_fail=True)
 
+
+@uses_js
 def test_proper_line_numbers():
     """Test that the proper line numbers are passed to test_js_snippet."""
 
@@ -228,7 +233,8 @@ def test_proper_line_numbers():
     eq_(warning["line"], 3);
 
 
-def test_script_scraping():
+@patch('appvalidator.testcases.scripting.test_js_snippet')
+def test_script_scraping(tjs):
     """Test that the scripts in a document are collected properly."""
 
     err = ErrorBundle()
@@ -242,4 +248,4 @@ def test_script_scraping():
     </doc>
     """, "xul")
 
-    assert err.failed()
+    assert tjs.called
