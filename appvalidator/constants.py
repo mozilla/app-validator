@@ -21,19 +21,18 @@ MAX_RESOURCE_SIZE = 2 * 1024 * 1024
 # Graciously provided by @kumar in bug 614574
 if (not SPIDERMONKEY_INSTALLATION or
     not os.path.exists(SPIDERMONKEY_INSTALLATION)):
-    for p in os.environ.get('PATH', '').split(':'):
+    for p in os.environ.get("PATH", "").split(":"):
         SPIDERMONKEY_INSTALLATION = os.path.join(p, "js")
-        if os.path.exists(os.path.join(p, SPIDERMONKEY_INSTALLATION)):
+        if os.path.exists(SPIDERMONKEY_INSTALLATION):
             break
 
 if not os.path.exists(SPIDERMONKEY_INSTALLATION):
-
-    ############ Edit this to change the Spidermonkey location #############
     SPIDERMONKEY_INSTALLATION = "/usr/bin/js"
 
-    if not os.path.exists(SPIDERMONKEY_INSTALLATION):
-        # The fallback is simply to disable JS tests.
-        SPIDERMONKEY_INSTALLATION = None
+# The fallback is simply to disable JS tests.
+if (not os.path.exists(SPIDERMONKEY_INSTALLATION) or
+    os.environ.get("TRAVIS", "") == "true"):
+    SPIDERMONKEY_INSTALLATION = None
 
 try:
     from constants_local import *
