@@ -1,3 +1,6 @@
+from nose.tools import eq_
+
+from appvalidator.constants import MAX_STR_SIZE
 from js_helper import TestCase
 
 
@@ -67,3 +70,30 @@ class TestBasicStrings(TestCase):
         self.assert_silent()
         self.assert_var_eq("x", "44")
         self.assert_var_eq("y", 16)
+
+    def test_max_str_size_aug_assig(self):
+        """
+        Test that the max string size is enforced for augmented assignment.
+        """
+
+        # Create a string and max out its size.
+        self.run_script("""
+        var x = "%s";
+        x += x;
+        x += x;
+        """ % ("x" * (MAX_STR_SIZE / 2)))
+        self.assert_silent()
+        eq_(len(self.get_var("x")), MAX_STR_SIZE)
+
+    def test_max_str_size_binop(self):
+        """Test that the max string size is enforced for binary operators."""
+
+        # Create a string and max out its size.
+        self.run_script("""
+        var x = "%s";
+        x = x + x;
+        x = x + x;
+        """ % ("x" * (MAX_STR_SIZE / 2)))
+        self.assert_silent()
+        eq_(len(self.get_var("x")), MAX_STR_SIZE)
+

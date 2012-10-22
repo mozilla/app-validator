@@ -16,6 +16,9 @@ BUGZILLA_BUG = "https://bugzilla.mozilla.org/show_bug.cgi?id=%d"
 
 DEFAULT_TIMEOUT = 60
 
+# The maximum size of any string in JS analysis.
+MAX_STR_SIZE = 1024 * 24  # 24KB
+
 MAX_RESOURCE_SIZE = 2 * 1024 * 1024
 
 # Graciously provided by @kumar in bug 614574

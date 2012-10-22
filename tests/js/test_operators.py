@@ -219,3 +219,18 @@ class TestMath(TestCase):
         self.assert_var_eq("b", "-Infinityfoo")
         self.assert_var_eq("c", "fooInfinity")
         self.assert_var_eq("d", "foo-Infinity")
+
+    def test_simple_operators_when_dirty(self):
+        """
+        Test that when we're dealing with dirty objects, binary operations don't
+        cave in the roof.
+
+        Note that this test (if it fails) may cause some ugly crashes.
+        """
+
+        self.run_script("""
+        var x = foo();  // x is now a dirty object.
+        y = foo();  // y is now a dirty object as well.
+        """ +
+        """y += y + x;""" * 100)  # This bit makes the validator's head explode.
+
