@@ -636,3 +636,50 @@ class TestWebapps(TestCase):
         yield wrap, "", False
         for char in "`~!@#$%^&()+=/|\\<>":
             yield wrap, char * 3, False
+
+    def set_permissions(self):
+        """Fill out the permissions node with every possible permission."""
+        self.data["permissions"] = {}
+        for perm in WebappSpec.PERMISSIONS:
+            self.data["permissions"][perm] = {
+                "description": "Required to make things good."
+            }
+            if perm in WebappSpec.PERMISSIONS_ACCESS:
+                self.data["permissions"][perm]["access"] = (
+                    WebappSpec.PERMISSIONS_ACCESS[perm][0])
+
+    def test_permissions_full(self):
+        self.set_permissions()
+        self.analyze()
+        self.assert_silent()
+
+    def test_permissions_extra_invalid(self):
+        self.set_permissions()
+        self.data["permissions"]["foo"] = {"description": "lol"}
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_permissions_missing_desc(self):
+        self.set_permissions()
+        self.data["permissions"]["alarm"] = {}
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_permissions_missing_access(self):
+        self.set_permissions()
+        del self.data["permissions"]["contacts"]["access"]
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_permissions_invalid_access(self):
+        self.set_permissions()
+        self.data["permissions"]["contacts"]["access"] = "asdf"
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_permissions_wrong_access(self):
+        self.set_permissions()
+        # This access type isn't available for the `settings` permission.
+        self.data["permissions"]["settings"]["access"] = "createonly"
+        self.analyze()
+        self.assert_failed(with_errors=True)

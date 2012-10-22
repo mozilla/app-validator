@@ -14,9 +14,23 @@ class WebappSpec(Spec):
     """This object parses and subsequently validates webapp manifest files."""
 
     SPEC_NAME = "Web App Manifest"
-    MORE_INFO = ("You can find more information at %s" %
-                     "https://developer.mozilla.org/en/OpenWebApps/The_Manifest")
+    MORE_INFO = ("You can find more information at "
+                 "https://developer.mozilla.org/en/OpenWebApps/The_Manifest")
     MIN_REQUIRED_ICON_SIZE = 128
+
+    PERMISSIONS = ("alarm", "backgroundservice", "bluetooth", "browser",
+                   "camera", "contacts", "desktop-notification",
+                   "device-storage", "fmradio", "geolocation",
+                   "mobileconnection", "power", "push", "settings", "sms",
+                   "storage", "systemclock", "network-http", "network-tcp",
+                   "telephony", "wake-lock-screen", "webapps-manage", "wifi")
+    PERMISSIONS_ACCESS = {
+        "contacts": ("readonly", "readwrite", "readcreate", "createonly"),
+        "device-storage":
+            ("readonly", "readwrite", "readcreate", "createonly"),
+        "settings": ("readonly", "readwrite"),
+    }
+
     SPEC = {
         "expected_type": dict,
         "required_nodes": ["name", "description"],
@@ -25,7 +39,7 @@ class WebappSpec(Spec):
                                "default_locale", "installs_allowed_from",
                                "version", "screen_size", "required_features",
                                "orientation", "fullscreen", "appcache_path",
-                               "type", "activities"],
+                               "type", "activities", "permissions"],
         "allowed_nodes": ["developer"],
         "disallowed_nodes": ["widget"],
         "child_nodes": {
@@ -84,30 +98,51 @@ class WebappSpec(Spec):
                               "process": lambda s: s.process_appcache_path},
             "type": {"expected_type": types.StringTypes,
                      "process": lambda s: s.process_type},
-            "activities":
-                {"expected_type": dict,
-                 "allowed_nodes": ["*"],
-                 "child_nodes":
-                     {"*": {"expected_type": dict,
-                            "required_nodes": ["href"],
-                            "allowed_once_nodes": ["disposition", "filters"],
-                            "child_nodes": {
-                                "href":
-                                    {"expected_type": types.StringTypes,
+            "activities": {
+                "expected_type": dict,
+                "allowed_nodes": ["*"],
+                "child_nodes": {
+                    "*": {
+                        "expected_type": dict,
+                        "required_nodes": ["href"],
+                        "allowed_once_nodes": ["disposition", "filters"],
+                        "child_nodes": {
+                            "href": {"expected_type": types.StringTypes,
                                      "process": lambda s: s.process_act_href,
                                      "not_empty": True},
-                                "disposition":
-                                    {"expected_type": types.StringTypes,
-                                     "values": ["window", "inline"]},
-                                "filters":
-                                    {"expected_type": dict,
-                                     "allowed_nodes": ["*"],
-                                     "child_nodes":
-                                         {"*": {"expected_type": LIST_OR_STR,
-                                                "process": lambda s:
-                                                    s.process_act_type,
-                                                "not_empty": True}}}
-                            }}}}
+                            "disposition": {"expected_type": types.StringTypes,
+                                            "values": ["window", "inline"]},
+                            "filters": {
+                                "expected_type": dict,
+                                "allowed_nodes": ["*"],
+                                "child_nodes":
+                                    {"*": {"expected_type": LIST_OR_STR,
+                                           "process":
+                                               lambda s: s.process_act_type,
+                                           "not_empty": True}}
+                            }
+                        }
+                    }
+                }
+            },
+            "permissions": {
+                "allowed_nodes": PERMISSIONS,
+                "expected_type": dict,
+                "child_nodes": {
+                    "*": {
+                        "expected_type": dict,
+                        "required_nodes": ["description"],
+                        "allowed_once_nodes": ["access"],
+                        "child_nodes": {
+                            "description": {"expected_type": types.StringTypes,
+                                            "not_empty": True},
+                            "access": {"expected_type": types.StringTypes,
+                                       "not_empty": True}
+                        }
+                    }
+                },
+                "process": lambda s: s.process_permissions
+            }
         }
     }
 
@@ -390,6 +425,36 @@ class WebappSpec(Spec):
                              "array.",
                              self.MORE_INFO])
 
+    def process_permissions(self, node):
+        for permission, per_node in node.items():
+            if permission not in self.PERMISSIONS_ACCESS:
+                continue
+
+            if "access" not in per_node:
+                self.err.error(
+                    err_id=("spec", "webapp", "permission", "missing_access"),
+                    error="Webapp permission missing `access` node.",
+                    description=["The permission '%s' requires that an "
+                                 "`access` node be provided in addition to a "
+                                 "`description` node." % permission,
+                                 "Access values for this permission: %s" %
+                                     ", ".join(
+                                         self.PERMISSIONS_ACCESS[permission]),
+                                 self.MORE_INFO])
+                continue
+
+            access_value = per_node.get("access")
+            if access_value not in self.PERMISSIONS_ACCESS[permission]:
+                self.err.error(
+                    err_id=("spec", "webapp", "permission", "bad_access"),
+                    error="Webapp permission missing `access` node.",
+                    description=["The permission '%s' was given an invalid "
+                                 "`access` node value." % permission,
+                                 "Valid values: %s" %
+                                     ", ".join(
+                                         self.PERMISSIONS_ACCESS[permission]),
+                                 "Found value: %s" % access_value,
+                                 self.MORE_INFO])
 
     def parse(self, data):
         if isinstance(data, types.StringTypes):
