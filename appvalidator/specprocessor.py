@@ -29,6 +29,8 @@ class Spec(object):
         A list of nodes that are allowed only once.
     allowed_nodes:
         A list of nodes that are allowed multiple times.
+    unknown_node_level:
+        The message type to return when an unknown node is encountered.
     child_nodes:
         A dict of node definitions for nodes that can exist within this node.
     max_length:
@@ -63,6 +65,14 @@ class Spec(object):
         self.data = self.parse(data)
         self.err = err
 
+        self.err_map = {"error": self.err.error,
+                        "warning": self.err.warning,
+                        "notice": self.err.notice}
+
+    def _message(self, type_, *args, **kwargs):
+        kwargs[type_] = kwargs.pop("message")
+        self.err_map[type_](*args, **kwargs)
+
     def validate(self):
         # Validate the root node.
         root_name, root_node = self.get_root_node(self.data)
@@ -80,7 +90,6 @@ class Spec(object):
         We expect this function to return a tuple:
         ("Root Node Name", root_node)
         """
-        pass
 
     def has_attribute(self, node, key): pass
     def get_attribute(self, node, key): pass
@@ -277,12 +286,12 @@ class Spec(object):
 
             # If the child isn't allowed, throw an error.
             if child_name not in allowed_nodes and "*" not in allowed_nodes:
-                self.err.error(
+                self._message(
+                    spec_branch.get("unknown_node_level", "error"),
                     err_id=("spec", "iterate", "not_allowed"),
-                    error="`%s` is not a recognized element within a %s" %
-                            (child_name, self.SPEC_NAME),
+                    message="`%s` is not a recognized element within a %s" %
+                                (child_name, self.SPEC_NAME),
                     description=["While iterating a %s, a `%s` was found "
                                  "within a %s, which is not valid." %
                                      (self.SPEC_NAME, child_name, branch_name),
                                  self.MORE_INFO])
-

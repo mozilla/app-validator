@@ -128,6 +128,7 @@ class WebappSpec(Spec):
             "permissions": {
                 "allowed_nodes": PERMISSIONS,
                 "expected_type": dict,
+                "unknown_node_level": "warning",
                 "child_nodes": {
                     "*": {
                         "expected_type": dict,
