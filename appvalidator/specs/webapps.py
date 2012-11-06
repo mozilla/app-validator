@@ -39,7 +39,7 @@ class WebappSpec(Spec):
                                "default_locale", "installs_allowed_from",
                                "version", "screen_size", "required_features",
                                "orientation", "fullscreen", "appcache_path",
-                               "type", "activities", "permissions"],
+                               "type", "activities", "permissions", "csp"],
         "allowed_nodes": ["developer"],
         "disallowed_nodes": ["widget"],
         "child_nodes": {
@@ -143,7 +143,9 @@ class WebappSpec(Spec):
                     }
                 },
                 "process": lambda s: s.process_permissions
-            }
+            },
+            "csp": {"expected_type": types.StringTypes,
+                    "not_empty": True},
         }
     }
 

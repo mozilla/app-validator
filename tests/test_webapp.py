@@ -683,3 +683,8 @@ class TestWebapps(TestCase):
         self.data["permissions"]["settings"]["access"] = "createonly"
         self.analyze()
         self.assert_failed(with_errors=True)
+
+    def test_csp(self):
+        self.data['csp'] = 'this is the csp policy. it can be a string.'
+        self.analyze()
+        self.assert_silent()
