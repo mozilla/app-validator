@@ -152,13 +152,13 @@ class TestWebapps(TestCase):
         """Test that unknown elements are flagged"""
         self.data["foobar"] = "hello"
         self.analyze()
-        self.assert_failed(with_errors=True)
+        self.assert_failed(with_warnings=True)
 
     def test_warn_extra_keys(self):
         """Test that extra keys are flagged."""
         self.data["locales"]["es"]["foo"] = "hello"
         self.analyze()
-        self.assert_failed(with_errors=True)
+        self.assert_failed(with_warnings=True)
 
     def test_icons_not_dict(self):
         """Test that the icons property is a dictionary."""
@@ -232,7 +232,7 @@ class TestWebapps(TestCase):
         # Banned locale element.
         self.data["locales"]["es"]["default_locale"] = "foo"
         self.analyze()
-        self.assert_failed(with_errors=True)
+        self.assert_failed(with_warnings=True)
 
     def test_invalid_locale_keys_missing(self):
         """Test that locales aren't missing any required elements."""
@@ -377,7 +377,7 @@ class TestWebapps(TestCase):
         """Test that the 'screen_size' keys are correct."""
         self.data["screen_size"]["max_width"] = "500"
         self.analyze()
-        self.assert_failed(with_errors=True)
+        self.assert_failed(with_warnings=True)
 
     def test_bad_screen_size_value(self):
         """Test that the 'screen_size' keys are correct."""

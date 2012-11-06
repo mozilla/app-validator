@@ -287,7 +287,7 @@ class Spec(object):
             # If the child isn't allowed, throw an error.
             if child_name not in allowed_nodes and "*" not in allowed_nodes:
                 self._message(
-                    spec_branch.get("unknown_node_level", "error"),
+                    spec_branch.get("unknown_node_level", "warning"),
                     err_id=("spec", "iterate", "not_allowed"),
                     message="`%s` is not a recognized element within a %s" %
                                 (child_name, self.SPEC_NAME),
