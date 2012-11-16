@@ -1,6 +1,0 @@
-<?xml version="1.0"?>
-<dialog
-	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul">
-	<iframe src="http://foo.bar"></iframe>
-	
-</dialog>

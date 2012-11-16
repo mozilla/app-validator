@@ -3,11 +3,8 @@ import simplejson as json
 import types
 import urlparse
 
-from ..constants import DEFAULT_WEBAPP_MRKT_URLS
+from ..constants import DESCRIPTION_TYPES
 from ..specprocessor import Spec, LITERAL_TYPE
-
-
-LIST_OR_STR = types.StringTypes + (list, tuple, )
 
 
 class WebappSpec(Spec):
@@ -90,7 +87,7 @@ class WebappSpec(Spec):
                           {"expected_type": LITERAL_TYPE,
                            "process": lambda s: s.process_screen_size}}},
             "required_features": {"expected_type": list},
-            "orientation": {"expected_type": LIST_OR_STR,
+            "orientation": {"expected_type": DESCRIPTION_TYPES,
                             "process": lambda s: s.process_orientation},
             "fullscreen": {"expected_type": types.StringTypes,
                            "values": ["true", "false"]},
@@ -116,7 +113,7 @@ class WebappSpec(Spec):
                                 "expected_type": dict,
                                 "allowed_nodes": ["*"],
                                 "child_nodes":
-                                    {"*": {"expected_type": LIST_OR_STR,
+                                    {"*": {"expected_type": DESCRIPTION_TYPES,
                                            "process":
                                                lambda s: s.process_act_type,
                                            "not_empty": True}}
@@ -270,6 +267,11 @@ class WebappSpec(Spec):
 
     def process_iaf(self, node):
         market_urls = set()
+
+        # Import the constants that are overwritten by the call to the
+        # validator in Zamboni.
+        from ..validate import constants
+
         for index, item in enumerate(node):
             name = "`installs_allowed_from[%d]`" % index
             if not isinstance(item, types.StringTypes):
@@ -289,8 +291,8 @@ class WebappSpec(Spec):
                                  "conform to this requirement." % name,
                                  "Found: %s" % item,
                                  self.MORE_INFO])
-            elif (item.startswith("http://") and
-                  "https://%s" % item[7:] in DEFAULT_WEBAPP_MRKT_URLS):
+            elif (item.startswith("http://") and "https://%s" % item[7:] in
+                      constants.DEFAULT_WEBAPP_MRKT_URLS):
                 self.err.error(
                     err_id=("spec", "webapp", "iaf_bad_mrkt_protocol"),
                     error="Marketplace URL must use HTTPS.",
@@ -301,7 +303,7 @@ class WebappSpec(Spec):
                                  "`https://` to correct this issue.",
                                  "Found: %s" % item,
                                  self.MORE_INFO])
-            elif item == "*" or item in DEFAULT_WEBAPP_MRKT_URLS:
+            elif item == "*" or item in constants.DEFAULT_WEBAPP_MRKT_URLS:
                 market_urls.add(item)
 
         if self.err.get_resource("listed") and not market_urls:
@@ -311,8 +313,8 @@ class WebappSpec(Spec):
                 description="To be included on %s, a webapp needs to include "
                             "%s or '*' (wildcard) as an element in the "
                             "`installs_allowed_from` property." %
-                                (DEFAULT_WEBAPP_MRKT_URLS[0],
-                                 ", ".join(DEFAULT_WEBAPP_MRKT_URLS)))
+                                (constants.DEFAULT_WEBAPP_MRKT_URLS[0],
+                                 ", ".join(constants.DEFAULT_WEBAPP_MRKT_URLS)))
 
     def process_screen_size(self, node):
         if not node.isdigit():

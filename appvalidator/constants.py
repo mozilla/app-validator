@@ -2,6 +2,7 @@
 
 import json
 import os
+import types
 
 # Package type constants.
 PACKAGE_ANY = 0
@@ -15,6 +16,8 @@ DEFAULT_WEBAPP_MRKT_URLS = ["https://marketplace.firefox.com",
 BUGZILLA_BUG = "https://bugzilla.mozilla.org/show_bug.cgi?id=%d"
 
 DEFAULT_TIMEOUT = 60
+
+DESCRIPTION_TYPES = types.StringTypes + (list, tuple)
 
 # The maximum size of any string in JS analysis.
 MAX_STR_SIZE = 1024 * 24  # 24KB

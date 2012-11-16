@@ -4,7 +4,7 @@ import types
 from . import actions
 from .jstypes import *
 from .nodedefinitions import DEFINITIONS, E4X_NODES
-from .predefinedentities import GLOBAL_ENTITIES, BANNED_IDENTIFIERS
+from .predefinedentities import GLOBAL_ENTITIES
 
 
 DEBUG = False
@@ -251,7 +251,7 @@ class Traverser(object):
 
         if "dangerous" in entity:
             dang = entity["dangerous"]
-            if dang and not isinstance(dang, types.LambdaType):
+            if dang and not callable(dang):
                 self._debug("DANGEROUS")
                 self.err.warning(
                     ("js", "traverser", "dangerous_global"),

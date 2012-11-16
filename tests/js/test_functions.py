@@ -3,71 +3,6 @@ from nose.tools import eq_
 from js_helper import TestCase
 
 
-class TestCreateElement(TestCase):
-
-    def test_pass(self):
-        "Tests that createElement and createElementNS throw errors."
-
-        self.run_script("""
-        var x = foo;
-        foo.bar.whateverElement("script");
-        """)
-        self.assert_silent()
-
-    def test_create_split(self):
-        self.run_script("""
-        var x = foo;
-        foo.bar.createElement("scr"+"ipt");
-        """)
-        self.assert_failed(with_warnings=True)
-
-    def test_create_case(self):
-        # Part of bug 636835
-        self.run_script("""
-        var x = foo;
-        foo.bar.createElement("scRipt");
-        """)
-        self.assert_failed(with_warnings=True)
-
-    def test_create_ns(self):
-        self.run_script("""
-        var x = foo;
-        foo.bar.createElementNS("http://foo.bar/", "asdf:" +"scr"+"ipt");
-        """)
-        self.assert_failed(with_warnings=True)
-
-    def test_create_compiled(self):
-        self.run_script("""
-        let scr = "scr";
-        scr += "ipt";
-        foo.bar.createElement(scr);
-        """)
-        self.assert_failed(with_warnings=True)
-
-    def test_create_other(self):
-        self.run_script("""
-        document.createElement("style");
-        function x(doc) {
-            doc.createElement("style");
-        }""")
-        self.assert_silent()
-
-    def test_create_split_other(self):
-        self.run_script("""
-        document.createElement("sty"+"le");
-        var x = "sty";
-        x += "le";
-        document.createElement(x);
-        """)
-        self.assert_silent()
-
-    def test_create_noop(self):
-        # Also test an empty call (tests for tracebacks)
-        self.run_script("""
-        document.createElement();
-        """)
-
-
 class TestXHR(TestCase):
 
     def test_synchronous_xhr(self):
@@ -87,29 +22,6 @@ class TestXHR(TestCase):
         x.send(null);
         """)
         self.assert_failed()
-
-
-class TestLoadOverlay(TestCase):
-
-    def test_empty(self):
-        self.run_script("""document.loadOverlay();""")
-        self.assert_failed()
-
-    def test_name(self):
-        self.run_script("""document.loadOverlay("foobar");""")
-        self.assert_failed()
-
-    def test_chrome(self):
-        self.run_script("""document.loadOverlay("chrome:foo/bar/");""")
-        self.assert_silent()
-
-    def test_compiled_chrome(self):
-        self.run_script("""document.loadOverlay("chr" + "ome:foo/bar/");""")
-        self.assert_silent()
-
-    def test_resource(self):
-        self.run_script("""document.loadOverlay("resource:foo/bar/");""")
-        self.assert_silent()
 
 
 class TestScope(TestCase):

@@ -1,6 +1,5 @@
 import math
 import re
-import types
 
 import actions
 import traverser as js_traverser
@@ -26,7 +25,7 @@ def string_global(wrapper, arguments, traverser):
 def array_global(wrapper, arguments, traverser):
     output = JSArray()
     if arguments:
-        output.elements = [traverser._traverse_node(a) for a in arguments]
+        output.elements = map(traverser._traverse_node, arguments)
     return JSWrapper(output, traverser=traverser)
 
 
@@ -35,12 +34,9 @@ def number_global(wrapper, arguments, traverser):
         return JSWrapper(0, traverser=traverser)
     arg = traverser._traverse_node(arguments[0])
     try:
-        value = float(arg.get_literal_value())
+        return float(arg.get_literal_value())
     except (ValueError, TypeError):
-        return traverser._build_global(
-                name="NaN",
-                entity=predefinedentities.GLOBAL_ENTITIES[u"NaN"])
-    return JSWrapper(value, traverser=traverser)
+        return actions.get_NaN(traverser)
 
 
 def boolean_global(wrapper, arguments, traverser):
@@ -71,7 +67,7 @@ def python_wrap(func, args, nargs=False):
         return literal
 
     def wrap(wrapper, arguments, traverser):
-        passed_args = [traverser._traverse_node(a) for a in arguments]
+        passed_args = map(traverser._traverse_node, arguments)
 
         params = []
         if not nargs:
@@ -107,7 +103,7 @@ def python_wrap(func, args, nargs=False):
 
 def math_log(wrapper, arguments, traverser):
     """Return a better value than the standard python log function."""
-    args = [traverser._traverse_node(a) for a in arguments]
+    args = map(traverser._traverse_node, arguments)
     if not args:
         return JSWrapper(0, traverser=traverser)
 
@@ -129,7 +125,7 @@ def math_random(wrapper, arguments, traverser):
 
 def math_round(wrapper, arguments, traverser):
     """Return a better value than the standard python round function."""
-    args = [traverser._traverse_node(a) for a in arguments]
+    args = map(traverser._traverse_node, arguments)
     if not args:
         return JSWrapper(0, traverser=traverser)
 
@@ -143,43 +139,3 @@ def math_round(wrapper, arguments, traverser):
         arg += 0.0000000000000001
     arg = round(arg)
     return JSWrapper(arg, traverser=traverser)
-
-
-def js_wrap(wrapper, arguments, traverser):
-    """Return the wrapped variant of an unwrapped JSObject."""
-    if not arguments:
-        traverser._debug("WRAP:NO ARGS")
-        return
-
-    traverser._debug("WRAPPING OBJECT")
-    obj = traverser._traverse_node(arguments[0])
-    if obj.value is None:
-        traverser._debug("WRAPPING OBJECT>>NOTHING TO WRAP")
-        return JSWrapper(JSObject(), traverser=traverser)
-
-    if obj.is_global:
-        obj.value["is_unwrapped"] = False
-    else:
-        obj.value.is_unwrapped = False
-
-    return obj
-
-
-def js_unwrap(wrapper, arguments, traverser):
-    """Return the unwrapped variant of an unwrapped JSObject."""
-    if not arguments:
-        traverser._debug("UNWRAP:NO ARGS")
-        return
-
-    traverser._debug("UNWRAPPING OBJECT")
-    obj = traverser._traverse_node(arguments[0])
-    if obj.value is None:
-        traverser._debug("UNWRAPPING OBJECT>>NOTHING TO UNWRAP")
-        return JSWrapper(JSObject(unwrapped=True), traverser=traverser)
-
-    if obj.is_global:
-        obj.value["is_unwrapped"] = True
-    else:
-        obj.value.is_unwrapped = True
-
-    return obj

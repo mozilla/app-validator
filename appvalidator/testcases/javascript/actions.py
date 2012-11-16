@@ -3,7 +3,8 @@ import math
 import re
 import types
 
-from appvalidator.constants import BUGZILLA_BUG, MAX_STR_SIZE
+from appvalidator.constants import (BUGZILLA_BUG, DESCRIPTION_TYPES,
+                                    MAX_STR_SIZE)
 import spidermonkey
 import instanceactions
 import instanceproperties
@@ -46,8 +47,7 @@ def _get_member_exp_property(traverser, node):
 def _expand_globals(traverser, node):
     """Expands a global object that has a lambda value."""
 
-    if (node.is_global and
-        isinstance(node.value.get("value"), types.LambdaType)):
+    if node.is_global and callable(node.value.get("value")):
 
         result = node.value["value"](t=traverser)
         if isinstance(result, dict):
@@ -90,7 +90,6 @@ def trace_member(traverser, node, instantiate=False):
                 return base
 
         identifier = _get_member_exp_property(traverser, node)
-        test_identifier(traverser, identifier)
 
         traverser._debug("MEMBER_EXP>>PROPERTY: %s" % identifier)
         output = base.get(
@@ -100,7 +99,6 @@ def trace_member(traverser, node, instantiate=False):
 
     elif node["type"] == "Identifier":
         traverser._debug("MEMBER_EXP>>ROOT:IDENTIFIER")
-        test_identifier(traverser, node["name"])
 
         # If we're supposed to instantiate the object and it doesn't already
         # exist, instantitate the object.
@@ -115,21 +113,6 @@ def trace_member(traverser, node, instantiate=False):
         traverser._debug("MEMBER_EXP>>ROOT:EXPRESSION")
         # It's an expression, so just try your damndest.
         return traverser._traverse_node(node)
-
-
-def test_identifier(traverser, name):
-    "Tests whether an identifier is banned"
-
-    import predefinedentities
-    if name in predefinedentities.BANNED_IDENTIFIERS:
-        traverser.err.warning(
-            err_id=("js", "actions", "banned_identifier"),
-            warning="Banned or deprecated JavaScript Identifier",
-            description=predefinedentities.BANNED_IDENTIFIERS[name],
-            filename=traverser.filename,
-            line=traverser.line,
-            column=traverser.position,
-            context=traverser.context)
 
 
 def _function(traverser, node):
@@ -347,26 +330,7 @@ def _call_expression(traverser, node):
 
     member = traverser._traverse_node(node["callee"])
 
-    if (traverser.filename.startswith("defaults/preferences/") and
-        ("name" not in node["callee"] or
-         node["callee"]["name"] not in (u"pref", u"user_pref"))):
-
-        traverser.err.warning(
-            err_id=("testcases_javascript_actions",
-                    "_call_expression",
-                    "complex_prefs_defaults_code"),
-            warning="Complex code should not appear in preference defaults "
-                    "files",
-            description="Calls to functions other than 'pref' and 'user_pref' "
-                        "should not appear in defaults/preferences/ files.",
-            filename=traverser.filename,
-            line=traverser.line,
-            column=traverser.position,
-            context=traverser.context)
-
-    if (member.is_global and
-        "dangerous" in member.value and
-        isinstance(member.value["dangerous"], types.LambdaType)):
+    if member.is_global and callable(member.value.get("dangerous")):
 
         dangerous = member.value["dangerous"]
         t = traverser._traverse_node
@@ -380,8 +344,7 @@ def _call_expression(traverser, node):
                         "called_dangerous_global"),
                 warning="`%s` called in potentially dangerous manner" %
                             member.value["name"],
-                description=result if isinstance(result, (types.StringTypes,
-                                                          list, tuple)) else
+                description=result if isinstance(result, DESCRIPTION_TYPES) else
                             "The global `%s` function was called using a set "
                             "of dangerous parameters. Calls of this nature "
                             "are deprecated." % member.value["name"],
@@ -406,54 +369,6 @@ def _call_expression(traverser, node):
         return member.value["return"](wrapper=member, arguments=args,
                                       traverser=traverser)
     return JSWrapper(JSObject(), dirty=True, traverser=traverser)
-
-
-def _call_settimeout(a, t, e):
-    """
-    Handler for setTimeout and setInterval. Should determine whether a[0]
-    is a lambda function or a string. Strings are banned, lambda functions are
-    ok. Since we can't do reliable type testing on other variables, we flag
-    those, too.
-    """
-
-    if a and a[0]["type"] != "FunctionExpression":
-        return ("In order to prevent vulnerabilities, the setTimeout "
-                "and setInterval functions should be called only with "
-                "function expressions as their first argument.",
-                "Variables referencing function names are acceptable "
-                "but deprecated as they are not amenable to static "
-                "source validation.")
-
-
-def _call_create_pref(a, t, e):
-    """
-    Handler for pref() and user_pref() calls in defaults/preferences/*.js files
-    to ensure that they don't touch preferences outside of the "extensions."
-    branch.
-    """
-
-    if not t.im_self.filename.startswith("defaults/preferences/") or len(a) == 0:
-        return
-
-    value = str(t(a[0]).get_literal_value())
-
-    from predefinedentities import BANNED_PREF_BRANCHES, BANNED_PREF_REGEXPS
-    for banned in BANNED_PREF_BRANCHES:
-        if value.startswith(banned):
-            return ("Extensions should not alter preferences in the '%s' "
-                    "preference branch" % banned)
-
-    for banned in BANNED_PREF_REGEXPS:
-        if re.match(banned, value):
-            return ("Extensions should not alter preferences matching /%s/"
-                        % banned)
-
-    if not value.startswith("extensions.") or value.rindex(".") < len("extensions."):
-        return ("Extensions should not alter preferences outside of the "
-                "'extensions.' preference branch. Please make sure that "
-                "all of your extension's preferences are prefixed with "
-                "'extensions.add-on-name.', where 'add-on-name' is a "
-                "distinct string unique to and indicative of your add-on.")
 
 
 def _expression(traverser, node):
@@ -499,9 +414,6 @@ def _ident(traverser, node):
     "Initiates an object lookup on the traverser based on an identifier token"
 
     name = node["name"]
-
-    # Ban bits like "newThread"
-    test_identifier(traverser, name)
 
     if traverser._is_defined(name):
         return traverser._seek_variable(name)
@@ -578,7 +490,7 @@ def _expr_assignment(traverser, node):
         traverser._debug("ASSIGNMENT:DIRECT:GLOB_OVERWRITE %s" %
                              global_overwrite)
 
-        if isinstance(readonly_value, types.LambdaType):
+        if callable(readonly_value):
             # The readonly attribute supports a lambda function that accepts
             readonly_value(t=traverser, r=right, rn=node["right"])
 

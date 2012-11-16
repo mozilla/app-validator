@@ -1,4 +1,3 @@
-import types
 import instanceproperties
 
 
@@ -31,7 +30,7 @@ class JSObject(object):
 
         if name in self.data:
             output = self.data[name]
-            if isinstance(output, types.LambdaType):
+            if callable(output):
                 output = output()
         elif instantiate:
             output = JSWrapper(JSObject(), dirty=True, traverser=traverser)
@@ -86,7 +85,7 @@ class JSObject(object):
 
         output_dict = {}
         for key in self.data.keys():
-            if isinstance(self.data[key], types.LambdaType):
+            if callable(self.data[key]):
                 continue
             elif (isinstance(self.data[key], JSWrapper) and
                   self.data[key].value == self):
@@ -194,7 +193,7 @@ class JSWrapper(object):
             self.context = value.context
             # const does not carry over on reassignment
             return self
-        elif isinstance(value, types.LambdaType):
+        elif callable(value):
             value = value(t=traverser)
 
         if not isinstance(value, dict):
@@ -232,7 +231,7 @@ class JSWrapper(object):
                 return output
 
             def _evaluate_lambdas(node):
-                if isinstance(node, types.LambdaType):
+                if callable(node):
                     return _evaluate_lambdas(node(t=traverser))
                 else:
                     return node

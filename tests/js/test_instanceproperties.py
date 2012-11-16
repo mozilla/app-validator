@@ -24,7 +24,6 @@ class TestHTML(TestCase):
         for decl in (True, False, ):
             yield test, self, decl, '"<div></div>"', False
             yield test, self, decl, '"<div onclick=\\"foo\\"></div>"', True
-            yield test, self, decl, '"x" + y', True
             yield test, self, decl, '<a href="javascript:alert();">', True
             yield test, self, decl, '"<script>"', True
 
@@ -43,7 +42,6 @@ class TestHTML(TestCase):
         for decl in (True, False, ):
             yield test, self, decl, '"<div></div>"', False
             yield test, self, decl, '"<div onclick=\\"foo\\"></div>"', True
-            yield test, self, decl, '"x" + y', True
 
     @patch("appvalidator.testcases.markup.markuptester.MarkupParser.process",
            _mock_html_error)
@@ -66,7 +64,7 @@ class TestHTML(TestCase):
         self.run_script("""
         x.innerHTML = foo();
         """)
-        self.assert_failed()
+        self.assert_silent()
 
 
 class TestOnProperties(TestCase):

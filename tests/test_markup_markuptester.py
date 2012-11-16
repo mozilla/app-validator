@@ -16,7 +16,8 @@ def _test_xul(path, should_fail=False, type_=None):
                         type_)
 
 
-def _test_xul_raw(data, path, should_fail=False, type_=None):
+def _test_xul_raw(data, path, should_fail=False, should_fail_csp=None,
+                  type_=None):
     filename = path.split("/")[-1]
     extension = filename.split(".")[-1]
 
@@ -30,9 +31,18 @@ def _test_xul_raw(data, path, should_fail=False, type_=None):
     print err.print_summary(verbose=True)
 
     if should_fail:
-        assert err.failed()
+        assert any(m for m in (err.errors + err.warnings) if
+                   m["id"][0] != "csp")
     else:
-        assert not err.failed()
+        assert not any(m for m in (err.errors + err.warnings) if
+                       m["id"][0] != "csp")
+
+    if should_fail_csp == True:
+        assert any(m for m in (err.errors + err.warnings) if
+                   m["id"][0] == "csp")
+    elif should_fail_csp == False:
+        assert not any(m for m in (err.errors + err.warnings) if
+                       m["id"][0] == "csp")
 
     return err
 
@@ -67,11 +77,6 @@ def test_xml_file():
     "Tests a package with a valid XML file."
 
     _test_xul("tests/resources/markup/markuptester/pass.xml")
-
-
-def test_xul_file():
-    "Tests a package with a valid XUL file."
-    _test_xul("tests/resources/markup/markuptester/pass.xul")
 
 
 def test_xml_bad_nesting():
@@ -150,24 +155,8 @@ def test_html_ignore_comment():
     _test_xul("tests/resources/markup/markuptester/ignore_comments.html")
 
 
-# Temporarily commented out because there are no CSS tests for the app
-# validator (yet).
-
-#def test_html_css_style():
-#    "Tests that CSS within an element is passed to the CSS tester"
-#    _test_xul("tests/resources/markup/markuptester/css_style.html", True)
-#
-#
-#def test_html_css_inline():
-#    "Tests that inline CSS is passed to the CSS tester"
-#    _test_xul("tests/resources/markup/markuptester/css_inline.html", True)
-
-
 def test_invalid_markup():
     "Tests an markup file that is simply broken."
-
-    # Test for the banned test element
-    _test_xul("tests/resources/markup/markuptester/bad_banned.xml", True)
 
     result = _test_xul("tests/resources/markup/markuptester/bad.xml", True)
     assert result.warnings
@@ -193,28 +182,20 @@ def test_self_closing_scripts():
     """, "foo.xul")
 
 
-def test_dom_mutation():
-    """Test that DOM mutation events are warned against."""
+def test_script_attrs():
+    """Test that script attributes are warned against."""
 
     _test_xul_raw("""
     <foo><bar onzap="" /></foo>
-    """, "foo.xul")
-
-    _test_xul_raw("""
-    <foo><bar ondomattrmodified="" /></foo>
-    """, "foo.xul", should_fail=True)
+    """, "foo.xul", should_fail_csp=True)
 
 
 def test_dom_mutation():
-    """Test that DOM mutation events are warned against."""
-
-    _test_xul_raw("""
-    <foo><bar onzap="" /></foo>
-    """, "foo.xul")
-
+    """Test that DOM mutation events are warned against. This should fail both
+    the standard tests as well as the CSP tests."""
     _test_xul_raw("""
     <foo><bar ondomattrmodified="" /></foo>
-    """, "foo.xul", should_fail=True)
+    """, "foo.xul", should_fail=True, should_fail_csp=True)
 
 
 @uses_js
@@ -225,16 +206,16 @@ def test_proper_line_numbers():
     <script>
     eval("OWOWOWOWOWOWOWOW");
     </script>
-    </foo>""", "foo.xul", should_fail=True)
+    </foo>""", "foo.xul", should_fail_csp=True)
 
-    assert err.warnings
-    warning = err.warnings[0]
-    eq_(warning["file"], "foo.xul")
-    eq_(warning["line"], 3);
+    assert err.errors
+    error = err.errors[0]
+    eq_(error["file"], "foo.xul")
+    # 4 because it detects the script when it gets closed.
+    eq_(error["line"], 4)
 
 
-@patch('appvalidator.testcases.scripting.test_js_snippet')
-def test_script_scraping(tjs):
+def test_script_scraping():
     """Test that the scripts in a document are collected properly."""
 
     err = ErrorBundle()
@@ -248,4 +229,4 @@ def test_script_scraping(tjs):
     </doc>
     """, "xul")
 
-    assert tjs.called
+    assert err.errors

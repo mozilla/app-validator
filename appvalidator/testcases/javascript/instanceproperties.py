@@ -2,6 +2,7 @@ import re
 import types
 
 from appvalidator.constants import BUGZILLA_BUG
+from appvalidator.csp import warn
 import jstypes
 
 
@@ -30,35 +31,19 @@ def _set_HTML_property(function, new_value, traverser):
 
             # Test for on* attributes and script tags.
             if EVENT_ASSIGNMENT.search(literal_value.lower()):
-                traverser.err.warning(
-                    err_id=("testcases_javascript_instancetypes",
-                            "set_%s" % function, "event_assignment"),
-                    warning="Event handler assignment via %s" % function,
-                    description=["When assigning event handlers, %s "
-                                 "should never be used. Rather, use a "
-                                 "proper technique, like addEventListener." %
-                                     function,
-                                 "Event handler code: %s" %
-                                     literal_value.encode("ascii", "replace")],
-                    filename=traverser.filename,
-                    line=traverser.line,
-                    column=traverser.position,
-                    context=traverser.context)
-            elif ("<script" in literal_value or
-                  JS_URL.search(literal_value)):
-                traverser.err.warning(
-                    err_id=("testcases_javascript_instancetypes",
-                            "set_%s" % function, "script_assignment"),
-                    warning="Scripts should not be created with `%s`" %
-                                function,
-                    description="`%s` should not be used to add scripts to "
-                                "pages via script tags or JavaScript URLs. "
-                                "Instead, use event listeners and external "
-                                "JavaScript." % function,
-                    filename=traverser.filename,
-                    line=traverser.line,
-                    column=traverser.position,
-                    context=traverser.context)
+                warn(traverser.err,
+                     filename=traverser.filename,
+                     line=traverser.line,
+                     column=traverser.position,
+                     context=traverser.context,
+                     violation_type="javascript_event_assignment")
+            elif "<script" in literal_value or JS_URL.search(literal_value):
+                warn(traverser.err,
+                     filename=traverser.filename,
+                     line=traverser.line,
+                     column=traverser.position,
+                     context=traverser.context,
+                     violation_type="javascript_url")
             else:
                 # Everything checks out, but we still want to pass it through
                 # the markup validator. Turn off strict mode so we don't get
@@ -67,41 +52,20 @@ def _set_HTML_property(function, new_value, traverser):
                 parser = MarkupParser(traverser.err, strict=False, debug=True)
                 parser.process(traverser.filename, literal_value, "xul")
 
-    else:
-        # Variable assignments
-        traverser.err.warning(
-            err_id=("testcases_javascript_instancetypes", "set_%s" % function,
-                        "variable_assignment"),
-            warning="%s should not be set dynamically" % function,
-            description="Due to both security and performance reasons, "
-                        "%s should not be set using dynamic "
-                        "values. This can lead to security issues or "
-                        "fairly serious performance degradation." % function,
-            filename=traverser.filename,
-            line=traverser.line,
-            column=traverser.position,
-            context=traverser.context)
-
 
 def set_on_event(new_value, traverser):
     """Ensure that on* properties are not assigned string values."""
 
     is_literal = new_value.is_literal()
 
-    if (is_literal and
-        isinstance(new_value.get_literal_value(), types.StringTypes)):
-        traverser.err.warning(
-            err_id=("testcases_javascript_instancetypes", "set_on_event",
-                    "on*_str_assignment"),
-            warning="on* property being assigned string",
-            description="Event handlers in JavaScript should not be "
-                        "assigned by setting an on* property to a "
-                        "string of JS code. Rather, consider using "
-                        "addEventListener.",
-            filename=traverser.filename,
-            line=traverser.line,
-            column=traverser.position,
-            context=traverser.context)
+    if is_literal and isinstance(new_value.get_literal_value(),
+                                 types.StringTypes):
+        warn(traverser.err,
+             filename=traverser.filename,
+             line=traverser.line,
+             column=traverser.position,
+             context=traverser.context,
+             violation_type="setting_on-event")
     elif not is_literal and new_value.has_property("handleEvent"):
         traverser.err.error(
             err_id=("js", "on*", "handleEvent"),

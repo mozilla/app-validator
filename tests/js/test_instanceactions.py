@@ -74,7 +74,7 @@ class TestSetAttribute(TestCase):
         var x = "foo";
         x.setAttribute("onfoo", "bar");
         """)
-        self.assert_notices()
+        self.assert_failed()
 
 
 class TestCallExpression(TestCase):
@@ -125,12 +125,5 @@ class TestInsertAdjacentHTML(TestCase):
         # Test without declaration
         self.run_script("""
         x.insertAdjacentHTML("foo bar", "<div onclick=\\"foo\\"></div>");
-        """)
-        self.assert_failed()
-
-    def test_insertAdjacentHTML_dirty(self):
-        self.run_script("""
-        var x = foo();
-        x.insertAdjacentHTML("foo bar", "x" + y);
         """)
         self.assert_failed()

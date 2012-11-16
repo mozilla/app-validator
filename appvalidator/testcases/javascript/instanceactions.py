@@ -10,10 +10,9 @@ node
     the current node being evaluated
 """
 
-import types
-
 import actions
 from appvalidator.constants import BUGZILLA_BUG
+from appvalidator.csp import warn
 from .jstypes import *
 from .instanceproperties import _set_HTML_property
 
@@ -50,36 +49,24 @@ def createElementNS(args, traverser, node, wrapper):
 
 def _create_script_tag(traverser):
     """Raises a warning that the dev is creating a script tag"""
-    traverser.err.warning(
-        err_id=("testcases_javascript_instanceactions", "_call_expression",
-                    "called_createelement"),
-        warning="createElement() used to create script tag",
-        description="The createElement() function was used to create a script "
-                    "tag in a JavaScript file. Add-ons are not allowed to "
-                    "create script tags or load code dynamically from the "
-                    "web.",
-        filename=traverser.filename,
-        line=traverser.line,
-        column=traverser.position,
-        context=traverser.context)
+
+    warn(traverser.err,
+         filename=traverser.filename,
+         line=traverser.line,
+         column=traverser.position,
+         context=traverser.context,
+         violation_type="createElement-script")
 
 
 def _create_variable_element(traverser):
     """Raises a warning that the dev is creating an arbitrary element"""
-    traverser.err.warning(
-        err_id=("testcases_javascript_instanceactions", "_call_expression",
-                    "createelement_variable"),
-        warning="Variable element type being created",
-        description=["createElement or createElementNS were used with a "
-                     "variable rather than a raw string. Literal values should "
-                     "be used when taking advantage of the element creation "
-                     "functions.",
-                     "E.g.: createElement('foo') rather than "
-                     "createElement(el_type)"],
-        filename=traverser.filename,
-        line=traverser.line,
-        column=traverser.position,
-        context=traverser.context)
+
+    warn(traverser.err,
+         filename=traverser.filename,
+         line=traverser.line,
+         column=traverser.position,
+         context=traverser.context,
+         violation_type="createElement-variable")
 
 
 def insertAdjacentHTML(args, traverser, node, wrapper):
@@ -105,17 +92,12 @@ def setAttribute(args, traverser, node, wrapper):
 
     first_as_str = actions._get_as_str(simple_args[0].get_literal_value())
     if first_as_str.lower().startswith("on"):
-        traverser.err.notice(
-            err_id=("testcases_javascript_instanceactions", "setAttribute",
-                        "setting_on*"),
-            notice="on* attribute being set using setAttribute",
-            description="To prevent vulnerabilities, event handlers (like "
-                        "'onclick' and 'onhover') should always be defined "
-                        "using addEventListener.",
-            filename=traverser.filename,
-            line=traverser.line,
-            column=traverser.position,
-            context=traverser.context)
+        warn(traverser.err,
+             filename=traverser.filename,
+             line=traverser.line,
+             column=traverser.position,
+             context=traverser.context,
+             violation_type="setAttribute-on")
 
 
 INSTANCE_DEFINITIONS = {"createElement": createElement,

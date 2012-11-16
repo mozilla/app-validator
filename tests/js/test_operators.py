@@ -71,13 +71,6 @@ class TestMath(TestCase):
         """)
         self.assert_silent()
 
-    def test_function_instanceof_reference(self):
-        self.run_script("""
-        var x = foo();
-        print(x === Function);
-        """)
-        self.assert_failed()
-
     def test_unary_typeof(self):
         """Test that the typeof operator does good."""
 

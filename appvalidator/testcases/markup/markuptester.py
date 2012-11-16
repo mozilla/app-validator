@@ -2,18 +2,17 @@ import re
 import sys
 import types
 
-from .. import scripting
 import appvalidator.unicodehelper as unicodehelper
 from . import csstester
 from appvalidator.contextgenerator import ContextGenerator
 from appvalidator.constants import *
+from appvalidator.csp import warn as message_csp
 from patchedhtmlparser import PatchedHTMLParser
 
 
 DEBUG = False
 
 UNSAFE_TAGS = ("script", "object", "embed", "base", )
-UNSAFE_THEME_TAGS = ("implementation", "browser", "xul:browser", "xul:script")
 SELF_CLOSING_TAGS = ("area", "base", "basefont", "br", "col", "frame", "hr",
                      "img", "input", "li", "link", "meta", "p", "param", )
 SAFE_IFRAME_TYPES = ("content", "content-primary", "content-targetable", )
@@ -103,15 +102,11 @@ class MarkupParser(PatchedHTMLParser):
         line = unicodehelper.decode(line)
 
         try:
-            self.feed(line + "\n")
+            self.feed(line + u"\n")
         except UnicodeDecodeError, exc_instance:
-            exc_class, val, traceback = sys.exc_info()
-            try:
-                line = line.decode("ascii", "ignore")
-                self.feed(line + "\n")
-            except:
-                raise exc_instance, None, traceback
-
+            # There's no recovering from a unicode error here. We've got the
+            # unicodehelper; if that doesn't help us, nothing will.
+            return
         except Exception as inst:
             if DEBUG:  # pragma: no cover
                 print self.xml_state, inst
@@ -167,18 +162,6 @@ class MarkupParser(PatchedHTMLParser):
         if DEBUG:  # pragma: no cover
             print "S: ", self.xml_state, tag, self_closing
 
-        # A fictional tag for testing purposes.
-        if tag == "xbannedxtestx":
-            self.err.error(
-                err_id=("testcases_markup_markuptester",
-                        "handle_starttag",
-                        "banned_element"),
-                error="Banned markup element",
-                description="A banned markup element was found.",
-                filename=self.filename,
-                line=self.line,
-                context=self.context)
-
         # Find CSS and JS attributes and handle their values like they
         # would otherwise be handled by the standard parser flow.
         for attr in attrs:
@@ -205,23 +188,19 @@ class MarkupParser(PatchedHTMLParser):
                         line=self.line,
                         context=self.context)
 
-                scripting.test_js_snippet(err=self.err,
-                                          data=attr_value,
-                                          filename=self.filename,
-                                          line=self.line,
-                                          context=self.context)
+                message_csp(err=self.err, filename=self.filename,
+                            line=self.line, column=None,
+                            context=self.context,
+                            violation_type="script_attribute",
+                            severity="error")
+
             elif attr_name == "src" and tag == "script":
                 if not self._is_url_local(attr_value):
-                    self.err.error(
-                        err_id=("testcases_markup_markuptester",
-                                "handle_starttag",
-                                "remote_script"),
-                        error="Remote script resource detected",
-                        description="Remote scripts are not allowed within "
-                                    "markup in apps.",
-                        filename=self.filename,
-                        line=self.line,
-                        context=self.context)
+                    message_csp(err=self.err, filename=self.filename,
+                                line=self.line, column=None,
+                                context=self.context,
+                                violation_type="remote_script",
+                                severity="error")
 
         # When the dev forgets their <!-- --> on a script tag, bad
         # things happen.
@@ -236,8 +215,6 @@ class MarkupParser(PatchedHTMLParser):
     def handle_endtag(self, tag):
 
         tag = tag.lower()
-        if tag == "xul:script":
-            tag = "script"
 
         if DEBUG:  # pragma: no cover
             print "E: ", tag, self.xml_state
@@ -247,16 +224,16 @@ class MarkupParser(PatchedHTMLParser):
                 if DEBUG:
                     print "Unstrict; extra closing tags ------"
                 return
-            self.err.warning(("testcases_markup_markuptester",
-                              "handle_endtag",
-                              "extra_closing_tags"),
-                             "Markup parsing error",
-                             "The markup file has more closing tags than it "
-                             "has opening tags.",
-                             self.filename,
-                             line=self.line,
-                             context=self.context,
-                             tier=2)
+            self.err.warning(
+                err_id=("markup", "handle_endtag", "extra_closing_tags"),
+                warning="Markup parsing error",
+                description="The markup file has more closing tags than it "
+                            "has opening tags.",
+                filename=self.filename,
+                line=self.line,
+                context=self.context,
+                tier=2)
+
             self.reported.add("closing_tags")
             if DEBUG:  # pragma: no cover
                 print "Too many closing tags ------"
@@ -266,7 +243,7 @@ class MarkupParser(PatchedHTMLParser):
             # If we're in a script tag, nothing else matters. Just rush
             # everything possible into the xml buffer.
 
-            self._save_to_buffer("</" + tag + ">")
+            self._save_to_buffer("</%s>" % tag)
             if DEBUG:
                 print "Markup as text in script ------"
             return
@@ -274,18 +251,18 @@ class MarkupParser(PatchedHTMLParser):
         elif tag not in self.xml_state:
             # If the tag we're processing isn't on the stack, then
             # something is wrong.
-            self.err.warning(("testcases_markup_markuptester",
-                              "handle_endtag",
-                              "extra_closing_tags"),
-                             "Parse error: tag closed before opened",
-                             ["Markup tags cannot be closed before they are "
-                              "opened. Perhaps you were just a little "
-                              "overzealous with forward-slashes?",
-                              'Tag "%s" closed before it was opened' % tag],
-                             self.filename,
-                             line=self.line,
-                             context=self.context,
-                             tier=2)
+            self.err.warning(
+                err_id=("markup", "handle_endtag", "extra_closing_tags"),
+                warning="Parse error: tag closed before opened",
+                description=["Markup tags cannot be closed before they are "
+                             "opened. Perhaps you were just a little "
+                             "overzealous with forward-slashes?",
+                             'Tag `%s` closed before it was opened' % tag],
+                filename=self.filename,
+                line=self.line,
+                context=self.context,
+                tier=2)
+
             if DEBUG:  # pragma: no cover
                 print "Tag closed before opened ------"
             return
@@ -324,9 +301,11 @@ class MarkupParser(PatchedHTMLParser):
         # Perform analysis on collected data.
         if data_buffer:
             if tag == "script":
-                scripting.test_js_snippet(err=self.err, data=data_buffer,
-                                          filename=self.filename,
-                                          line=old_line, context=self.context)
+                message_csp(err=self.err, filename=self.filename,
+                            line=self.line, column=None,
+                            context=self.context,
+                            violation_type="inline_script",
+                            severity="error")
             elif tag == "style":
                 csstester.test_css_file(self.err, self.filename, data_buffer,
                                         old_line)

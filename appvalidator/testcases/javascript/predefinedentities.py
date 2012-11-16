@@ -7,84 +7,54 @@ from call_definitions import python_wrap
 from entity_values import entity
 from jstypes import JSWrapper
 
-# A list of identifiers and member values that may not be used.
-BANNED_IDENTIFIERS = {
-    u"newThread": "Creating threads from JavaScript is a common cause "
-                  "of crashes and is unsupported in recent versions of the platform",
-    u"processNextEvent": "Spinning the event loop with processNextEvent is a common "
-                         "cause of deadlocks, crashes, and other errors due to "
-                         "unintended reentrancy. Please use asynchronous callbacks "
-                         "instead wherever possible",
-}
-
-BANNED_PREF_BRANCHES = [
-    u"browser.preferences.instantApply",
-    u"capability.policy.",
-    u"extensions.alwaysUnpack",
-    u"extensions.blocklist.",
-    u"extensions.bootstrappedAddons",
-    u"extensions.checkCompatibility",
-    u"extensions.dss.",
-    u"extensions.getAddons.",
-    u"extensions.getMoreThemesURL",
-    u"extensions.installCache",
-    u"extensions.lastAppVersion",
-    u"extensions.pendingOperations",
-    u"extensions.update.",
-    u"general.useragent.",
-    u"network.http.",
-    u"network.websocket.",
-    u"nglayout.debug.disable_xul_cache",
-]
-
-BANNED_PREF_REGEXPS = [
-    r"extensions\..*\.update\.(url|enabled|interval)",
-]
-
 
 # See https://github.com/mattbasta/amo-validator/wiki/JS-Predefined-Entities
 # for details on entity properties.
 
+# This will be populated later, we just need to reserve its name now.
 CONTENT_DOCUMENT = None
+
+
+def get_global(*args):
+    def wrap(t):
+        element = GLOBAL_ENTITIES[args[0]]
+        for layer in args[1:]:
+            value = element["value"]
+            while callable(value):
+                value = value(t=t)
+            element = value[layer]
+        return element
+    return wrap
+
+
+def get_constant(value):
+    def wrap(t):
+        return JSWrapper(value, traverser=t)
+    return wrap
+
+
+def global_identity():
+    return lambda t: {"value": GLOBAL_ENTITIES}
+
+
+MUTABLE = {"overwriteable": True, "readonly": False}
 
 
 # GLOBAL_ENTITIES is also representative of the `window` object.
 GLOBAL_ENTITIES = {
-    u"window": {"value": lambda t: {"value": GLOBAL_ENTITIES}},
-    u"null": {"literal": lambda t: JSWrapper(None, traverser=t)},
+    u"window": {"value": global_identity()},
+    u"null": {"literal": get_constant(None)},
 
     u"document":
         {"value":
-             {u"title":
-                  {"overwriteable": True,
-                   "readonly": False},
-              u"defaultView":
-                  {"value": lambda t: {"value": GLOBAL_ENTITIES}},
-              u"createElement":
-                  {"dangerous":
-                       lambda a, t, e:
-                           not a or
-                           unicode(t(a[0]).get_literal_value()).lower() ==
-                               "script"},
-              u"createElementNS":
-                  {"dangerous":
-                       lambda a, t, e:
-                           not a or
-                           unicode(t(a[0]).get_literal_value()).lower() ==
-                               "script"},
-              u"loadOverlay":
-                  {"dangerous":
-                       lambda a, t, e:
-                           not a or
-                           not unicode(t(a[0]).get_literal_value()).lower()
-                               .startswith(("chrome:", "resource:"))},
-              u"xmlEncoding": entity("document.xmlEncoding"),
-              u"xmlVersion": entity("document.xmlVersion"),
-              u"xmlStandalone": entity("document.xmlStandalone")}},
+             {u"title": MUTABLE,
+              u"defaultView": {"value": global_identity()},
+              u"createElement": entity("createElement"),
+              u"createElementNS": entity("createElementNS")}},
 
     # The nefariuos timeout brothers!
-    u"setTimeout": {"dangerous": actions._call_settimeout},
-    u"setInterval": {"dangerous": actions._call_settimeout},
+    u"setTimeout": entity("setTimeout"),
+    u"setInterval": entity("setInterval"),
 
     u"encodeURI": {"readonly": True},
     u"decodeURI": {"readonly": True},
@@ -97,98 +67,91 @@ GLOBAL_ENTITIES = {
     u"parseFloat": {"readonly": True},
     u"parseInt": {"readonly": True},
 
-    u"eval": {"dangerous": True},
-
-    u"Function": {"dangerous": True},
+    u"eval": entity("eval"),
+    u"Function": entity("Function"),
     u"Object":
         {"value":
              {u"prototype": {"readonly": True},
-              u"constructor":  # Just an experiment for now
-                  {"value": lambda t: GLOBAL_ENTITIES["Function"]}}},
+              u"constructor":
+                  {"value": get_global("Function")}}},
     u"String":
         {"value":
-             {u"prototype": {"readonly": True}},
+             {u"prototype": {"readonly": True},
+              u"constructor":
+                  {"value": get_global("Function")}},
          "return": call_definitions.string_global},
     u"Array":
         {"value":
-             {u"prototype": {"readonly": True}},
+             {u"prototype": {"readonly": True},
+              u"constructor":
+                  {"value": get_global("Function")}},
          "return": call_definitions.array_global},
     u"Number":
         {"value":
              {u"prototype":
                   {"readonly": True},
+              u"constructor":
+                  {"value": get_global("Function")},
               u"POSITIVE_INFINITY":
-                  {"value": lambda t: JSWrapper(float('inf'), traverser=t)},
+                  {"value": get_constant(float('inf'))},
               u"NEGATIVE_INFINITY":
-                  {"value": lambda t: JSWrapper(float('-inf'), traverser=t)}},
+                  {"value": get_constant(float('-inf'))}},
          "return": call_definitions.number_global},
     u"Boolean":
         {"value":
-             {u"prototype": {"readonly": True}},
+             {u"prototype": {"readonly": True},
+              u"constructor":
+                  {"value": get_global("Function")}},
          "return": call_definitions.boolean_global},
-    u"RegExp": {"value": {u"prototype": {"readonly": True}}},
-    u"Date": {"value": {u"prototype": {"readonly": True}}},
-    u"File": {"value": {u"prototype": {"readonly": True}}},
+    u"RegExp":
+        {"value":
+            {u"prototype": {"readonly": True},
+             u"constructor":
+                 {"value": get_global("Function")}}},
+    u"Date":
+        {"value":
+            {u"prototype": {"readonly": True},
+             u"constructor":
+                 {"value": get_global("Function")}}},
+    u"File":
+        {"value":
+            {u"prototype": {"readonly": True},
+             u"constructor":
+                 {"value": get_global("Function")}}},
 
     u"Math":
         {"value":
-             {u"PI":
-                  {"value": lambda t: JSWrapper(math.pi, traverser=t)},
-              u"E":
-                  {"value": lambda t: JSWrapper(math.e, traverser=t)},
-              u"LN2":
-                  {"value": lambda t: JSWrapper(math.log(2), traverser=t)},
-              u"LN10":
-                  {"value": lambda t: JSWrapper(math.log(10), traverser=t)},
-              u"LOG2E":
-                  {"value": lambda t: JSWrapper(math.log(math.e, 2),
-                                                traverser=t)},
-              u"LOG10E":
-                  {"value": lambda t: JSWrapper(math.log10(math.e),
-                                                traverser=t)},
-              u"SQRT2":
-                  {"value": lambda t: JSWrapper(math.sqrt(2), traverser=t)},
-              u"SQRT1_2":
-                  {"value": lambda t: JSWrapper(math.sqrt(1/2), traverser=t)},
-              u"abs":
-                  {"return": python_wrap(abs, [("num", 0)])},
-              u"acos":
-                  {"return": python_wrap(math.acos, [("num", 0)])},
-              u"asin":
-                  {"return": python_wrap(math.asin, [("num", 0)])},
-              u"atan":
-                  {"return": python_wrap(math.atan, [("num", 0)])},
-              u"atan2":
-                  {"return": python_wrap(math.atan2, [("num", 0),
-                                                      ("num", 1)])},
-              u"ceil":
-                  {"return": python_wrap(math.ceil, [("num", 0)])},
-              u"cos":
-                  {"return": python_wrap(math.cos, [("num", 0)])},
-              u"exp":
-                  {"return": python_wrap(math.exp, [("num", 0)])},
-              u"floor":
-                  {"return": python_wrap(math.floor, [("num", 0)])},
-              u"log":
-                  {"return": call_definitions.math_log},
-              u"max":
-                  {"return": python_wrap(max, [("num", 0)], nargs=True)},
-              u"min":
-                  {"return": python_wrap(min, [("num", 0)], nargs=True)},
-              u"pow":
-                  {"return": python_wrap(math.pow, [("num", 0),
-                                                    ("num", 0)])},
-              u"random": # Random always returns 0.5 in our fantasy land.
-                  {"return": call_definitions.math_random},
-              u"round":
-                  {"return": call_definitions.math_round},
-              u"sin":
-                  {"return": python_wrap(math.sin, [("num", 0)])},
-              u"sqrt":
-                  {"return": python_wrap(math.sqrt, [("num", 1)])},
-              u"tan":
-                  {"return": python_wrap(math.tan, [("num", 0)])},
-                  }},
+             {u"PI": {"value": get_constant(math.pi)},
+              u"E": {"value": get_constant(math.e)},
+              u"LN2": {"value": get_constant(math.log(2))},
+              u"LN10": {"value": get_constant(math.log(10))},
+              u"LOG2E": {"value": get_constant(math.log(math.e, 2))},
+              u"LOG10E": {"value": get_constant(math.log10(math.e))},
+              u"SQRT2": {"value": get_constant(math.sqrt(2))},
+              u"SQRT1_2": {"value": get_constant(math.sqrt(1/2))},
+              u"abs": {"return": python_wrap(abs, [("num", 0)])},
+              u"acos": {"return": python_wrap(math.acos, [("num", 0)])},
+              u"asin": {"return": python_wrap(math.asin, [("num", 0)])},
+              u"atan": {"return": python_wrap(math.atan, [("num", 0)])},
+              u"atan2": {"return": python_wrap(math.atan2, [("num", 0),
+                                                            ("num", 1)])},
+              u"ceil": {"return": python_wrap(math.ceil, [("num", 0)])},
+              u"cos": {"return": python_wrap(math.cos, [("num", 0)])},
+              u"exp": {"return": python_wrap(math.exp, [("num", 0)])},
+              u"floor": {"return": python_wrap(math.floor, [("num", 0)])},
+              u"log": {"return": call_definitions.math_log},
+              u"max": {"return": python_wrap(max, [("num", 0)], nargs=True)},
+              u"min": {"return": python_wrap(min, [("num", 0)], nargs=True)},
+              u"pow": {"return": python_wrap(math.pow, [("num", 0),
+                                                        ("num", 0)])},
+              # Random always returns 0.5 in our fantasy land.
+              u"random": {"return": call_definitions.math_random},
+              u"round": {"return": call_definitions.math_round},
+              u"sin": {"return": python_wrap(math.sin, [("num", 0)])},
+              u"sqrt": {"return": python_wrap(math.sqrt, [("num", 1)])},
+              u"tan": {"return": python_wrap(math.tan, [("num", 0)])},
+            }
+        },
 
     u"XMLHttpRequest":
         {"value":
@@ -204,51 +167,23 @@ GLOBAL_ENTITIES = {
                            "slow network connections."}}},
 
     # Global properties are inherently read-only, though this formalizes it.
-    u"Infinity":
-        {"value":
-             lambda t:
-                 GLOBAL_ENTITIES[u"Number"]["value"][u"POSITIVE_INFINITY"]},
+    u"Infinity": {"value": get_global("Number", "POSITIVE_INFINITY")},
     u"NaN": {"readonly": True},
     u"undefined": {"readonly": True},
 
-    u"innerHeight": {"readonly": False},
-    u"innerWidth": {"readonly": False},
-    u"width": {"readonly": False},
-    u"height": {"readonly": False},
+    u"innerHeight": MUTABLE,
+    u"innerWidth": MUTABLE,
+    u"width": MUTABLE,
+    u"height": MUTABLE,
 
     u"content":
         {"context": "content",
-         "value":
-             {u"document":
-                  {"value": lambda t: GLOBAL_ENTITIES[u"document"]}}},
+         "value": {u"document": {"value": get_global("document")}}},
     u"contentWindow":
         {"context": "content",
-         "value":
-             lambda t: {"value": GLOBAL_ENTITIES}},
-    u"_content": {"value": lambda t: GLOBAL_ENTITIES[u"content"]},
-    u"gBrowser":
-        {"value":
-             {u"contentDocument":
-                  {"context": "content",
-                   "value": lambda t: CONTENT_DOCUMENT},
-              u"contentWindow":
-                  {"value":
-                       lambda t: {"value": GLOBAL_ENTITIES}},
-              u"selectedTab":
-                  {"readonly": False}}},
-    u"opener":
-        {"value":
-             lambda t: {"value": GLOBAL_ENTITIES}},
-
-    # Preference creation in pref defaults files
-    u"pref": {"dangerous": actions._call_create_pref},
-    u"user_pref": {"dangerous": actions._call_create_pref},
-
-    u"unsafeWindow": {"dangerous": "The use of unsafeWindow is insecure and "
-                                   "should be avoided whenever possible. "
-                                   "Consider using a different API if it is "
-                                   "available in order to achieve similar "
-                                   "functionality."},
+         "value": global_identity()},
+    u"_content": {"value": get_global("content")},
+    u"opener": {"value": global_identity()},
 }
 
 CONTENT_DOCUMENT = GLOBAL_ENTITIES[u"content"]["value"][u"document"]
