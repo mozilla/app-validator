@@ -10,7 +10,7 @@ PACKAGE_PACKAGED_WEBAPP = 9
 
 SPIDERMONKEY_INSTALLATION = os.environ.get("SPIDERMONKEY_INSTALLATION")
 
-DEFAULT_WEBAPP_MRKT_URLS = ["https://marketplace.mozilla.org",
+DEFAULT_WEBAPP_MRKT_URLS = ["https://marketplace.firefox.com",
                             "https://marketplace-dev.allizom.org"]
 BUGZILLA_BUG = "https://bugzilla.mozilla.org/show_bug.cgi?id=%d"
 
