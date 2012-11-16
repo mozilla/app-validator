@@ -14,6 +14,33 @@ from appvalidator.contextgenerator import ContextGenerator
 class TestErrorBundle(TestCase):
     pass
 
+
+def test_message_completeness():
+    """Test we're fully expecting all of the values for a message."""
+
+    bundle = ErrorBundle()
+
+    bundle.error(
+        ("id", ),
+        "error",
+        "description",
+        "file",
+        123,  # line
+        456  # column
+    )
+
+    results = json.loads(bundle.render_json())
+    eq_(len(results["messages"]), 1, "Unexpected number of messages.")
+
+    message = results["messages"][0]
+    eq_(message["id"], ["id"])
+    eq_(message["message"], "error")
+    eq_(message["description"], "description")
+    eq_(message["file"], "file")
+    eq_(message["line"], 123)
+    eq_(message["column"], 456)
+
+
 def test_json():
     """Test the JSON output capability of the error bundler."""
 
@@ -164,38 +191,27 @@ def test_json_constructs():
     """This tests some of the internal JSON stuff so we don't break zamboni."""
 
     e = ErrorBundle()
-    e.error(("a", "b", "c"),
-            "Test")
-    e.error(("a", "b", "foo"),
-            "Test")
-    e.error(("a", "foo", "c"),
-            "Test")
-    e.error(("a", "foo", "c"),
-            "Test")
-    e.error(("b", "foo", "bar"),
-            "Test")
-    e.warning((), "Context test",
-              context=("x", "y", "z"))
+    e.error(("a", "b", "c"), "Test")
+    e.error(("a", "b", "foo"), "Test")
+    e.error(("a", "foo", "c"), "Test")
+    e.error(("a", "foo", "c"), "Test")
+    e.error(("b", "foo", "bar"), "Test")
     e.warning((), "Context test",
               context=ContextGenerator("x\ny\nz\n"),
-              line=2,
-              column=0)
+              line=2, column=0)
     e.notice((), "none")
-    e.notice((), "line",
-             line=1)
-    e.notice((), "column",
-             column=0)
-    e.notice((), "line column",
-             line=1,
-             column=1)
+    e.notice((), "line", line=1)
+    e.notice((), "column", column=0)
+    e.notice((), "line column", line=1, column=1)
 
     results = e.render_json()
     print results
     j = json.loads(results)
 
     assert "messages" in j
-    for m in (m for m in j["messages"] if m["type"] == "warning"):
-        assert m["context"] == ["x", "y", "z"]
+    for m in j["messages"]:
+        if m["type"] == "warning":
+            assert m["context"] == ["x", "y", "z"]
 
     for m in (m for m in j["messages"] if m["type"] == "notice"):
         if "line" in m["message"]:

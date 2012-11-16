@@ -1,5 +1,6 @@
 import json
 import sys
+import types
 import uuid
 from StringIO import StringIO
 
@@ -32,7 +33,6 @@ class BaseErrorBundle(object):
         self.errors = []
         self.warnings = []
         self.notices = []
-        self.message_count = 0
 
         self.ending_tier = self.tier = 1
 
@@ -43,51 +43,49 @@ class BaseErrorBundle(object):
 
         super(BaseErrorBundle, self).__init__(*args, **kwargs)
 
-    def error(self, err_id, error,
-              description='', filename='', line=None, column=None,
-              context=None, tier=None):
-        "Stores an error message for the validation process"
-        self._save_message(self.errors,
-                           "errors",
-                           {"id": err_id, "message": error, "description": description,
-                            "file": filename,
-                            "line": line,
-                            "column": column,
-                            "tier": tier},
-                           context=context)
-        return self
+    def _message(type_, message_type):
+        def wrap(self, *args, **kwargs):
+            message = {
+                "uid": uuid.uuid4().hex,
+                "id": kwargs.get("err_id") or args[0],
+                "message": unicodehelper.decode(
+                    kwargs.get(message_type) or args[1]),
+                "description": unicodehelper.decode(
+                    kwargs.get("description", args[2] if
+                               len(args) > 2 else None)),
+                # Filename is never None.
+                "file": kwargs.get("filename",
+                                   args[3] if len(args) > 3 else ""),
+                "line": kwargs.get("line",
+                                   args[4] if len(args) > 4 else None),
+                "column": kwargs.get("column",
+                                     args[5] if len(args) > 5 else None),
+                "tier": kwargs.get("tier", self.tier),
+                "context": None,
+            }
 
-    def warning(self, err_id, warning,
-                description='', filename='', line=None, column=None,
-                context=None, tier=None):
-        "Stores a warning message for the validation process"
-        self._save_message(self.warnings,
-                           "warnings",
-                           {"id": err_id,
-                            "message": warning,
-                            "description": description,
-                            "file": filename,
-                            "line": line,
-                            "column": column,
-                            "tier": tier},
-                           context=context)
-        return self
+            context = kwargs.get("context")
+            if context is not None:
+                if isinstance(context, tuple):
+                    message["context"] = context
+                else:
+                    message["context"] = context.get_context(
+                        line=message["line"], column=message["column"])
 
-    def notice(self, err_id, notice,
-               description="", filename="", line=None, column=None,
-               context=None, tier=None):
-        "Stores an informational message about the validation"
-        self._save_message(self.notices,
-                           "notices",
-                           {"id": err_id,
-                            "message": notice,
-                            "description": description,
-                            "file": filename,
-                            "line": line,
-                            "column": column,
-                            "tier": tier},
-                           context=context)
-        return self
+            # Append the message to the right stack.
+            getattr(self, type_).append(message)
+
+            # If instant mode is turned on, output the message immediately.
+            if self.instant:
+                self._print_message(type_, message, verbose=True)
+
+            return self
+        return wrap
+
+    # And then all the real functions. Ahh, how clean!
+    error = _message("errors", "error")
+    warning = _message("warnings", "warning")
+    notice = _message("notices", "notice")
 
     def set_tier(self, tier):
         "Updates the tier and ending tier"
@@ -95,37 +93,9 @@ class BaseErrorBundle(object):
         if tier > self.ending_tier:
             self.ending_tier = tier
 
-    def _save_message(self, stack, type_, message, context=None):
-        "Stores a message in the appropriate message stack."
-
-        self.message_count += 1
-
-        uid = uuid.uuid4().hex
-        message["uid"] = uid
-
-        # Get the context for the message (if there's a context available)
-        if context is not None:
-            if isinstance(context, tuple):
-                message["context"] = context
-            else:
-                message["context"] = context.get_context(
-                    line=message["line"], column=message["column"])
-        else:
-            message["context"] = None
-
-        message["message"] = unicodehelper.decode(message["message"])
-        message["description"] = unicodehelper.decode(message["description"])
-
-        # Save the message to the stack.
-        stack.append(message)
-
-        # Mark the tier that the error occurred at.
-        if message["tier"] is None:
-            message["tier"] = self.tier
-
-        # If instant mode is turned on, output the message immediately.
-        if self.instant:
-            self._print_message(type_, message, verbose=True)
+    @property
+    def message_count(self):
+        return len(self.errors) + len(self.warnings) + len(self.notices)
 
     def failed(self, fail_on_warnings=True):
         """Returns a boolean value describing whether the validation
@@ -136,13 +106,7 @@ class BaseErrorBundle(object):
     def render_json(self):
         "Returns a JSON summary of the validation operation."
 
-        types = {0: "unknown",
-                 1: "extension",
-                 2: "theme",
-                 3: "dictionary",
-                 4: "langpack",
-                 5: "search",
-                 8: "webapp"}
+        types = {0: "unknown", 8: "webapp"}
         output = {"ending_tier": self.ending_tier,
                   "success": not self.failed(),
                   "messages": [],
@@ -165,8 +129,7 @@ class BaseErrorBundle(object):
             notice["type"] = "notice"
             messages.append(notice)
 
-        ext_output = self._extend_json()
-        output.update(ext_output)
+        output.update(self._extend_json())
 
         # Output the JSON.
         return json.dumps(output)
@@ -174,8 +137,7 @@ class BaseErrorBundle(object):
     def print_summary(self, verbose=False, no_color=False):
         "Prints a summary of the validation process so far."
 
-        types = {0: "Unknown",
-                 8: "App"}
+        types = {0: "Unknown", 8: "App"}
 
         buffer = StringIO()
         self.handler = OutputHandler(buffer, no_color)
@@ -219,19 +181,16 @@ class BaseErrorBundle(object):
 
         if data is None:
             return ""
-        if isinstance(data, (str, unicode)):
+        if isinstance(data, types.StringTypes):
             return data
         elif isinstance(data, (list, tuple)):
-            return "\n".join(self._flatten_list(x) for x in data)
+            return "\n".join(map(self._flatten_list, data))
 
     def _print_message(self, prefix, message, verbose=True):
         "Prints a message and takes care of all sorts of nasty code"
 
         # Load up the standard output.
-        output = ["\n",
-                  prefix,
-                  message["message"],
-                  "\n"]
+        output = ["\n", prefix, message["message"]]
 
         # We have some extra stuff for verbose mode.
         if verbose:
@@ -266,11 +225,9 @@ class BaseErrorBundle(object):
 
             if "context" in message and message["context"]:
                 verbose_output.append("\tContext:")
-                verbose_output.extend([("\t> %s" % x
-                                        if x is not None
-                                        else "\t>" + ("-" * 20))
-                                       for x
-                                       in message["context"]])
+                verbose_output.extend(
+                    [("\t> %s" % ("-" * 20 if x is None else x)) for
+                     x in message.get("context", [])])
 
             # Stick it in with the standard items.
             output.append("\n")
@@ -285,8 +242,7 @@ class BaseErrorBundle(object):
         greater than the ending tier.
         """
 
-        stacks = [self.errors, self.warnings, self.notices]
-        for stack in stacks:
+        for stack in [self.errors, self.warnings, self.notices]:
             for message in stack:
                 if message["tier"] > ending_tier:
                     stack.remove(message)
