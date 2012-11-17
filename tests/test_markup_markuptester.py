@@ -230,3 +230,8 @@ def test_script_scraping():
     """, "xul")
 
     assert err.errors
+
+
+def test_valueless_attribute():
+    """Test that valueless attributes generate no errors."""
+    _test_xul_raw("<foo bar />", "foo.xul", should_fail=False)

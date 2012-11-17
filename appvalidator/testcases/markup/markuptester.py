@@ -167,6 +167,10 @@ class MarkupParser(PatchedHTMLParser):
         for attr in attrs:
             attr_name, attr_value = attr[0].lower(), attr[1]
 
+            # We don't care about valueless attributes.
+            if attr_value is None:
+                continue
+
             if attr_name == "style":
                 csstester.test_css_snippet(self.err,
                                            self.filename,
