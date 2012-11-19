@@ -35,7 +35,7 @@ Submodules
 
 The validator may require some submodules to work. Make sure to run ::
 
-    git clone --recursive git://github.com/mozilla/amo-validator.git
+    git clone --recursive git://github.com/mozilla/app-validator.git
 
 so that you get all of the goodies inside.
 
@@ -95,7 +95,7 @@ The path to the XPI should point to an XPI file.
                     contexts, file data, etc.), and error descriptions. This
                     only applies to ``-o text``.
 --selfhosted        Disables messages that are specific to add-ons hosted on
-                    AMO.
+                    Marketplace.
 --boring            Disables colorful shell output.
 
 Output Type:
