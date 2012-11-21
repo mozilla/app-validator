@@ -7,18 +7,21 @@ from nose.tools import eq_
 
 from helper import TestCase
 
-from appvalidator.errorbundle import ErrorBundle
 from appvalidator.contextgenerator import ContextGenerator
+from appvalidator.errorbundle import ErrorBundle
 
 
-class TestErrorBundle(TestCase):
+class ErrorBundleTestCase(TestCase):
 
     def setUp(self):
-        super(TestErrorBundle, self).setUp()
+        super(ErrorBundleTestCase, self).setUp()
         self.setup_err()
 
     def get_json_results(self):
         return json.loads(self.err.render_json())
+
+
+class TestErrorBundle(ErrorBundleTestCase):
 
     def test_message_completeness(self):
         """Test we're fully expecting all of the values for a message."""
@@ -65,8 +68,6 @@ class TestErrorBundle(TestCase):
 
         self.err.error((), "<<BLUE>><<GREEN>><<YELLOW>>")
         self.err.print_summary(no_color=True)
-
-        sys.stdout.seek(0)
         eq_(sys.stdout.getvalue().count("<<GREEN>>"), 0)
 
     def test_file_structure(self):

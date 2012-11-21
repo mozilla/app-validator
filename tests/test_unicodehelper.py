@@ -3,7 +3,7 @@ import nose
 import appvalidator.unicodehelper as unicodehelper
 
 
-COMPARISON = "täst".decode("utf-8")
+COMPARISON = u"täst"
 
 def _do_test(path):
     "Performs a test on a JS file"

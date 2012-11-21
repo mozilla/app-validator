@@ -1,8 +1,9 @@
-import json
 import sys
 import types
 import uuid
 from StringIO import StringIO
+
+import simplejson as json
 
 from .outputhandlers.shellcolors import OutputHandler
 from .. import unicodehelper
@@ -132,7 +133,11 @@ class BaseErrorBundle(object):
         output.update(self._extend_json())
 
         # Output the JSON.
-        return json.dumps(output)
+        return json.dumps(output, ensure_ascii=True)
+
+    def _extend_json(self):
+        """Override this method to extend the JSON produced by the bundle."""
+        pass
 
     def print_summary(self, verbose=False, no_color=False):
         "Prints a summary of the validation process so far."

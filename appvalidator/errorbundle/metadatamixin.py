@@ -36,4 +36,6 @@ class MetadataMixin(object):
 
     def _extend_json(self):
         """Output the metadata as part of the main JSON blob."""
-        return {"metadata": self.metadata}
+        extension = super(MetadataMixin, self)._extend_json() or {}
+        extension.update(metadata=self.metadata)
+        return extension

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-import json
 import os
 import tempfile
 import types
 
+import simplejson as json
 from nose.tools import eq_
 
 from helper import TestCase
@@ -110,6 +110,9 @@ class TestWebapps(TestCase):
         """Test that a bland webapp file throws no errors."""
         self.analyze()
         self.assert_silent()
+
+        output = json.loads(self.err.render_json())
+        assert "manifest" in output and output["manifest"]
 
     def test_bom(self):
         """Test that a plain webapp with a BOM won't throw errors."""
