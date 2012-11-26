@@ -97,7 +97,7 @@ class TestResourceExceptions(TestCase):
     @mock_requests(reqexc.Timeout, "Timeout")
     def test_Timeout(self):
         appbase.try_get_resource(self.err, None, "http://foo.bar/", "")
-        self.assert_failed(with_errors=False, with_warnings=True)
+        self.assert_failed(with_errors=True, with_warnings=False)
 
     @mock_requests(reqexc.HTTPError, "404")
     def test_HTTPError(self):

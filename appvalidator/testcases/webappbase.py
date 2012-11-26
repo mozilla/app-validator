@@ -76,6 +76,16 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
                 filename=filename)
             return
 
+    def generic_http_error():
+        err.error(
+            err_id=("resources", "null_response"),
+            error="Error while requesting %s" % resource_type,
+            description=["A remote resource was requested, but an error "
+                         "prevented the request from completing. This may "
+                         "include connection, DNS, or HTTP issues.",
+                         "Requested resource: %s" % url],
+            filename=filename)
+
     try:
         request = requests.get(url, prefetch=False)
         data = request.raw.read(constants.MAX_RESOURCE_SIZE)
@@ -94,12 +104,7 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
         request.raw.close()
 
         if not data:
-            err.error(
-                err_id=("resources", "null_response"),
-                error="Null response when fetching %s" % resource_type,
-                description=["A remote resource was requested, but no data "
-                             "was returned.",
-                             "Requested resource: %s" % url])
+            generic_http_error()
 
         return data
 
@@ -120,36 +125,10 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
                          "an invalid URL was encountered.",
                          "URL: %s" % url],
             filename=filename)
-    except requests.exceptions.ConnectionError:
-        err.error(
-            err_id=("resources", "connection_error"),
-            error="Connection Error when requesting %s" % resource_type,
-            description=["While attempting to retrieve a remote resource, "
-                         "a connection error was encountered. This may be "
-                         "a DNS error, a connection refusal, or other low-"
-                         "level socket exception.",
-                         "Requested resource: %s" % url],
-            filename=filename)
-    except requests.exceptions.Timeout:
-        err.warning(
-            err_id=("resources", "timeout"),
-            warning="Timeout when requesting %s" % resource_type,
-            description=["While attempting to retrieve a remote resource, "
-                         "a timeout was encountered. Try validating your "
-                         "app again or contact your web host to see if there "
-                         "is an issue with the hosting.",
-                         "Requested resource: %s" % url],
-            filename=filename)
-    except requests.exceptions.HTTPError as e:
-        err.error(
-            err_id=("resources", "http_error"),
-            error="'%s' when requesting %s" % (str(e), resource_type),
-            description=["While attempting to retrieve a remote resource, "
-                         "a timeout was encountered. Try validating your "
-                         "app again or contact your web host to see if there "
-                         "is an issue with the hosting.",
-                         "Requested resource: %s" % url],
-            filename=filename)
+    except (requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+            requests.exceptions.HTTPError):
+        generic_http_error()
     except requests.exceptions.TooManyRedirects:
         err.error(
             err_id=("resources", "too_many_redirects"),
