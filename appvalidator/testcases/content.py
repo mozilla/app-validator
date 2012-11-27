@@ -1,16 +1,20 @@
 import hashlib
 
-from ..constants import *
-from ..contextgenerator import ContextGenerator
-from . import register_test
 import markup.csstester as testendpoint_css
 import markup.markuptester as testendpoint_markup
 import scripting as testendpoint_js
+from . import register_test
 from .. import unicodehelper
+from ..constants import *
+from ..contextgenerator import ContextGenerator
 
 
-FLAGGED_FILES = set([".DS_Store", "Thumbs.db"])
+FLAGGED_FILES = set([".DS_Store", "Thumbs.db", "desktop.ini",
+                     "_vti_cnf"])
 FLAGGED_EXTENSIONS = set([".orig", ".old", ".tmp", "~"])
+
+with open(os.path.join(os.path.dirname(__file__), "hashes.txt")) as f:
+    hash_blacklist = set(map(str.rstrip, f))
 
 
 @register_test(tier=2)
@@ -19,9 +23,6 @@ def test_packed_packages(err, package=None):
 
     processed_files = 0
     pretested_files = err.get_resource("pretested_files") or []
-
-    with open(os.path.join(os.path.dirname(__file__), "hashes.txt")) as f:
-        hash_blacklist = map(str.rstrip, f)
 
     # Iterate each item in the package.
     for name in package:

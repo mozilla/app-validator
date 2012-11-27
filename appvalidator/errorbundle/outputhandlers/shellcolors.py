@@ -1,14 +1,15 @@
 import re
+import sys
+from StringIO import StringIO
+
 try:
     import curses
 except ImportError:
     curses = None
-import os
-import sys
 
-from StringIO import StringIO
 
 COLORS = ("BLUE", "RED", "GREEN", "YELLOW", "WHITE", "BLACK")
+COLOR_ESCAPE_PATTERN = re.compile("\<\<[A-Z]*?\>\>")
 
 
 class OutputHandler:
@@ -19,8 +20,8 @@ class OutputHandler:
         if not curses:
             no_color = True
         if not no_color:
-            no_color = isinstance(sys.stdout, StringIO) or \
-                       not sys.stdout.isatty()
+            no_color = (isinstance(sys.stdout, StringIO) or
+                        not sys.stdout.isatty())
 
         self.no_color = no_color
 
@@ -79,12 +80,10 @@ class OutputHandler:
         if not self.no_color:
             text = self.colorize_text(text)
         else:
-            pattern = re.compile("\<\<[A-Z]*?\>\>")
-            text = pattern.sub("", text)
+            text = COLOR_ESCAPE_PATTERN.sub("", text)
 
         text += "\n"
 
         self.buffer.write(text)
 
         return self
-

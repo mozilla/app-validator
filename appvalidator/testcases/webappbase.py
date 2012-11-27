@@ -1,8 +1,8 @@
 import base64
 from cStringIO import StringIO
 
-from PIL import Image
 import requests
+from PIL import Image
 
 from . import register_test
 from .. import constants

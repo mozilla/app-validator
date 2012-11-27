@@ -1,10 +1,10 @@
 import codecs
-import simplejson as json
 import os
 import re
 import subprocess
 import tempfile
-from cStringIO import StringIO
+
+import simplejson as json
 
 from appvalidator.constants import SPIDERMONKEY_INSTALLATION
 from appvalidator.contextgenerator import ContextGenerator
@@ -23,7 +23,7 @@ def get_tree(code, err=None, filename=None, shell=None):
         return _get_tree(code, shell or SPIDERMONKEY_INSTALLATION)
     except JSReflectException as exc:
         str_exc = str(exc).strip("'\"")
-        if ("SyntaxError" in str_exc or "ReferenceError" in str_exc):
+        if "SyntaxError" in str_exc or "ReferenceError" in str_exc:
             err.warning(
                 err_id=("testcases_scripting", "test_js_file", "syntax_error"),
                 warning="JavaScript Compile-Time Error",
@@ -86,9 +86,9 @@ def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
 
     code = prepare_code(code)
 
-    temp = tempfile.NamedTemporaryFile(mode="w+b", delete=False)
-    temp.write(code.encode("utf_8"))
-    temp.flush()
+    with tempfile.NamedTemporaryFile(mode="w+b", delete=False) as temp:
+        temp_name = temp.name
+        temp.write(code.encode("utf_8"))
 
     data = """
     try{options("allow_xml");}catch(e){}
@@ -100,7 +100,7 @@ def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
             "error_message":e.toString(),
             "line_number":e.lineNumber
         }));
-    }""" % json.dumps(temp.name)
+    }""" % json.dumps(temp_name)
 
     try:
         cmd = [shell, "-e", data, "-U"]
@@ -113,11 +113,9 @@ def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
         if stderr:
             raise RuntimeError('Error calling %r: %s' % (cmd, stderr))
 
-        # Closing the temp file will delete it.
     finally:
         try:
-            temp.close()
-            os.unlink(temp.name)
+            os.unlink(temp_name)
         except IOError:
             pass
 
@@ -127,7 +125,7 @@ def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
     data = unicodehelper.decode(data)
     parsed = json.loads(data, strict=False)
 
-    if "error" in parsed and parsed["error"]:
+    if parsed.get("error"):
         if parsed["error_message"].startswith("ReferenceError: Reflect"):
             raise RuntimeError("Spidermonkey version too old; "
                                "1.8pre+ required; error='%s'; "
@@ -138,4 +136,3 @@ def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
                     parsed["line_number"])
 
     return parsed
-

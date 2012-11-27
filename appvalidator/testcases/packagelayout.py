@@ -55,7 +55,7 @@ def test_blacklisted_files(err, package=None):
                             "be successfully unzipped.",
                 filename=name)
 
-        if [x for x in blacklisted_magic_numbers if bytes[0:len(x)] == x]:
+        if any(bytes[0:len(x)] == x for x in blacklisted_magic_numbers):
             # Note that there is binary content in the metadata
             err.metadata["contains_binary_content"] = True
             err.warning(

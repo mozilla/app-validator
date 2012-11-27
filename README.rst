@@ -94,7 +94,7 @@ The path to the XPI should point to an XPI file.
                     Jetpack information if available, extra error info (like
                     contexts, file data, etc.), and error descriptions. This
                     only applies to ``-o text``.
---selfhosted        Disables messages that are specific to add-ons hosted on
+--unlisted          Disables messages that are specific to apps hosted on
                     Marketplace.
 --boring            Disables colorful shell output.
 
@@ -106,7 +106,7 @@ The output type may be either of the following:
 text (default)
     Outputs a textual summary of the addo-on analysis. Supports verbose mode.
 json
-    Outputs a JSON snippet representing a full summary of the add-on analysis.
+    Outputs a JSON snippet representing a full summary of the analysis.
 
 
 --------
@@ -120,8 +120,8 @@ In ``text`` output mode, output is structured in the format of one
 message per line. The messages are prefixed by their priority level
 (i.e.: "Warning: This is the message").
 
-At the head of the text output is a block describing what the
-add-on type was determined to be.
+At the head of the text output is a block describing what the app type was
+determined to be.
 
 
 JSON Output Mode:

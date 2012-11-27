@@ -1,4 +1,3 @@
-from StringIO import StringIO
 from zipfile import ZipFile
 import zlib
 
@@ -84,10 +83,7 @@ class ZipPackage(object):
 
     def write(self, name, data):
         """Write a blob of data to the ZIP manager."""
-        if isinstance(data, StringIO):
-            self.zf.writestr(name, data.getvalue())
-        else:
-            self.zf.writestr(name, to_utf8(data))
+        self.zf.writestr(name, to_utf8(data))
 
     def write_file(self, name, path=None):
         """Write the contents of a file from the disk to the ZIP."""

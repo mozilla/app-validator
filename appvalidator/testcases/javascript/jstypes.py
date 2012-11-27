@@ -7,12 +7,11 @@ class JSObject(object):
     context to enable static analysis of `with` statements.
     """
 
-    def __init__(self, data=None, unwrapped=False):
+    def __init__(self, data=None):
         self.type_ = "object"  # For use when an object is pushed as a context.
         self.data = {u"prototype": lambda: JSPrototype()}
         if data:
             self.data.update(data)
-        self.is_unwrapped = unwrapped
 
         self.recursing = False
 
@@ -20,13 +19,6 @@ class JSObject(object):
         "Returns the value associated with a property name"
         name = unicode(name)
         output = None
-
-        if name == "wrappedJSObject":
-            if traverser:
-                traverser._debug("Requested unwrapped JS object...")
-            clone = JSObject(unwrapped=True)
-            clone.data = self.data
-            return JSWrapper(clone, traverser=traverser)
 
         if name in self.data:
             output = self.data[name]
@@ -56,25 +48,10 @@ class JSObject(object):
                 if modified_value is not None:
                     value = modified_value
 
-            if self.is_unwrapped:
-                traverser.err.warning(
-                    err_id=("testcases_javascript_jstypes", "JSObject_set",
-                            "unwrapped_js_object"),
-                    warning="Assignment of unwrapped JS Object's properties.",
-                    description="Improper use of unwrapped JS objects can "
-                                "result in serious security vulnerabilities. "
-                                "Please reconsider your use of unwrapped "
-                                "JS objects.",
-                    filename=traverser.filename,
-                    line=traverser.line,
-                    column=traverser.position,
-                    context=traverser.context)
-
         self.data[name] = value
 
     def has_var(self, name):
-        name = unicode(name)
-        return name in self.data
+        return unicode(name) in self.data
 
     def output(self):
         if self.recursing:
@@ -98,18 +75,14 @@ class JSObject(object):
         # Pop from the recursion buster.
         self.recursing = False
 
-        output = []
-        if self.is_unwrapped:
-            output.append("<unwrapped>: ")
-        output.append(str(output_dict))
-        return "".join(output)
+        return str(output_dict)
 
 
 class JSContext(JSObject):
     """A variable context"""
 
-    def __init__(self, context_type, unwrapped=False):
-        super(JSContext, self).__init__(unwrapped=unwrapped)
+    def __init__(self, context_type):
+        super(JSContext, self).__init__()
         self.type_ = context_type
         self.data = {}
 
@@ -117,7 +90,7 @@ class JSContext(JSObject):
 class JSWrapper(object):
     """Wraps a JS value and handles contextual functions for it."""
 
-    def __init__(self, value=None, const=False, dirty=False, lazy=False,
+    def __init__(self, value=None, dirty=False, lazy=False,
                  is_global=False, traverser=None, callable=False,
                  setter=None, context="chrome"):
 
@@ -131,7 +104,7 @@ class JSWrapper(object):
                 traverser._debug(">>> Rewrap <<<")
             traverser.debug_level -= 1
 
-        self.const = const
+        self.const = False
         self.traverser = traverser
         self.value = None  # Instantiate the placeholder value
         self.is_global = False  # Not yet...
@@ -362,8 +335,8 @@ class JSWrapper(object):
 class JSLiteral(JSObject):
     """Represents a literal JavaScript value."""
 
-    def __init__(self, value=None, unwrapped=False):
-        super(JSLiteral, self).__init__(unwrapped=unwrapped)
+    def __init__(self, value=None):
+        super(JSLiteral, self).__init__()
         self.value = value
 
     def set_value(self, value):
@@ -388,8 +361,8 @@ class JSPrototype(JSObject):
     methods.
     """
 
-    def __init__(self, unwrapped=False):
-        super(JSPrototype, self).__init__(unwrapped=unwrapped)
+    def __init__(self):
+        super(JSPrototype, self).__init__()
         self.data = {}
 
     def get(self, name, instantiate=False, traverser=None):
@@ -407,8 +380,8 @@ class JSPrototype(JSObject):
 class JSArray(JSObject):
     """A class that represents both a JS Array and a JS list."""
 
-    def __init__(self, unwrapped=False):
-        super(JSArray, self).__init__(unwrapped=unwrapped)
+    def __init__(self):
+        super(JSArray, self).__init__()
         self.elements = []
 
     def get(self, index, instantiate=False, traverser=None):
@@ -446,14 +419,10 @@ class JSArray(JSObject):
             index = int(index)
             f_index = float(index)
             # Ignore floating point indexes
-            if index != float(index):
+            if index != float(index) or index < 0:
                 return super(JSArray, self).set(value, traverser)
         except ValueError:
             return super(JSArray, self).set(index, value, traverser)
-
-        # JS ignores indexes less than 0
-        if index < 0:
-            return
 
         if len(self.elements) > index:
             self.elements[index] = JSWrapper(value=value, traverser=traverser)

@@ -266,18 +266,14 @@ def _define_var(traverser, node):
             var_name = declaration["id"]["name"]
             traverser._debug("NAME>>%s" % var_name)
 
-            var_value = traverser._traverse_node(declaration["init"])
-            traverser._debug("VALUE>>%s" % (var_value.output()
-                                            if var_value is not None
+            var = traverser._traverse_node(declaration["init"])
+            traverser._debug("VALUE>>%s" % (var.output()
+                                            if var is not None
                                             else "None"))
 
-            if not isinstance(var_value, JSWrapper):
-                var = JSWrapper(value=var_value,
-                                const=node["kind"] == "const",
-                                traverser=traverser)
-            else:
-                var = var_value
-                var.const = node["kind"] == "const"
+            if not isinstance(var, JSWrapper):
+                var = JSWrapper(value=var_value, traverser=traverser)
+            var.const = node["kind"] == "const"
             traverser._declare_variable(var_name, var, type_=node["kind"])
 
     traverser.debug_level -= 1

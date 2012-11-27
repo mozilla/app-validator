@@ -15,8 +15,8 @@ DEBUG = False
 UNSAFE_TAGS = ("script", "object", "embed", "base", )
 SELF_CLOSING_TAGS = ("area", "base", "basefont", "br", "col", "frame", "hr",
                      "img", "input", "li", "link", "meta", "p", "param", )
-SAFE_IFRAME_TYPES = ("content", "content-primary", "content-targetable", )
 TAG_NOT_OPENED = "Tag (%s) being closed before it is opened."
+REMOTE_URL_PATTERN = re.compile("((ht|f)tps?:)?//")
 
 DOM_MUTATION_HANDLERS = (
         "ondomattrmodified", "ondomattributenamechanged",
@@ -362,5 +362,4 @@ class MarkupParser(PatchedHTMLParser):
         return " " + " ".join('%s="%s"' % a for a in args)
 
     def _is_url_local(self, url):
-        pattern = re.compile("((ht|f)tps?:)?//")
-        return not pattern.match(url)
+        return not REMOTE_URL_PATTERN.match(url)

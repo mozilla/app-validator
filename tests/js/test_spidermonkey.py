@@ -1,6 +1,6 @@
 import json
 
-from mock import MagicMock, patch
+from mock import Mock, patch
 
 from js_helper import TestCase
 from appvalidator.errorbundle import ErrorBundle
@@ -21,25 +21,11 @@ def test_scripting_disabled():
     assert scripting.test_js_file(err, "abc def", "foo bar") is None
 
 
-class TestSnippets(TestCase):
-    """Test that JS snippets are treated as first-class citizens."""
-
-    def test_scripting_snippet(self):
-        self.setup_err()
-        scripting.test_js_snippet(self.err, "alert(1 + 1 == 2)", "bar.zap")
-        self.assert_silent()
-
-    def test_scripting_snippet(self):
-        self.setup_err()
-        scripting.test_js_snippet(self.err, "eval('foo');", "bar.zap")
-        self.assert_failed()
-
-
 @patch("subprocess.Popen")
 def test_reflectparse_presence(Popen):
     "Tests that when Spidermonkey is too old, a proper error is produced"
 
-    SPObj = MagicMock()
+    SPObj = Mock()
     SPObj.communicate.return_value = (
         json.dumps({"error": True,
                     "error_message": "ReferenceError: Reflect is not defined",

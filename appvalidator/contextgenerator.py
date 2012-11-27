@@ -1,4 +1,3 @@
-from StringIO import StringIO
 import unicodehelper
 
 
@@ -11,9 +10,6 @@ class ContextGenerator:
     for errors, warnings, and the like."""
 
     def __init__(self, data=None):
-        if isinstance(data, StringIO):
-            data = data.getvalue()
-
         self.data = data.split("\n")
 
     def get_context(self, line=1, column=0):
@@ -102,8 +98,7 @@ class ContextGenerator:
                 # Trim from the end
                 data = "%s ..." % data[:140]
 
-        data = unicodehelper.decode(data)
-        return data
+        return unicodehelper.decode(data)
 
     def get_line(self, position):
         """Returns the line number that the given string position is found on."""
@@ -118,4 +113,3 @@ class ContextGenerator:
             line += 1
 
         return line
-

@@ -1,23 +1,15 @@
 import argparse
-import json
-import os
 import sys
-import zipfile
-from StringIO import StringIO
 
 from . import validate_app, validate_packaged_app
-from constants import *
 
 
 def main():
     "Main function. Handles delegation to other functions."
 
-    expectations = {"any": PACKAGE_ANY,
-                    "webapp": PACKAGE_WEBAPP}
-
     # Parse the arguments that
     parser = argparse.ArgumentParser(
-        description="Run tests on a Mozilla-type addon.")
+        description="Run tests on a web app.")
 
     parser.add_argument("package",
                         help="The path of the package you're testing")
@@ -38,12 +30,11 @@ def main():
                         const=True,
                         help="""Activating this flag will remove color
                         support from the terminal.""")
-    parser.add_argument("--selfhosted",
+    parser.add_argument("--unlisted",
                         action="store_const",
                         const=True,
-                        help="""Indicates that the addon will not be
-                        hosted on addons.mozilla.org. This allows the
-                        <em:updateURL> element to be set.""")
+                        help="Indicates that the app will not be listed on "
+                             "the Firefox Marketplace.")
     parser.add_argument("--timeout",
                         help="The amount of time before validation is "
                              "terminated with a timeout exception.",
@@ -58,12 +49,12 @@ def main():
         sys.exit(1)
 
     error_bundle = validate_packaged_app(
-        args.package, listed=not args.selfhosted, format=None, timeout=timeout)
+        args.package, listed=not args.unlisted, format=None, timeout=timeout)
 
     # Print the output of the tests based on the requested format.
     if args.output == "text":
-        print error_bundle.print_summary(verbose=args.verbose,
-                                         no_color=args.boring).encode("utf-8")
+        print error_bundle.print_summary(
+            verbose=args.verbose, no_color=args.boring).encode("utf-8")
     elif args.output == "json":
         sys.stdout.write(error_bundle.render_json())
 
