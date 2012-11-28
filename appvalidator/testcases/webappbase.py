@@ -201,7 +201,7 @@ def test_app_resources(err, package):
             # problem.
             err.warning(
                 err_id=("resources", "icon", "count"),
-                warning="Too man icon resources.",
+                warning="Too many icon resources.",
                 description=["The app's manifest file contains more than %d "
                              "icons. Including too many icons could put "
                              "unnecessary load on a web server." %
