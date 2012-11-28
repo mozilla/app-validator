@@ -621,10 +621,12 @@ def _expr_binary(traverser, node):
     # Dirty l or r values mean we can skip the expression. A dirty value
     # indicates that a lazy operation took place that introduced some
     # nondeterminacy.
-    if left.dirty:
-        return left
-    elif right.dirty:
-        return right
+    if operator != "+":
+        # We don't want this to apply to concatenation.
+        if left.dirty:
+            return left
+        elif right.dirty:
+            return right
 
     # Binary expressions are only executed on literals.
     left_wrap = left

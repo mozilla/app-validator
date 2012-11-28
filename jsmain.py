@@ -4,8 +4,8 @@ import sys
 import os
 
 from appvalidator.constants import SPIDERMONKEY_INSTALLATION
-from appvalidator.errorbundler import ErrorBundle
-from appvalidator.outputhandlers.shellcolors import OutputHandler
+from appvalidator.errorbundle import ErrorBundle
+from appvalidator.errorbundle.outputhandlers.shellcolors import OutputHandler
 import appvalidator.testcases.scripting as scripting
 import appvalidator.testcases.javascript.traverser
 from appvalidator.testcases.javascript.predefinedentities import GLOBAL_ENTITIES

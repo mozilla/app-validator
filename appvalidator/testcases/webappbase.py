@@ -237,4 +237,3 @@ def test_app_resources(err, package):
     test_developer(manifest.get("developer"))
     for locale, locale_data in manifest.get("locales", {}).items():
         test_developer(locale_data.get("developer"))
-
