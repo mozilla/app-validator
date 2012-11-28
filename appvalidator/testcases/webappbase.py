@@ -190,13 +190,33 @@ def test_app_resources(err, package):
     # Test the icons in the manifest. The manifest validator should have thrown
     # a hard error if this isn't a dict, so this won't ever be reached if it'll
     # otherwise fail with subscript errors.
-    for icon_size, url in manifest.get("icons", {}).items():
+    icon_urls = set()
+    icons = manifest.get("icons", {}).items()
+    for icon_size, url in icons:
+        # Don't test the same icon URL twice.
+        if url in icon_urls:
+            continue
+        elif len(icon_urls) == constants.ICON_LIMIT:
+            # If we're going in and there are already ten icons, that's a
+            # problem.
+            err.warning(
+                err_id=("resources", "icon", "count"),
+                warning="Too man icon resources.",
+                description=["The app's manifest file contains more than %d "
+                             "icons. Including too many icons could put "
+                             "unnecessary load on a web server." %
+                                 constants.ICON_LIMIT,
+                             "Found %d icons." % len(icons)],
+                filename="webapp.manifest")
+            break
+
         icon_data = try_get_resource(err, package,
                                      url, "webapp.manifest", "icon")
         if not icon_data:
             continue
 
         test_icon(err, data=StringIO(icon_data), url=url, size=icon_size)
+        icon_urls.add(url)
 
     if "launch_path" in manifest:
         try_get_resource(err, package, manifest["launch_path"],

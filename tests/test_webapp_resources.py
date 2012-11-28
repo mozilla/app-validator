@@ -5,9 +5,10 @@ from mock import Mock, patch
 from nose.tools import eq_, raises
 import requests.exceptions as reqexc
 
-from helper import TestCase
-from appvalidator.errorbundle import ErrorBundle
 import appvalidator.testcases.webappbase as appbase
+from helper import TestCase
+from appvalidator.constants import ICON_LIMIT
+from appvalidator.errorbundle import ErrorBundle
 
 
 class TestWebappDataURL(TestCase):
@@ -174,10 +175,29 @@ class TestResourcePolling(TestCase):
     @patch("appvalidator.testcases.webappbase.try_get_resource")
     def test_icons(self, tgr, test_icon):
         tgr.return_value = "foobar"
+
         self.setup_manifest()["icons"] = {"32": "fizz"}
         appbase.test_app_resources(self.err, None)
         eq_(tgr.call_args[0][2], "fizz")
         eq_(test_icon.call_args[1]["data"].getvalue(), "foobar")
+
+    @patch("appvalidator.testcases.webappbase.test_icon", Mock())
+    @patch("appvalidator.testcases.webappbase.try_get_resource",
+           Mock(return_value="this is an icon."))
+    def test_too_many_icons(self):
+        self.setup_manifest()["icons"] = dict(
+            [(str(i), "http://foo%d.jpg" % i) for i in range(ICON_LIMIT + 1)])
+        appbase.test_app_resources(self.err, None)
+        self.assert_failed(with_warnings=True)
+
+    @patch("appvalidator.testcases.webappbase.test_icon", Mock())
+    @patch("appvalidator.testcases.webappbase.try_get_resource",
+           Mock(return_value="this is an icon."))
+    def test_many_icons_same_url(self):
+        self.setup_manifest()["icons"] = dict(
+            [(str(i), "foo.jpg") for i in range(ICON_LIMIT + 1)])
+        appbase.test_app_resources(self.err, None)
+        self.assert_silent()
 
     @patch("appvalidator.testcases.webappbase.try_get_resource")
     def test_appcache_path(self, tgr):

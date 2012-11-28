@@ -24,6 +24,8 @@ MAX_STR_SIZE = 1024 * 24  # 24KB
 
 MAX_RESOURCE_SIZE = 2 * 1024 * 1024
 
+ICON_LIMIT = 10
+
 # Graciously provided by @kumar in bug 614574
 if (not SPIDERMONKEY_INSTALLATION or
     not os.path.exists(SPIDERMONKEY_INSTALLATION)):
