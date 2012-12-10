@@ -18,21 +18,6 @@ def test_blacklisted_files():
     assert err.metadata["contains_binary_extension"]
 
 
-def test_java_jar_detection():
-    """
-    Test that Java archives are flagged as such so that they do not generate
-    hundreds or thousands of errors.
-    """
-
-    classes = ("c%d.class" % i for i in xrange(1000))
-    mock_xpi = MockXPI(dict(zip(classes, repeat(""))))
-    err = ErrorBundle()
-    packagelayout.test_blacklisted_files(err, mock_xpi)
-
-    assert not err.failed()
-    assert err.notices
-
-
 def test_blacklisted_magic_numbers():
     "Tests that blacklisted magic numbers are banned"
 

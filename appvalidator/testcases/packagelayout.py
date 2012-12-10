@@ -17,10 +17,6 @@ blacklisted_magic_numbers = (
         (0x43, 0x57, 0x53),  # ZLIB compressed SWF
 )
 
-# If there are more than 10 .class files in a package, it is flagged as a Java
-# archive file.
-JAVA_JAR_THRESHOLD = 10
-
 
 @register_test(tier=1)
 def test_blacklisted_files(err, package=None):
@@ -72,32 +68,20 @@ def test_blacklisted_files(err, package=None):
 
     if flagged_files:
         # Detect Java JAR files:
-        if (sum(1 for f in flagged_files if f.endswith(".class")) >
-                JAVA_JAR_THRESHOLD):
-            err.notice(
-                err_id=("testcases_packagelayout",
-                        "test_blacklisted_files",
-                        "java_jar"),
-                notice="Java JAR file detected.",
-                description="A Java JAR file was detected in the add-on.",
-                filename=package.filename)
-        else:
-            err.warning(
-                err_id=("testcases_packagelayout",
-                        "test_blacklisted_files",
-                        "disallowed_extension"),
-                warning="Flagged file extensions found.",
-                description=["Files whose names end with flagged extensions "
-                             "have been found in the add-on.",
-                             "The extension of these files are flagged because "
-                             "they usually identify binary components. Please "
-                             "see "
-                             "http://addons.mozilla.org/developers/docs/"
-                                 "policies/reviews#section-binary"
-                             " for more information on the binary content "
-                             "review process.",
-                             "\n".join(flagged_files)],
-                filename=name)
+        err.warning(
+            err_id=("testcases_packagelayout",
+                    "test_blacklisted_files",
+                    "disallowed_extension"),
+            warning="Flagged file extensions found.",
+            description=["Files whose names end with flagged extensions have "
+                         "been found in the add-on.",
+                         "The extension of these files are flagged because "
+                         "they usually identify binary components. Please see "
+                         "http://addons.mozilla.org/developers/docs/"
+                             "policies/reviews#section-binary"
+                         " for more information on the binary content review "
+                         "process.", "\n".join(flagged_files)],
+            filename=name)
 
 
 @register_test(tier=1)
