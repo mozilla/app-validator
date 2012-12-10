@@ -48,10 +48,13 @@ class TestWebapps(TestCase):
         super(TestWebapps, self).setUp()
         self.listed = False
 
+        descr = "Exciting Open Web development action!"
+        descr += (250 - len(descr)) * "_"
+
         self.data = {
             "version": "1.0",
             "name": "MozBall",
-            "description": "Exciting Open Web development action!",
+            "description": descr,
             "icons": {
                 "16": "/img/icon-16.png",
                 "48": "/img/icon-48.png",
@@ -701,3 +704,5 @@ class TestWebapps(TestCase):
         self.data['locales']['es']['description'] = u'×' * 251
         self.analyze()
         self.assert_failed(with_errors=True)
+        assert 'locales > es > description' in (
+            self.err.errors[0]['description'][-1])

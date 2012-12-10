@@ -1,5 +1,6 @@
 import re
 import types
+from functools import partial
 
 
 LITERAL_TYPE = types.StringTypes + (int, float, long, bool, )
@@ -65,9 +66,20 @@ class Spec(object):
         self.data = self.parse(data)
         self.err = err
 
-        self.err_map = {"error": self.err.error,
-                        "warning": self.err.warning,
-                        "notice": self.err.notice}
+        self.error = partial(self._err_message, self.err.error)
+        self.warning = partial(self._err_message, self.err.warning)
+        self.notice = partial(self._err_message, self.err.notice)
+
+        self.err_map = {"error": self.error,
+                        "warning": self.warning,
+                        "notice": self.notice}
+
+        self.path = []
+
+    def _err_message(self, func, *args, **kwargs):
+        if self.path:
+            kwargs['description'].append("Node: %s" % self._get_path())
+        func(*args, **kwargs)
 
     def _message(self, type_, *args, **kwargs):
         kwargs[type_] = kwargs.pop("message")
@@ -100,12 +112,20 @@ class Spec(object):
         """
 
     def iterate(self, branch_name, branch, spec_branch):
+        self.path.append(branch_name)
+        self._iterate(branch_name, branch, spec_branch)
+        self.path.pop()
+
+    def _get_path(self):
+        return ' > '.join(self.path)
+
+    def _iterate(self, branch_name, branch, spec_branch):
         """Iterate the tree of nodes and validate as we go."""
 
         # Check that the node is of the proper type. If it isn't, then we need
         # to stop iterating at this point.
         if not isinstance(branch, spec_branch["expected_type"]):
-            self.err.error(
+            self.error(
                 err_id=("spec", "iterate", "bad_type"),
                 error="%s's `%s` was of an unexpected type." %
                         (self.SPEC_NAME, branch_name),
@@ -123,7 +143,7 @@ class Spec(object):
             spec_branch["process"](self)(branch)
 
         if "not_empty" in spec_branch and not branch:
-            self.err.error(
+            self.error(
                 err_id=("spec", "iterate", "empty"),
                 error="`%s` is empty." % branch_name,
                 description=["A value was expected for `%s`, but one wasn't "
@@ -133,7 +153,7 @@ class Spec(object):
         # If the node isn't an object...
         if not isinstance(branch, dict):
             if "values" in spec_branch and branch not in spec_branch["values"]:
-                self.err.error(
+                self.error(
                     err_id=("spec", "iterate", "bad_value"),
                     error="`%s` contains an invalid value in %s" %
                           (branch_name, self.SPEC_NAME),
@@ -147,7 +167,7 @@ class Spec(object):
                 raw_pattern = spec_branch.get("value_matches")
                 pattern = re.compile(raw_pattern)
                 if not pattern.match(branch):
-                    self.err.error(
+                    self.error(
                         err_id=("spec", "iterate", "value_pattern_fail"),
                         error="`%s` contains an invalid value in %s" %
                               (branch_name, self.SPEC_NAME),
@@ -162,7 +182,7 @@ class Spec(object):
 
             if ("max_length" in spec_branch and
                 len(branch) > spec_branch["max_length"]):
-                self.err.error(
+                self.error(
                     err_id=("spec", "iterate", "max_length"),
                     error="`%s` has exceeded its maximum length." % branch_name,
                     description=["`%s` has a maximum length (%d), which has "
@@ -194,7 +214,7 @@ class Spec(object):
 
             for req_node in [n for n in spec_branch["required_nodes"] if
                              not self.has_child(branch, n)]:
-                self.err.error(
+                self.error(
                     err_id=("spec", "iterate", "missing_req"),
                     error="%s expecting `%s`" % (self.SPEC_NAME, req_node),
                     description=["The '%s' node of the %s expects a `%s` "
@@ -209,7 +229,7 @@ class Spec(object):
             for req_node in [name for name, cond in
                              spec_branch["required_nodes_when"].items() if
                              cond(branch) and not self.has_child(branch, name)]:
-                self.err.error(
+                self.error(
                     err_id=("spec", "iterate", "missing_req_cond"),
                     error="%s expecting `%s`" % (self.SPEC_NAME, req_node),
                     description=["The '%s' node, under the current "
@@ -225,7 +245,7 @@ class Spec(object):
 
             for dnode in [n for n in disallowed_nodes if
                           self.has_child(branch, n)]:
-                self.err.error(
+                self.error(
                     err_id=("spec", "iterate", "disallowed"),
                     error="%s found `%s`, which is not allowed." %
                             (self.SPEC_NAME, dnode),
@@ -269,7 +289,7 @@ class Spec(object):
                 # Don't warn about the same node multiple times.
                 if child_name in warned_nodes:
                     continue
-                self.err.error(
+                self.error(
                     err_id=("spec", "iterate", "allow_once_multiple"),
                     error="%s found `%s` more than once." %
                               (self.SPEC_NAME, child_name),
