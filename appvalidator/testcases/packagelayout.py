@@ -98,3 +98,11 @@ def test_layout_all(err, package):
             description="The package contains multiple entries with the same "
                         "name. This practice has been banned. Try unzipping "
                         "and re-zipping your add-on package and try again.")
+
+    if any(name.startswith('META-INF/') for name in package_nameset):
+        err.error(
+            err_id=("testcases_packagelayout", "test_layout_all",
+                    "META-INF"),
+            error="Packages must not contain META-INF",
+            description="Packages must not contain a META-INF directory. This "
+                        "directory prevents apps from being properly signed.")

@@ -4,7 +4,7 @@ from mock import MagicMock
 
 import appvalidator.testcases.packagelayout as packagelayout
 from appvalidator.errorbundle import ErrorBundle
-from helper import _do_test, MockXPI
+from helper import _do_test, MockXPI, TestCase
 
 
 def test_blacklisted_files():
@@ -38,6 +38,25 @@ def test_duplicate_files():
     package.zf = zf
 
     err = ErrorBundle()
-    err.save_resource("has_install_rdf", True)
     packagelayout.test_layout_all(err, package)
     assert err.failed()
+
+
+class TestMETAINF(TestCase):
+
+    def setUp(self):
+        self.setup_err()
+        self.package = MagicMock()
+        self.package.subpackage = False
+
+    def test_metainf_pass(self):
+        self.package.zf.namelist.return_value = ["META-INF-foo.js"]
+        packagelayout.test_layout_all(self.err, self.package)
+        self.assert_silent()
+
+    def test_metainf_fail(self):
+        """Test that META-INF directories fail validation."""
+
+        self.package.zf.namelist.return_value = ["META-INF/foo.js"]
+        packagelayout.test_layout_all(self.err, self.package)
+        self.assert_failed(with_errors=True)
