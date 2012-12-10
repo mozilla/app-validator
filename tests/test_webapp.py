@@ -691,3 +691,13 @@ class TestWebapps(TestCase):
         self.data['csp'] = 'this is the csp policy. it can be a string.'
         self.analyze()
         self.assert_silent()
+
+    def test_description_long(self):
+        self.data['description'] = 'x' * 251
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_locale_description_long(self):
+        self.data['locales']['es']['description'] = u'×' * 251
+        self.analyze()
+        self.assert_failed(with_errors=True)
