@@ -448,7 +448,7 @@ class TestWebapps(TestCase):
             self.assert_silent()
 
         for key in ("portrait", "landscape", "portrait-secondary",
-                    "landscape-secondary",):
+                    "landscape-secondary", "portrait-primary", "landscape-primary"):
             yield test_orientation, self, key
 
     def test_orientation_bad_value(self):
