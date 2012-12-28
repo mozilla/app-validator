@@ -664,7 +664,7 @@ class TestWebapps(TestCase):
         self.set_permissions()
         self.data["permissions"]["foo"] = {"description": "lol"}
         self.analyze()
-        self.assert_failed(with_warnings=True)
+        self.assert_failed(with_errors=True)
 
     def test_permissions_missing_desc(self):
         self.set_permissions()
