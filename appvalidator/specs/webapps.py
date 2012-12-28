@@ -125,7 +125,6 @@ class WebappSpec(Spec):
             "permissions": {
                 "allowed_nodes": PERMISSIONS,
                 "expected_type": dict,
-                "unknown_node_level": "warning",
                 "child_nodes": {
                     "*": {
                         "expected_type": dict,
@@ -371,7 +370,7 @@ class WebappSpec(Spec):
 
     def process_orientation(self, node):
         values = [u"portrait", u"landscape", u"portrait-secondary",
-                  u"landscape-secondary", u"portrait-primary", 
+                  u"landscape-secondary", u"portrait-primary",
                   u"landscape-primary"]
         message = ("The value provided for a webapp's orientation should be "
                    "either a string or an array of strings.")
