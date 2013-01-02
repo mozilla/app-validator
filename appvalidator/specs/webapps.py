@@ -7,6 +7,9 @@ from ..constants import DESCRIPTION_TYPES
 from ..specprocessor import Spec, LITERAL_TYPE
 
 
+_FULL_PERMISSIONS = ("readonly", "readwrite", "readcreate", "createonly")
+
+
 class WebappSpec(Spec):
     """This object parses and subsequently validates webapp manifest files."""
 
@@ -15,16 +18,26 @@ class WebappSpec(Spec):
                  "https://developer.mozilla.org/en/OpenWebApps/The_Manifest")
     MIN_REQUIRED_ICON_SIZE = 128
 
-    PERMISSIONS = ("alarm", "backgroundservice", "bluetooth", "browser",
-                   "camera", "contacts", "desktop-notification",
-                   "device-storage", "fmradio", "geolocation",
-                   "mobileconnection", "power", "push", "settings", "sms",
-                   "storage", "systemclock", "network-http", "network-tcp",
-                   "telephony", "wake-lock-screen", "webapps-manage", "wifi")
+    PERMISSIONS = (
+        "alarms", "attention", "audio-channel-normal", "audio-channel-content",
+        "audio-channel-notification", "audio-channel-alarm",
+        "audio-channel-ringer", "audio-channel-telephony",
+        "audio-channel-publicnotification", "background-sensors",
+        "backgroundservice", "bluetooth", "browser", "camera", "contacts",
+        "desktop-notification", "device-storage:apps", "device-storage:music",
+        "device-storage:pictures", "device-storage:sdcard",
+        "device-storage:videos", "embed-apps", "fmradio", "geolocation",
+        "idle", "mobileconnection", "network-events", "networkstats-manage",
+        "open-remote-window", "permissions", "power", "settings", "sms",
+        "storage", "systemXHR", "tcp-socket", "telephony", "time", "voicemail",
+        "webapps-manage", "wifi-manage")
     PERMISSIONS_ACCESS = {
-        "contacts": ("readonly", "readwrite", "readcreate", "createonly"),
-        "device-storage":
-            ("readonly", "readwrite", "readcreate", "createonly"),
+        "contacts": _FULL_PERMISSIONS,
+        "device-storage:apps": _FULL_PERMISSIONS,
+        "device-storage:music": _FULL_PERMISSIONS,
+        "device-storage:pictures": _FULL_PERMISSIONS,
+        "device-storage:sdcards": _FULL_PERMISSIONS,
+        "device-storage:videos": _FULL_PERMISSIONS,
         "settings": ("readonly", "readwrite"),
     }
 
