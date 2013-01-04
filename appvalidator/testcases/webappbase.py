@@ -101,7 +101,11 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
                 filename=filename)
             return
 
-        request.raw.close()
+        try:
+            request.raw.close()
+        except AttributeError:
+            # Some versions of requests don't support close().
+            pass
 
         if not data:
             generic_http_error()
@@ -142,6 +146,12 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
 
 
 def test_icon(err, data, url, size):
+    try:
+        size = int(size)
+    except ValueError:
+        # This is handled elsewhere.
+        return
+
     try:
         icon = Image.open(data)
         icon.verify()
@@ -193,6 +203,13 @@ def test_app_resources(err, package):
     icon_urls = set()
     icons = manifest.get("icons", {}).items()
     for icon_size, url in icons:
+
+        try:
+            icon_size = int(icon_size)
+        except ValueError:
+            # There will be an error for this someplace else.
+            continue
+
         # Don't test the same icon URL twice.
         if url in icon_urls:
             continue

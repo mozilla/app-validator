@@ -273,12 +273,19 @@ class TestIconProperties(TestCase):
         self._test_icon("icon-128.png", 128)
         self.assert_silent()
 
+        self._test_icon("icon-128.png", "128")
+        self.assert_silent()
+
     def test_bad_icon(self):
         self._test_icon("corrupt.xpi", 128)
         self.assert_failed(with_errors=True)
 
     def test_not_square(self):
         self._test_icon("icon-128x64.png", 128)
+        self.assert_failed(with_errors=True)
+
+        self.setup_err()
+        self._test_icon("icon-128x64.png", "128")
         self.assert_failed(with_errors=True)
 
     def test_bad_size(self):
