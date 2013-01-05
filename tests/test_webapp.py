@@ -533,7 +533,7 @@ class TestWebapps(TestCase):
             self.analyze()
             self.assert_silent()
 
-        for key in ("web", "trusted", "certified", ):
+        for key in ("web", "privileged", "certified", ):
             yield wrap, self, key
 
     def test_act_base(self):

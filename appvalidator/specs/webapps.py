@@ -350,12 +350,12 @@ class WebappSpec(Spec):
                              self.MORE_INFO])
 
     def process_type(self, node):
-        if unicode(node) not in (u"web", u"trusted", u"certified", ):
+        if unicode(node) not in (u"web", u"privileged", u"certified", ):
             self.err.error(
                 err_id=("spec", "webapp", "type_not_known"),
                 error="`type` is not a recognized value",
                 description=["The `type` key does not contain a recognized "
-                             "value. `type` may only contain 'web', 'trusted', "
+                             "value. `type` may only contain 'web', 'privileged', "
                              "or 'certified'.",
                              "Found value: '%s'" % node,
                              self.MORE_INFO])
