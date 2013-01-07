@@ -107,7 +107,10 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
             # Some versions of requests don't support close().
             pass
 
-        if not data:
+        final_status = request.status_code
+        final_status -= final_status % 100
+
+        if not data and final_status != 300:
             generic_http_error()
 
         return data

@@ -47,6 +47,7 @@ def safe(func):
         with patch("requests.get") as r_g:
             request = Mock()
             request.text = "foo bar"
+            request.status_code = 200
             # The first bit is the return value. The second bit tells whatever
             # is requesting the data that there's no more data.
             request.raw.read.side_effect = [request.text, ""]

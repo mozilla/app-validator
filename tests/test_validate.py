@@ -1,5 +1,7 @@
 import json
 
+from mock import patch
+
 from appvalidator import validate_app, validate_packaged_app
 from helper import safe
 

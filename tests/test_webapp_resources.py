@@ -122,6 +122,7 @@ class TestDataOutput(TestCase):
     def test_too_big(self, r_g):
         big_response_object = Mock()
         big_response_object.raw.read.return_value = "x" * 100
+        big_response_object.status_code = 200
         r_g.return_value = big_response_object
 
         appbase.try_get_resource(self.err, None, "http://foo.bar/", "")
@@ -132,6 +133,7 @@ class TestDataOutput(TestCase):
     def test_just_right(self, r_g):
         normal_response_object = Mock()
         normal_response_object.raw.read.side_effect = ["x" * 100, ""]
+        normal_response_object.status_code = 200
         r_g.return_value = normal_response_object
 
         eq_(appbase.try_get_resource(self.err, None, "http://foo.bar/", ""),
@@ -143,11 +145,24 @@ class TestDataOutput(TestCase):
     def test_empty(self, r_g):
         empty_response = Mock()
         empty_response.raw.read.return_value = ""
+        empty_response.status_code = 200
         r_g.return_value = empty_response
 
         eq_(appbase.try_get_resource(
                 self.err, None, "http://foo.bar/", ""), "")
         self.assert_failed(with_errors=True)
+
+    @patch("requests.get")
+    @patch("appvalidator.constants.MAX_RESOURCE_SIZE", 100)
+    def test_empty_redirect(self, r_g):
+        empty_response = Mock()
+        empty_response.raw.read.return_value = ""
+        empty_response.status_code = 345
+        r_g.return_value = empty_response
+
+        eq_(appbase.try_get_resource(
+                self.err, None, "http://foo.bar/", ""), "")
+        self.assert_silent()
 
 
 class TestResourcePolling(TestCase):
