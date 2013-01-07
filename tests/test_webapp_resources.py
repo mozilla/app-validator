@@ -111,9 +111,7 @@ class TestResourceExceptions(TestCase):
         self.assert_failed(with_errors=True)
 
     @mock_requests(reqexc.TooManyRedirects, "Duplicate error")
-    def test_not_duplicated(self, r_g):
-        r_g.side_effect = reqexc.Timeout
-
+    def test_not_duplicated(self):
         appbase.try_get_resource(self.err, None, "http://foo.bar/", "")
         self.assert_failed(with_errors=True)
         appbase.try_get_resource(self.err, None, "http://foo.bar/", "")
