@@ -10,21 +10,13 @@ from .. import unicodehelper
 
 
 class BaseErrorBundle(object):
-    """This class does all sorts of cool things. It gets passed around
-    from test to test and collects up all the errors like the candy man
-    'separating the sorrow and collecting up all the cream.' It's
-    borderline magical.
-
-    Keyword Arguments:
+    """Keyword Arguments:
 
     **determined**
         Whether the validator should continue after a tier fails
-    **listed**
-        True if the add-on is destined for AMO, false if not
     **instant**
         Who knows what this does
-    **spidermonkey**
-        Optional path to the local spidermonkey installation
+
     """
 
     def __init__(self, determined=True, instant=False, *args, **kwargs):

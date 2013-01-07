@@ -93,7 +93,8 @@ class TestWebapps(TestCase):
                 "touch", "geolocation", "webgl"
             ],
             "orientation": "landscape",
-            "fullscreen": "true"
+            "fullscreen": "true",
+            "type": "privileged",
         }
 
     def analyze(self):
@@ -535,6 +536,13 @@ class TestWebapps(TestCase):
 
         for key in ("web", "privileged", "certified", ):
             yield wrap, self, key
+
+    def test_type_not_certified(self):
+        """Test that certified apps cannot be listed in the marketplace."""
+        self.listed = True
+        self.data["type"] = "certified"
+        self.analyze()
+        self.assert_failed(with_errors=True)
 
     def test_act_base(self):
         """Test that the most basic web activity passes."""

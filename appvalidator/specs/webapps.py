@@ -360,6 +360,14 @@ class WebappSpec(Spec):
                              "Found value: '%s'" % node,
                              self.MORE_INFO])
 
+        if self.err.get_resource("listed") and node == "certified":
+            self.err.error(
+                err_id=("spec", "webapp", "type_denied"),
+                error="Certified apps cannot be listed on the Marketplace.",
+                description=["Apps marked as `certified` cannot be listed on "
+                             "the Firefox Marketplace.",
+                             self.MORE_INFO])
+
     def process_act_href(self, node):
         if not self._path_valid(node, can_be_absolute=True,
                                 can_be_relative=True):
