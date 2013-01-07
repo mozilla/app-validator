@@ -110,6 +110,16 @@ class TestResourceExceptions(TestCase):
         appbase.try_get_resource(self.err, None, "http://foo.bar/", "")
         self.assert_failed(with_errors=True)
 
+    @mock_requests(reqexc.TooManyRedirects, "Duplicate error")
+    def test_not_duplicated(self, r_g):
+        r_g.side_effect = reqexc.Timeout
+
+        appbase.try_get_resource(self.err, None, "http://foo.bar/", "")
+        self.assert_failed(with_errors=True)
+        appbase.try_get_resource(self.err, None, "http://foo.bar/", "")
+        assert len(self.err.errors) == 1, (
+            "HTTP errors should not be duplicated.")
+
 
 class TestDataOutput(TestCase):
 
@@ -151,18 +161,6 @@ class TestDataOutput(TestCase):
         eq_(appbase.try_get_resource(
                 self.err, None, "http://foo.bar/", ""), "")
         self.assert_failed(with_errors=True)
-
-    @patch("requests.get")
-    @patch("appvalidator.constants.MAX_RESOURCE_SIZE", 100)
-    def test_empty_redirect(self, r_g):
-        empty_response = Mock()
-        empty_response.raw.read.return_value = ""
-        empty_response.status_code = 345
-        r_g.return_value = empty_response
-
-        eq_(appbase.try_get_resource(
-                self.err, None, "http://foo.bar/", ""), "")
-        self.assert_silent()
 
 
 class TestResourcePolling(TestCase):

@@ -47,6 +47,7 @@ def try_get_data_uri(data_url):
 
 def try_get_resource(err, package, url, filename, resource_type="URL",
                      max_size=True):
+
     # Try to process data URIs first.
     if url.startswith("data:"):
         try:
@@ -76,6 +77,10 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
                 filename=filename)
             return
 
+    http_cache = err.get_or_create('http_cache', {})
+    if url in http_cache:
+        return http_cache[url]
+
     def generic_http_error():
         err.error(
             err_id=("resources", "null_response"),
@@ -87,7 +92,8 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
             filename=filename)
 
     try:
-        request = requests.get(url, prefetch=False)
+        request = requests.get(url, prefetch=False, allow_redirects=True,
+                               timeout=3)
         data = request.raw.read(constants.MAX_RESOURCE_SIZE)
         # Check that there's not more data than the max size.
         if max_size and request.raw.read(1):
@@ -107,10 +113,9 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
             # Some versions of requests don't support close().
             pass
 
-        final_status = request.status_code
-        final_status -= final_status % 100
+        http_cache[url] = data
 
-        if not data and final_status != 300:
+        if not data:
             generic_http_error()
 
         return data
@@ -132,10 +137,6 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
                          "an invalid URL was encountered.",
                          "URL: %s" % url],
             filename=filename)
-    except (requests.exceptions.ConnectionError,
-            requests.exceptions.Timeout,
-            requests.exceptions.HTTPError):
-        generic_http_error()
     except requests.exceptions.TooManyRedirects:
         err.error(
             err_id=("resources", "too_many_redirects"),
@@ -146,6 +147,13 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
                          "permanent URL in an app.",
                          "Requested resource: %s" % url],
             filename=filename)
+    except (requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+            requests.exceptions.HTTPError):
+        generic_http_error()
+
+    # Save the failed request to the cache.
+    http_cache[url] = None
 
 
 def test_icon(err, data, url, size):
