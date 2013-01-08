@@ -256,6 +256,9 @@ class WebappSpec(Spec):
                              self.MORE_INFO])
 
     def process_icons(self, node):
+        if not node:
+            return
+
         # This test only applies to listed apps.
         if self.err.get_resource("listed"):
             max_size = max(int(x) for x in node.keys() if x.isdigit())

@@ -173,6 +173,11 @@ class TestWebapps(TestCase):
         self.analyze()
         self.assert_failed(with_errors=True)
 
+    def test_icons_empty(self):
+        """Test that no icons doesn't cause a traceback."""
+        self.data["icons"] = {}
+        self.analyze()
+
     def test_icons_size(self):
         """Test that webapp icon sizes must be integers."""
         self.data["icons"]["foo"] = "/foo.png"
