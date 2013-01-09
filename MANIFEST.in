@@ -1,2 +1,1 @@
-include validator/testcases/hashes.txt
-include validator/testcases/whitelist_hashes.txt
+include appvalidator/testcases/hashes.txt
