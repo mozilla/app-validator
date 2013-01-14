@@ -160,6 +160,17 @@ class TestDataOutput(TestCase):
                 self.err, None, "http://foo.bar/", ""), "")
         self.assert_failed(with_errors=True)
 
+    @patch("requests.get")
+    @patch("appvalidator.constants.MAX_RESOURCE_SIZE", 100)
+    def test_eventual_404(self, r_g):
+        error_response = Mock()
+        error_response.raw.read.side_effect = ["x" * 100, ""]
+        error_response.status_code = 404
+        r_g.return_value = error_response
+
+        appbase.try_get_resource(self.err, None, "http://foo.bar/", "")
+        self.assert_failed(with_errors=True)
+
 
 class TestResourcePolling(TestCase):
 

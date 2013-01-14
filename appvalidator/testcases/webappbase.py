@@ -115,7 +115,7 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
 
         http_cache[url] = data
 
-        if not data:
+        if not data or request.status_code != 200:
             generic_http_error()
 
         return data
