@@ -371,6 +371,15 @@ class WebappSpec(Spec):
                              "the Firefox Marketplace.",
                              self.MORE_INFO])
 
+        if not self.err.get_resource("packaged") and node != "web":
+            self.err.error(
+                err_id=("spec", "webapp", "type_denied_web"),
+                error="Web apps may not be privileged.",
+                description=["Web apps may not have a `type` of `privileged` "
+                             "or `certified`.",
+                             "Detected type: %s" % node,
+                             self.MORE_INFO])
+
     def process_act_href(self, node):
         if not self._path_valid(node, can_be_absolute=True,
                                 can_be_relative=True):

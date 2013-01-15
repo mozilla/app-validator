@@ -94,13 +94,19 @@ class TestWebapps(TestCase):
             ],
             "orientation": "landscape",
             "fullscreen": "true",
-            "type": "privileged",
+            "type": "web",
         }
+
+        self.resources = []
 
     def analyze(self):
         """Run the webapp tests on the file."""
         self.detected_type = appvalidator.constants.PACKAGE_WEBAPP
         self.setup_err()
+
+        for resource, value in self.resources:
+            self.err.save_resource(resource, value)
+
         with tempfile.NamedTemporaryFile(delete=False) as t:
             if isinstance(self.data, types.StringTypes):
                 t.write(self.data)
@@ -535,6 +541,7 @@ class TestWebapps(TestCase):
 
         def wrap(self, value):
             self.setUp()
+            self.resources.append(("packaged", value != "web"))
             self.data["type"] = value
             self.analyze()
             self.assert_silent()
@@ -548,6 +555,27 @@ class TestWebapps(TestCase):
         self.data["type"] = "certified"
         self.analyze()
         self.assert_failed(with_errors=True)
+
+    def test_type_web_priv_fail(self):
+        """Test that web apps cannot be privileged or certified."""
+        self.data["type"] = "privileged"
+        self.resources.append(("packaged", False))
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_type_web_priv_fail(self):
+        """Test that web apps cannot be privileged or certified."""
+        self.data["type"] = "web"
+        self.resources.append(("packaged", False))
+        self.analyze()
+        self.assert_silent()
+
+    def test_type_packaged_priv_fail(self):
+        """Test that web apps cannot be privileged or certified."""
+        self.data["type"] = "privileged"
+        self.resources.append(("packaged", True))
+        self.analyze()
+        self.assert_silent()
 
     def test_act_base(self):
         """Test that the most basic web activity passes."""
