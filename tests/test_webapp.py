@@ -748,3 +748,12 @@ class TestWebapps(TestCase):
         self.assert_failed(with_errors=True)
         assert 'locales > es > description' in (
             self.err.errors[0]['description'][-1])
+
+    def test_appcache_path_packaged(self):
+        self.data["appcache_path"] = '/foo.bar'
+        self.analyze()
+        self.assert_silent()
+
+        self.resources.append(("packaged", True))
+        self.analyze()
+        self.assert_failed(with_errors=True)

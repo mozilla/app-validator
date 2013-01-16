@@ -343,6 +343,16 @@ class WebappSpec(Spec):
                              self.MORE_INFO])
 
     def process_appcache_path(self, node):
+        if self.err.get_resource("packaged"):
+            self.err.error(
+                err_id=("spec", "webapp", "appcache_packaged"),
+                error="`appcache_path` is not allowed for packaged apps.",
+                description=["Packaged apps cannot use Appcache. The "
+                             "`appcache_path` field should not be provided in "
+                             "a packaged app's manifest.",
+                             self.MORE_INFO])
+            return
+
         if not self._path_valid(node, can_be_absolute=True):
             self.err.error(
                 err_id=("spec", "webapp", "appcache_not_absolute"),
