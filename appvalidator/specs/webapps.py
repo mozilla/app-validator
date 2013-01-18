@@ -319,7 +319,8 @@ class WebappSpec(Spec):
                                  "`https://` to correct this issue.",
                                  "Found: %s" % item,
                                  self.MORE_INFO])
-            elif item == "*" or item in constants.DEFAULT_WEBAPP_MRKT_URLS:
+            elif item == "*" or item in (self.err.get_resource("market_urls") or
+                                         constants.DEFAULT_WEBAPP_MRKT_URLS):
                 market_urls.add(item)
 
         if self.err.get_resource("listed") and not market_urls:

@@ -27,7 +27,7 @@ def validate_app(data, listed=True, market_urls=None):
     bundle = ErrorBundle(listed=listed)
 
     # Set the market URLs.
-    set_market_urls(market_urls)
+    bundle.save_resource("market_urls", market_urls)
 
     webapp.detect_webapp_string(bundle, data)
     return format_result(bundle, "json")
@@ -60,7 +60,7 @@ def validate_packaged_app(path, listed=True, format="json", market_urls=None,
     bundle.save_resource("packaged", True)
 
     # Set the market URLs.
-    set_market_urls(market_urls)
+    bundle.save_resource("market_urls", market_urls)
 
     submain.prepare_package(bundle, path, timeout)
     return format_result(bundle, format)
@@ -73,9 +73,3 @@ def format_result(bundle, format):
         return formats[format](bundle)
     else:
         return bundle
-
-
-def set_market_urls(market_urls=None):
-    if market_urls is not None:
-        constants.DEFAULT_WEBAPP_MRKT_URLS = market_urls
-
