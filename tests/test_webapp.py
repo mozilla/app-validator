@@ -49,7 +49,7 @@ class TestWebapps(TestCase):
         self.listed = False
 
         descr = "Exciting Open Web development action!"
-        descr += (250 - len(descr)) * "_"
+        descr += (1024 - len(descr)) * "_"
 
         self.data = {
             "version": "1.0",
@@ -738,12 +738,12 @@ class TestWebapps(TestCase):
         self.assert_silent()
 
     def test_description_long(self):
-        self.data['description'] = 'x' * 251
+        self.data['description'] = 'x' * 1025
         self.analyze()
         self.assert_failed(with_errors=True)
 
     def test_locale_description_long(self):
-        self.data['locales']['es']['description'] = u'×' * 251
+        self.data['locales']['es']['description'] = u'×' * 1025
         self.analyze()
         self.assert_failed(with_errors=True)
         assert 'locales > es > description' in (

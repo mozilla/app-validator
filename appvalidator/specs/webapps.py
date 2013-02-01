@@ -57,7 +57,7 @@ class WebappSpec(Spec):
                      "max_length": 128,
                      "not_empty": True},
             "description": {"expected_type": types.StringTypes,
-                            "max_length": 250,
+                            "max_length": 1024,
                             "not_empty": True},
             "launch_path": {"expected_type": types.StringTypes,
                             "process": lambda s: s.process_launch_path,
