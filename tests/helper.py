@@ -1,6 +1,7 @@
 from functools import wraps
 import sys
 
+import requests
 from mock import MagicMock, Mock, patch
 
 from appvalidator.zip import ZipPackage
@@ -45,13 +46,20 @@ def safe(func):
             "`requests.get` already mocked")
 
         with patch("requests.get") as r_g:
-            request = Mock()
-            request.text = "foo bar"
-            request.status_code = 200
-            # The first bit is the return value. The second bit tells whatever
-            # is requesting the data that there's no more data.
-            request.raw.read.side_effect = [request.text, ""]
-            r_g.return_value = request
+            def request_generator(*args, **kwargs):
+                url = kwargs.get("url", args[0])
+                if "://" not in url:
+                    raise requests.exceptions.MissingSchema
+
+                request = Mock()
+                request.text = "foo bar"
+                request.status_code = 200
+                # The first bit is the return value. The second bit tells whatever
+                # is requesting the data that there's no more data.
+                request.raw.read.side_effect = [request.text, ""]
+                return request
+
+            r_g.side_effect = request_generator
             return func(*args, **kwargs)
     return wrap
 

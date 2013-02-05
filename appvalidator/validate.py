@@ -1,13 +1,14 @@
 import json
 
 import constants
-from errorbundle import ErrorBundle
 import loader
 import submain
 import webapp
+from errorbundle import ErrorBundle
 
 
-def validate_app(data, listed=True, market_urls=None):
+def validate_app(data, listed=True, market_urls=None, url=None,
+                 format="json"):
     """
     A handy function for validating apps.
 
@@ -18,6 +19,10 @@ def validate_app(data, listed=True, market_urls=None):
     `market_urls`:
         A list of URLs to use when validating the `installs_allowed_from`
         field of the manifest. Does not apply if `listed` is not set to `True`.
+    `url`:
+        The URL of the manifest. Used to resolve non-absolute URLs.
+    `format`:
+        The output format to return the results in.
 
     Notes:
     - App validation is always determined because there is only one tier.
@@ -25,12 +30,13 @@ def validate_app(data, listed=True, market_urls=None):
       perform JavaScript validation on webapps.
     """
     bundle = ErrorBundle(listed=listed)
-
-    # Set the market URLs.
     bundle.save_resource("market_urls", market_urls)
+    bundle.save_resource("manifest_url", url)
 
     webapp.detect_webapp_string(bundle, data)
-    return format_result(bundle, "json")
+    submain.test_inner_package(bundle, None)
+
+    return format_result(bundle, format)
 
 
 def validate_packaged_app(path, listed=True, format="json", market_urls=None,

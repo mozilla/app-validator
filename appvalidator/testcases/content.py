@@ -19,7 +19,9 @@ with open(os.path.join(os.path.dirname(__file__), "hashes.txt")) as f:
 
 @register_test(tier=2)
 def test_packed_packages(err, package=None):
-    "Tests XPI and JAR files for naughty content."
+
+    if not package:
+        return
 
     processed_files = 0
     pretested_files = err.get_resource("pretested_files") or []

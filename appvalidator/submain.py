@@ -110,15 +110,7 @@ def test_inner_package(err, package):
 
         # Iterate through each test of our detected type.
         for test in testcases._get_tests(tier):
-
-            test_func = test["test"]
-            if test["simple"]:
-                test_func(err)
-            else:
-                # Pass in:
-                # - Error Bundler
-                # - A copy of the package itself
-                test_func(err, package)
+            test(err, package)
 
         # Return any errors at the end of the tier if undetermined.
         if err.failed(fail_on_warnings=False) and not err.determined:

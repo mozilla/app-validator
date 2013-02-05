@@ -12,7 +12,7 @@ def test_tiers():
     """
     testcases.register_test(tier=1)(lambda: None)
     testcases.register_test(tier=2)(lambda: None)
-    testcases.register_test(tier=2, simple=True)(lambda: None)
+    testcases.register_test(tier=2)(lambda: None)
 
     tiers = testcases._get_tiers()
     print tiers

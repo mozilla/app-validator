@@ -78,10 +78,7 @@ class MockTestcases:
         if self.fail_tier is not None:
             if tier == self.fail_tier:
                 print "> Fail Tier"
-
-                yield {"test": lambda x, y: x.fail_tier(),
-                       "simple": False,
-                       "versions": None}
+                yield lambda x, y: x.fail_tier()
 
             assert tier <= self.fail_tier or self.determined
 
@@ -89,13 +86,7 @@ class MockTestcases:
 
         for x in range(1,10): # Ten times because we care
             print "Yielding Complex"
-            yield {"test": lambda x, z: x.report(tier),
-                   "simple": False,
-                   "versions": None}
-            print "Yielding Simple"
-            yield {"test": lambda x, z=None: x.test_simple(z),
-                   "simple": True,
-                   "versions": None}
+            yield lambda x, z: x.report(tier)
 
     def report_tier(self, tier):
         "Checks to make sure the last test run is on the current tier."
@@ -138,10 +129,6 @@ class MockErrorHandler:
         "Simulates a failure"
         self.has_failed = True
         self.decorator.report_fail()
-
-    def test_simple(self, z):
-        "Makes sure that the second two params of a simple test are respected"
-        assert z is None
 
     def failed(self, fail_on_warnings=False):
         "Simple accessor because the standard error handler has one"

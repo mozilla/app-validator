@@ -1,4 +1,5 @@
 import base64
+import urlparse
 from cStringIO import StringIO
 
 import requests
@@ -11,6 +12,10 @@ from ..webapp import detect_webapp_string
 
 @register_test(tier=1)
 def test_app_manifest(err, package):
+
+    if not err.get_resource("packaged"):
+        # This is done by the validate_*() functions.
+        return
 
     if "manifest.webapp" not in package:
         return err.error(
@@ -45,6 +50,13 @@ def try_get_data_uri(data_url):
         return decoded
 
 
+def _normalize_url(err, url):
+    p_url = urlparse.urlparse(url)
+    p_defurl = urlparse.urlparse(err.get_resource("manifest_url"))
+
+    return urlparse.urlunparse(p_defurl[:2] + p_url[2:])
+
+
 def try_get_resource(err, package, url, filename, resource_type="URL",
                      max_size=True):
 
@@ -62,20 +74,23 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
         return
 
     # Pull in whatever packaged app resources are required.
-    if err.get_resource("packaged") and "://" not in url:
-        url = url.lstrip("/")
-        try:
-            return package.read(url)
-        except Exception:
-            err.error(
-                err_id=("resources", "packaged", "not_found"),
-                error="Resource in packaged app not found.",
-                description=["A resource within a packaged app is "
-                             "referenced, but the path used does not "
-                             "point to a valid item in the package.",
-                             "Requested resource: %s" % url],
-                filename=filename)
-            return
+    if "://" not in url:
+        if err.get_resource("packaged"):
+            url = url.lstrip("/")
+            try:
+                return package.read(url)
+            except Exception:
+                err.error(
+                    err_id=("resources", "packaged", "not_found"),
+                    error="Resource in packaged app not found.",
+                    description=["A resource within a packaged app is "
+                                 "referenced, but the path used does not "
+                                 "point to a valid item in the package.",
+                                 "Requested resource: %s" % url],
+                    filename=filename)
+                return
+        else:
+            url = _normalize_url(err, url)
 
     http_cache = err.get_or_create('http_cache', {})
     if url in http_cache:
@@ -121,12 +136,33 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
         return data
 
     except requests.exceptions.MissingSchema:
+        if (not err.get_resource("packaged") and
+            not err.get_resource("manifest_url")):
+            err.warning(
+                err_id=("resources", "missing_schema"),
+                warning="Unable to fetch resource",
+                description=["A relative URL was encountered, but because "
+                             "the full URL of the manifest is not known, it "
+                             "is not possible to fetch the resources. You "
+                             "can provide the URL to fix this issue.",
+                             "URL: %s" % url],
+                filename=filename)
+            return
         err.error(
             err_id=("resources", "invalid_url", "schema"),
             error="Invalid URL",
             description=["While attempting to retrieve a remote resource, "
                          "an invalid URL was encountered. All URLs must "
                          "contain a schema.",
+                         "URL: %s" % url],
+            filename=filename)
+    except requests.exceptions.InvalidSchema:
+        err.error(
+            err_id=("resources", "invalid_url", "bad_schema"),
+            error="Invalid URL Schema",
+            description=["While attempting to retrieve a remote resource, "
+                         "an invalid URL was encountered. The URL uses an "
+                         "invalid schema.",
                          "URL: %s" % url],
             filename=filename)
     except requests.exceptions.URLRequired:

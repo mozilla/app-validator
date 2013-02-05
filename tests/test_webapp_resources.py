@@ -57,7 +57,7 @@ class TestPackagedAppLocalResource(TestCase):
         self.assert_failed(with_errors=True)
 
     @raises(ValueError)
-    @patch("requests.get")
+    @patch("appvalidator.testcases.webappbase.requests.get")
     def test_absolute_url(self, requests_get):
         requests_get.side_effect = ValueError("Whoops!")
         appbase.try_get_resource(self.err, self.package, "http://foo.bar/", "")
@@ -67,11 +67,16 @@ def mock_requests(with_exception, text):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            with patch("requests.get") as requests_get:
+            with patch("appvalidator.testcases.webappbase."
+                       "requests.get") as requests_get:
                 requests_get.side_effect = with_exception(text)
                 return func(*args, **kwargs)
         return wrapper
     return decorator
+
+
+class DummyException(Exception):
+    pass
 
 
 class TestResourceExceptions(TestCase):
@@ -83,7 +88,22 @@ class TestResourceExceptions(TestCase):
     @mock_requests(reqexc.MissingSchema, "Bad URL")
     def test_bad_url_MissingSchema(self):
         appbase.try_get_resource(self.err, None, "http://foo.bar/", "")
-        self.assert_failed(with_errors=True)
+        self.assert_failed(with_warnings=True)
+
+    def test_bad_url_MissingSchema_normalized(self):
+        self.err.save_resource(
+            "manifest_url", "ftp://test.com/manifest.webapp")
+        with patch("appvalidator.testcases.webappbase."
+                   "requests.get") as requests_get:
+            requests_get.side_effect = DummyException
+            try:
+                appbase.try_get_resource(self.err, None, "/zip/zap", "")
+            except DummyException:
+                requests_get.assert_called_once_with(
+                    "ftp://test.com/zip/zap", prefetch=False,
+                    allow_redirects=True, timeout=3)
+            else:
+                raise AssertionError("Should have gotten DummyException")
 
     @mock_requests(reqexc.URLRequired, "Bad URL")
     def test_bad_url_URLRequired(self):
@@ -125,7 +145,7 @@ class TestDataOutput(TestCase):
         super(TestDataOutput, self).setUp()
         self.setup_err()
 
-    @patch("requests.get")
+    @patch("appvalidator.testcases.webappbase.requests.get")
     @patch("appvalidator.constants.MAX_RESOURCE_SIZE", 100)
     def test_too_big(self, r_g):
         big_response_object = Mock()
@@ -136,7 +156,7 @@ class TestDataOutput(TestCase):
         appbase.try_get_resource(self.err, None, "http://foo.bar/", "")
         self.assert_failed(with_errors=True)
 
-    @patch("requests.get")
+    @patch("appvalidator.testcases.webappbase.requests.get")
     @patch("appvalidator.constants.MAX_RESOURCE_SIZE", 100)
     def test_just_right(self, r_g):
         normal_response_object = Mock()
@@ -148,7 +168,7 @@ class TestDataOutput(TestCase):
             "x" * 100)
         self.assert_silent()
 
-    @patch("requests.get")
+    @patch("appvalidator.testcases.webappbase.requests.get")
     @patch("appvalidator.constants.MAX_RESOURCE_SIZE", 100)
     def test_empty(self, r_g):
         empty_response = Mock()
@@ -160,7 +180,7 @@ class TestDataOutput(TestCase):
                 self.err, None, "http://foo.bar/", ""), "")
         self.assert_failed(with_errors=True)
 
-    @patch("requests.get")
+    @patch("appvalidator.testcases.webappbase.requests.get")
     @patch("appvalidator.constants.MAX_RESOURCE_SIZE", 100)
     def test_eventual_404(self, r_g):
         error_response = Mock()

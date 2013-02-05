@@ -22,6 +22,9 @@ blacklisted_magic_numbers = (
 def test_blacklisted_files(err, package=None):
     "Detects blacklisted files and extensions."
 
+    if not package:
+        return
+
     flagged_files = []
 
     for name in package:
@@ -87,6 +90,9 @@ def test_blacklisted_files(err, package=None):
 @register_test(tier=1)
 def test_layout_all(err, package):
     """Tests the well-formedness of extensions."""
+
+    if not package:
+        return
 
     package_namelist = list(package.zf.namelist())
     package_nameset = set(package_namelist)

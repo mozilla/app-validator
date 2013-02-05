@@ -1,5 +1,7 @@
-import argparse
 import sys
+
+import argparse
+import requests
 
 from . import validate_app, validate_packaged_app
 
@@ -48,8 +50,20 @@ def main():
         print "Invalid timeout. Integer expected."
         sys.exit(1)
 
-    error_bundle = validate_packaged_app(
-        args.package, listed=not args.unlisted, format=None, timeout=timeout)
+    if "://" in args.package:
+        error_bundle = validate_app(
+            requests.get(args.package).content, listed=not args.unlisted,
+            format=None, url=args.package)
+
+    elif args.package.endswith(".webapp"):
+        with open(args.package) as f:
+            error_bundle = validate_app(
+                f.read(), listed=not args.unlisted, format=None)
+
+    else:
+        error_bundle = validate_packaged_app(
+            args.package, listed=not args.unlisted, format=None,
+            timeout=timeout)
 
     # Print the output of the tests based on the requested format.
     if args.output == "text":
@@ -64,5 +78,5 @@ def main():
         sys.exit(0)
 
 # Start up the testing and return the output.
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
