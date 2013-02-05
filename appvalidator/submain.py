@@ -92,7 +92,7 @@ def test_package(err, file_, name):
             err_id=("main", "test_package", "timeout"),
             error="Validation timed out",
             description=["The validation process took too long to complete. "
-                         "Contact an addons.mozilla.org editor for more "
+                         "Contact an Firefox Marketplace reviewer for more "
                          "information.", str(ex)])
         output = None
 
