@@ -19,3 +19,11 @@ class TestManifestMixin(ErrorBundleTestCase):
         results = self.get_json_results()
         assert "manifest" in results, results.keys()
         eq_(results["manifest"]["foo"], u"bär")
+
+    def test_permissions(self):
+        perms = ["alarms", "systemXHR"]
+        self.err.save_resource("permissions", perms)
+
+        results = self.get_json_results()
+        assert "permissions" in results, results.keys()
+        eq_(results["permissions"], perms)

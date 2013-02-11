@@ -8,5 +8,6 @@ class ManifestMixin(object):
     def _extend_json(self):
         """Output the manifest as part of the main JSON blob."""
         extension = super(ManifestMixin, self)._extend_json() or {}
-        extension.update(manifest=self.get_resource("manifest"))
+        extension.update(manifest=self.get_resource("manifest"),
+                         permissions=self.get_resource("permissions"))
         return extension

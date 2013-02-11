@@ -476,6 +476,7 @@ class WebappSpec(Spec):
                              self.MORE_INFO])
 
     def process_permissions(self, node):
+        requested_permissions = set()
         for permission, per_node in node.items():
             if permission not in self.PERMISSIONS_ACCESS:
                 continue
@@ -505,6 +506,10 @@ class WebappSpec(Spec):
                                          self.PERMISSIONS_ACCESS[permission]),
                                  "Found value: %s" % access_value,
                                  self.MORE_INFO])
+
+            requested_permissions.add(permission)
+
+        self.err.save_resource("permissions", list(requested_permissions))
 
     def parse(self, data):
         if isinstance(data, types.StringTypes):
