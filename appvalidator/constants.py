@@ -26,6 +26,19 @@ MAX_RESOURCE_SIZE = 2 * 1024 * 1024
 
 ICON_LIMIT = 10
 
+PERMISSIONS = {
+    'web': set([
+        'geolocation', 'alarms', 'fmradio', 'desktop-notification', 'storage',
+        'audio-channel-normal', 'audio-channel-content'
+    ]),
+    'privileged': set([
+        'device-storage:pictures', 'device-storage:videos',
+        'device-storage:music', 'device-storage:sdcard', 'tcp-socket',
+        'browser', 'systemXHR', 'audio-channel-notification',
+        'audio-channel-alarm'
+    ]),
+}
+
 # Graciously provided by @kumar in bug 614574
 if (not SPIDERMONKEY_INSTALLATION or
     not os.path.exists(SPIDERMONKEY_INSTALLATION)):

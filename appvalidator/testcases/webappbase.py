@@ -10,6 +10,9 @@ from .. import constants
 from ..webapp import detect_webapp_string
 
 
+TYPE_URL = "https://developer.mozilla.org/en-US/docs/Apps/Manifest#type"
+
+
 @register_test(tier=1)
 def test_app_manifest(err, package):
 
@@ -27,6 +30,38 @@ def test_app_manifest(err, package):
 
     webapp = detect_webapp_string(err, package.read("manifest.webapp"))
     err.save_resource("manifest", webapp)
+
+
+@register_test(tier=2)
+def test_permissions(err, package):
+
+    if (not err.get_resource("permissions") or
+        not err.get_resource("manifest")):
+        return
+
+    app_type = err.get_resource("manifest").get("type", "web")
+
+    def error(permission):
+        err.error(
+            err_id=("webappbase", "test_permissions", "unauthorized"),
+            error="App requested unavailable permission",
+            description=["A permission requested by the app is not available "
+                         "for the app's type. See %s for more information." %
+                             TYPE_URL,
+                         "Requested permission: %s" % permission,
+                         "App's type: %s" % app_type])
+
+    if app_type == "web":
+        for perm in err.get_resource("permissions"):
+            if perm not in constants.PERMISSIONS["web"]:
+                error(perm)
+    elif app_type == "privileged":
+        available_perms = (constants.PERMISSIONS["web"] |
+                           constants.PERMISSIONS["privileged"])
+
+        for perm in err.get_resource("permissions"):
+            if perm not in available_perms:
+                error(perm)
 
 
 class DataURIException(Exception):
