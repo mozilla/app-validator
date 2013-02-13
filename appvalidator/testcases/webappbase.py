@@ -86,8 +86,12 @@ def try_get_data_uri(data_url):
 
 
 def _normalize_url(err, url):
+    manifest_url = err.get_resource("manifest_url")
+    if not manifest_url:
+        return url
+
     p_url = urlparse.urlparse(url)
-    p_defurl = urlparse.urlparse(err.get_resource("manifest_url"))
+    p_defurl = urlparse.urlparse(manifest_url)
 
     return urlparse.urlunparse(p_defurl[:2] + p_url[2:])
 

@@ -333,3 +333,30 @@ class TestIconProperties(TestCase):
     def test_bad_size(self):
         self._test_icon("icon-128.png", 256)
         self.assert_failed(with_errors=True)
+
+
+class TestURLNormalizer(TestCase):
+    """Test that URLs are normalized properly."""
+
+    def setUp(self):
+        super(TestURLNormalizer, self).setUp()
+        self.setup_err()
+        self.err.save_resource("manifest_url", "https://foo.bar/zip/zap.htm")
+
+    def url(self, input, expected):
+        def wrap():
+            self.setUp()
+            normalized = appbase._normalize_url(self.err, input)
+            eq_(normalized, expected)
+        return wrap
+
+    def test_urls(self):
+        yield self.url("path/file.txt", "https://foo.bar/path/file.txt")
+        yield self.url("/path/file.txt", "https://foo.bar/path/file.txt")
+        yield self.url("file.txt", "https://foo.bar/file.txt")
+        yield self.url("/file.txt", "https://foo.bar/file.txt")
+        yield self.url("http://nice.try/asdf", "https://foo.bar/asdf")
+
+    def test_nulls(self):
+        self.err.save_resource("manifest_url", None)
+        eq_(appbase._normalize_url(self.err, '/foo.txt'), '/foo.txt')
