@@ -246,9 +246,10 @@ def test_icon(err, data, url, size):
         try:
             name = url.split('/')[-1]
             data.seek(0)  # Rewind the StringIO
-            with gzip.GzipFile(name, 'rb', fileobj=data) as gzf:
-                icon = Image.open(gzf)
-                icon.verify()
+            gzf = gzip.GzipFile(name, 'rb', fileobj=data)
+            icon = Image.open(gzf)
+            icon.verify()
+
         except IOError, e:
             err.error(
                 err_id=("resources", "icon", "ioerror"),
@@ -257,6 +258,9 @@ def test_icon(err, data, url, size):
                              "may contain invalid or corrupt data. Icons may "
                              "be only JPG or PNG images.",
                              "%dpx icon (%s)" % (size, url)])
+        else:
+            if gzf:
+                gzf.close()
     else:
         width, height = icon.size
         if width != height:
