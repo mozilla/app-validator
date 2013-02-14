@@ -318,6 +318,20 @@ class TestIconProperties(TestCase):
         self._test_icon("icon-128.png", "128")
         self.assert_silent()
 
+    def test_pass_gzip(self):
+        """
+        Since we need to use raw sockets to pull in the data, we don't get
+        gzip-uncompressed data back for servers that proactively compress
+        assets. This tests that a GZ file can be accepted and pass just the
+        same as a standard icon file can.
+        """
+
+        self._test_icon("icon-128.png.gz", 128)
+        self.assert_silent()
+
+        self._test_icon("icon-128.png.gz", "128")
+        self.assert_silent()
+
     def test_bad_icon(self):
         self._test_icon("corrupt.xpi", 128)
         self.assert_failed(with_errors=True)

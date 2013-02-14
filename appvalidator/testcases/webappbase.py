@@ -1,4 +1,5 @@
 import base64
+import gzip
 import urlparse
 from cStringIO import StringIO
 
@@ -241,14 +242,21 @@ def test_icon(err, data, url, size):
     try:
         icon = Image.open(data)
         icon.verify()
-    except IOError:
-        err.error(
-            err_id=("resources", "icon", "ioerror"),
-            error="Could not read icon file.",
-            description=["A downloaded icon file could not be opened. It may "
-                         "contain invalid or corrupt data. Icons may be only "
-                         "JPG or PNG images.",
-                         "%dpx icon (%s)" % (size, url)])
+    except IOError, e:
+        try:
+            name = url.split('/')[-1]
+            data.seek(0)  # Rewind the StringIO
+            with gzip.GzipFile(name, 'rb', fileobj=data) as gzf:
+                icon = Image.open(gzf)
+                icon.verify()
+        except IOError, e:
+            err.error(
+                err_id=("resources", "icon", "ioerror"),
+                error="Could not read icon file.",
+                description=["A downloaded icon file could not be opened. It "
+                             "may contain invalid or corrupt data. Icons may "
+                             "be only JPG or PNG images.",
+                             "%dpx icon (%s)" % (size, url)])
     else:
         width, height = icon.size
         if width != height:
