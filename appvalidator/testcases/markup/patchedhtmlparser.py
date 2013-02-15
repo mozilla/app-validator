@@ -1,3 +1,5 @@
+import re
+
 try:
     import HTMLParser as htmlparser
 except ImportError:  # pragma: no cover
