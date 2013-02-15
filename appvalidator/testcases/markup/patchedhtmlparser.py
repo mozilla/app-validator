@@ -3,6 +3,8 @@ try:
 except ImportError:  # pragma: no cover
     import html.parser as htmlparser
 
+interesting_cdata = re.compile(r'<(/|\Z)')
+
 
 class PatchedHTMLParser(htmlparser.HTMLParser):
     """
@@ -89,5 +91,5 @@ class PatchedHTMLParser(htmlparser.HTMLParser):
         return j
 
     def set_cdata_mode(self, tag):
-        self.interesting = htmlparser.interesting_cdata
+        self.interesting = interesting_cdata
         self.cdata_tag = None
