@@ -44,4 +44,3 @@ def test_remote_urls():
 
     assert not t("UrL(/abc.def)")
     assert t("url(HTTP://foo.bar/)")
-

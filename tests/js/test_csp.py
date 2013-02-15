@@ -1,9 +1,58 @@
 from nose.tools import eq_
 
-from js_helper import TestCase
+import appvalidator.testcases.markup.markuptester as markuptester
+
+from ..helper import TestCase
+from js_helper import TestCase as JSTestCase
 
 
-class TestCSP(TestCase):
+class TestCSPTags(TestCase):
+
+    def analyze(self, snippet, app_type="web"):
+        self.setup_err()
+        self.err.save_resource("app_type", app_type)
+        markuptester.MarkupParser(self.err, debug=True).process("", snippet)
+
+    def test_script_not_js(self):
+        markup = """
+        <script type="text/x-jquery-tmpl">foo</script>
+        """
+
+        self.analyze(markup)
+        self.assert_silent()
+
+        self.analyze(markup, "privileged")
+        self.assert_silent()
+
+    def test_script(self):
+        markup = """<script>foo</script>"""
+
+        self.analyze(markup)
+        self.assert_failed(with_warnings=True)
+
+        self.analyze(markup, "privileged")
+        self.assert_failed(with_errors=True)
+
+    def test_script_attrs(self):
+        markup = """<button onclick="foo();"></button>"""
+
+        self.analyze(markup)
+        self.assert_failed(with_warnings=True)
+
+        self.analyze(markup, "privileged")
+        self.assert_failed(with_errors=True)
+
+    def test_script_remote(self):
+        markup = """<script src="http://foo.bar/zip.js"></script>"""
+
+        self.analyze(markup)
+        self.assert_failed(with_warnings=True)
+
+        self.analyze(markup, "privileged")
+        self.assert_failed(with_errors=True)
+
+
+class TestCSP(JSTestCase):
 
     def test_function(self):
         self.run_script("var x = Function('foo');")
@@ -34,7 +83,7 @@ class TestCSP(TestCase):
         self.assert_silent()
 
 
-class TestCreateElement(TestCase):
+class TestCreateElement(JSTestCase):
 
     def test_pass(self):
         "Tests that createElement and createElementNS throw errors."

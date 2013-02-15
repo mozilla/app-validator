@@ -22,6 +22,7 @@ def _test_xul_raw(data, path, should_fail=False, should_fail_csp=None,
     extension = filename.split(".")[-1]
 
     err = ErrorBundle()
+    err.save_resource("app_type", "certified")
     if type_:
         err.set_type(type_)
 
@@ -186,7 +187,7 @@ def test_script_attrs():
     """Test that script attributes are warned against."""
 
     _test_xul_raw("""
-    <foo><bar onzap="" /></foo>
+    <foo><bar onzap="asdf" /></foo>
     """, "foo.xul", should_fail_csp=True)
 
 
@@ -194,7 +195,7 @@ def test_dom_mutation():
     """Test that DOM mutation events are warned against. This should fail both
     the standard tests as well as the CSP tests."""
     _test_xul_raw("""
-    <foo><bar ondomattrmodified="" /></foo>
+    <foo><bar ondomattrmodified="asdf" /></foo>
     """, "foo.xul", should_fail=True, should_fail_csp=True)
 
 
@@ -203,7 +204,7 @@ def test_proper_line_numbers():
     """Test that the proper line numbers are passed to test_js_snippet."""
 
     err = _test_xul_raw("""<foo>
-    <script>
+    <script> // This is line 2
     eval("OWOWOWOWOWOWOWOW");
     </script>
     </foo>""", "foo.xul", should_fail_csp=True)
@@ -211,8 +212,7 @@ def test_proper_line_numbers():
     assert err.errors
     error = err.errors[0]
     eq_(error["file"], "foo.xul")
-    # 4 because it detects the script when it gets closed.
-    eq_(error["line"], 4)
+    eq_(error["line"], 2)
 
 
 def test_script_scraping():

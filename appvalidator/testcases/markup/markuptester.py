@@ -7,7 +7,7 @@ from . import csstester
 from appvalidator.contextgenerator import ContextGenerator
 from appvalidator.constants import *
 from appvalidator.csp import warn as message_csp
-from patchedhtmlparser import PatchedHTMLParser
+from patchedhtmlparser import htmlparser, PatchedHTMLParser
 
 
 DEBUG = False
@@ -18,11 +18,11 @@ SELF_CLOSING_TAGS = ("area", "base", "basefont", "br", "col", "frame", "hr",
 TAG_NOT_OPENED = "Tag (%s) being closed before it is opened."
 REMOTE_URL_PATTERN = re.compile("((ht|f)tps?:)?//")
 
-DOM_MUTATION_HANDLERS = (
+DOM_MUTATION_HANDLERS = set([
         "ondomattrmodified", "ondomattributenamechanged",
         "ondomcharacterdatamodified", "ondomelementnamechanged",
         "ondomnodeinserted", "ondomnodeinsertedintodocument", "ondomnoderemoved",
-        "ondomnoderemovedfromdocument", "ondomsubtreemodified", )
+        "ondomnoderemovedfromdocument", "ondomsubtreemodified", ])
 
 
 class MarkupParser(PatchedHTMLParser):
@@ -44,7 +44,7 @@ class MarkupParser(PatchedHTMLParser):
 
         self.reported = set()
 
-    def process(self, filename, data, extension="xul"):
+    def process(self, filename, data, extension="html"):
         """Processes data by splitting it into individual lines, then
         incrementally feeding each line into the parser, increasing the
         value of the line number with each line."""
@@ -107,7 +107,7 @@ class MarkupParser(PatchedHTMLParser):
             # There's no recovering from a unicode error here. We've got the
             # unicodehelper; if that doesn't help us, nothing will.
             return
-        except Exception as inst:
+        except htmlparser.HTMLParseError as inst:
             if DEBUG:  # pragma: no cover
                 print self.xml_state, inst
 
@@ -153,7 +153,6 @@ class MarkupParser(PatchedHTMLParser):
 
         # Normalize!
         tag = tag.lower()
-        orig_tag = tag
 
         # Be extra sure it's not a self-closing tag.
         if not self_closing:
@@ -162,49 +161,31 @@ class MarkupParser(PatchedHTMLParser):
         if DEBUG:  # pragma: no cover
             print "S: ", self.xml_state, tag, self_closing
 
-        # Find CSS and JS attributes and handle their values like they
-        # would otherwise be handled by the standard parser flow.
-        for attr in attrs:
-            attr_name, attr_value = attr[0].lower(), attr[1]
+        attr_dict = dict([(a[0].lower(), a[1]) for a in attrs if a[1]])
 
-            # We don't care about valueless attributes.
-            if attr_value is None:
-                continue
+        if "style" in attr_dict:
+            csstester.test_css_snippet(
+                self.err, self.filename, attr_dict["style"], self.line)
 
-            if attr_name == "style":
-                csstester.test_css_snippet(self.err,
-                                           self.filename,
-                                           attr_value,
-                                           self.line)
-            elif attr_name.startswith("on"):  # JS attribute
-                # Warn about DOM mutation event handlers.
-                if attr_name in DOM_MUTATION_HANDLERS:
-                    self.err.error(
-                        err_id=("testcases_markup_markuptester",
-                                "handle_starttag",
-                                "dom_manipulation_handler"),
-                        error="DOM Mutation Events Prohibited",
-                        description="DOM mutation events are flagged because "
-                                    "of their deprecated status, as well as "
-                                    "their extreme inefficiency. Consider "
-                                    "using a different event.",
-                        filename=self.filename,
-                        line=self.line,
-                        context=self.context)
+        script_attributes = dict(
+            (k, v) for k, v in attr_dict.iteritems() if k.startswith("on"))
+        if script_attributes:
+            if any(k in DOM_MUTATION_HANDLERS for k in script_attributes):
+                self.err.error(
+                    err_id=("testcases_markup_markuptester",
+                            "handle_starttag", "dom_manipulation_handler"),
+                    error="DOM Mutation Events Prohibited",
+                    description="DOM mutation events are flagged because of "
+                                "their deprecated status, as well as thier "
+                                "extreme inefficiency. Consider using a "
+                                "different event.",
+                    filename=self.filename,
+                    line=self.line,
+                    context=self.context)
 
-                message_csp(err=self.err, filename=self.filename,
-                            line=self.line, column=None,
-                            context=self.context,
-                            violation_type="script_attribute",
-                            severity="error")
-
-            elif attr_name == "src" and tag == "script":
-                if not self._is_url_local(attr_value):
-                    message_csp(err=self.err, filename=self.filename,
-                                line=self.line, column=None,
-                                context=self.context,
-                                violation_type="remote_script",
-                                severity="error")
+            message_csp(err=self.err, filename=self.filename,
+                        line=self.line, column=None, context=self.context,
+                        violation_type="script_attribute", severity="error")
 
         # When the dev forgets their <!-- --> on a script tag, bad
         # things happen.
@@ -212,9 +193,30 @@ class MarkupParser(PatchedHTMLParser):
             self._save_to_buffer("<" + tag + self._format_args(attrs) + ">")
             return
 
-        self.xml_state.append(orig_tag)
+        elif (tag == "script" and
+              ("type" not in attr_dict or
+               any(a[0] == "type" and "javascript" in a[1].lower() for
+                   a in attrs))):
+            # Inspect scripts which either have no type or have a type which
+            # is JS.
+
+            if "src" not in attr_dict:
+                # CSP warnings for inline scripts
+                message_csp(err=self.err, filename=self.filename,
+                            line=self.line, column=None,
+                            context=self.context,
+                            violation_type="inline_script",
+                            severity="error")
+
+            elif not self._is_url_local(attr_dict.get("src", "")):
+                # If there's a remote SRC, then that's a CSP violation.
+                message_csp(err=self.err, filename=self.filename,
+                            line=self.line, column=None, context=self.context,
+                            violation_type="remote_script", severity="error")
+
+        self.xml_state.append(tag)
         self.xml_line_stack.append(self.line)
-        self.xml_buffer.append(unicode(""))
+        self.xml_buffer.append(u"")
 
     def handle_endtag(self, tag):
 
@@ -303,16 +305,9 @@ class MarkupParser(PatchedHTMLParser):
         data_buffer = data_buffer.strip()
 
         # Perform analysis on collected data.
-        if data_buffer:
-            if tag == "script":
-                message_csp(err=self.err, filename=self.filename,
-                            line=self.line, column=None,
-                            context=self.context,
-                            violation_type="inline_script",
-                            severity="error")
-            elif tag == "style":
-                csstester.test_css_file(self.err, self.filename, data_buffer,
-                                        old_line)
+        if data_buffer and tag == "style":
+            csstester.test_css_file(self.err, self.filename, data_buffer,
+                                    old_line)
 
     def handle_data(self, data):
         self._save_to_buffer(data)

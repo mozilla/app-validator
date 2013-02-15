@@ -97,7 +97,7 @@ class TestWebapps(TestCase):
             "type": "web",
         }
 
-        self.resources = []
+        self.resources = [("app_type", "web")]
 
     def analyze(self):
         """Run the webapp tests on the file."""

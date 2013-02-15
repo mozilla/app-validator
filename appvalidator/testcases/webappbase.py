@@ -31,6 +31,8 @@ def test_app_manifest(err, package):
 
     webapp = detect_webapp_string(err, package.read("manifest.webapp"))
     err.save_resource("manifest", webapp)
+    if webapp:
+        err.save_resource("app_type", str(webapp.get("type", "web")).lower())
 
 
 @register_test(tier=2)
@@ -40,7 +42,7 @@ def test_permissions(err, package):
         not err.get_resource("manifest")):
         return
 
-    app_type = err.get_resource("manifest").get("type", "web")
+    app_type = err.get_resource("app_type")
 
     def error(permission):
         err.error(
@@ -258,7 +260,7 @@ def test_icon(err, data, url, size):
                              "may contain invalid or corrupt data. Icons may "
                              "be only JPG or PNG images.",
                              "%dpx icon (%s)" % (size, url)])
-        else:
+        finally:
             if gzf:
                 gzf.close()
     else:

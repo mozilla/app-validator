@@ -1,3 +1,5 @@
+from nose.tools import eq_
+
 from helper import TestCase
 from appvalidator.errorbundle import ErrorBundle
 import appvalidator.testcases.webappbase as appbase
@@ -24,6 +26,8 @@ class TestWebappPermissions(TestCase):
     def analyze(self):
         self.err.save_resource(
             "permissions", self.manifest.get("permissions", {}).keys())
+        self.err.save_resource(
+            "app_type", self.manifest.get("type", "web"))
         appbase.test_permissions(self.err, None)
 
     def test_no_perms(self):
@@ -35,6 +39,7 @@ class TestWebappPermissions(TestCase):
         self.manifest["type"] = "certified"
         self.analyze()
         self.assert_silent()
+        eq_(self.err.get_resource("app_type"), "certified")
 
     def test_certified_perms_priv(self):
         self.manifest["permissions"][CERT_PERM] = True
@@ -58,6 +63,7 @@ class TestWebappPermissions(TestCase):
         self.manifest["type"] = "privileged"
         self.analyze()
         self.assert_silent()
+        eq_(self.err.get_resource("app_type"), "privileged")
 
     def test_privileged_perms_cert(self):
         self.manifest["permissions"][PRIV_PERM] = True
@@ -93,8 +99,10 @@ class TestWebappPermissions(TestCase):
         self.manifest["type"] = "web"
         self.analyze()
         self.assert_silent()
+        eq_(self.err.get_resource("app_type"), "web")
 
     def test_web_perms_web_implicit(self):
         self.manifest["permissions"][WEB_PERM] = True
         self.analyze()
         self.assert_silent()
+        eq_(self.err.get_resource("app_type"), "web")
