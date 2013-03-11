@@ -101,7 +101,7 @@ class TestResourceExceptions(TestCase):
             except DummyException:
                 requests_get.assert_called_once_with(
                     "ftp://test.com/zip/zap", prefetch=False,
-                    allow_redirects=True, timeout=3)
+                    allow_redirects=True, timeout=3, headers=appbase.HEADERS)
             else:
                 raise AssertionError("Should have gotten DummyException")
 
