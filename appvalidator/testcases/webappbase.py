@@ -12,6 +12,9 @@ from ..webapp import detect_webapp_string
 
 
 TYPE_URL = "https://developer.mozilla.org/en-US/docs/Apps/Manifest#type"
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Mobile; rv:18.0) Gecko/18.0 Firefox/18.0"
+}
 
 
 @register_test(tier=1)
@@ -150,7 +153,7 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
 
     try:
         request = requests.get(url, prefetch=False, allow_redirects=True,
-                               timeout=3)
+                               timeout=3, headers=HEADERS)
         data = request.raw.read(constants.MAX_RESOURCE_SIZE)
         # Check that there's not more data than the max size.
         if max_size and request.raw.read(1):
