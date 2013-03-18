@@ -103,7 +103,7 @@ def _normalize_url(err, url):
 
 
 def try_get_resource(err, package, url, filename, resource_type="URL",
-                     max_size=True):
+                     max_size=True, simulate=False):
 
     # Try to process data URIs first.
     if url.startswith("data:"):
@@ -136,6 +136,9 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
                 return
         else:
             url = _normalize_url(err, url)
+
+    if simulate:
+        return
 
     http_cache = err.get_or_create('http_cache', {})
     if url in http_cache:
@@ -352,7 +355,8 @@ def test_app_resources(err, package):
         if branch and "url" in branch:
             try_get_resource(err, package, branch["url"],
                              filename="webapp.manifest",
-                             resource_type="developer url", max_size=False)
+                             resource_type="developer url",
+                             max_size=False, simulate=True)
 
     test_developer(manifest.get("developer"))
     for locale, locale_data in manifest.get("locales", {}).items():
