@@ -15,7 +15,7 @@ class WebappSpec(Spec):
 
     SPEC_NAME = "Web App Manifest"
     MORE_INFO = ("You can find more information at "
-                 "https://developer.mozilla.org/en/OpenWebApps/The_Manifest")
+                 "https://developer.mozilla.org/docs/Apps/Manifest")
     MIN_REQUIRED_ICON_SIZE = 128
 
     PERMISSIONS = (
