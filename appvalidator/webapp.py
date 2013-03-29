@@ -35,7 +35,8 @@ def detect_webapp_string(err, data):
 
         # This magic number brought to you by @cvan (see bug 770755)
         # Updated 11/21/12: Bumped to 12 because Gaia is different.
-        if "name" in webapp and len(webapp["name"]) > 12:
+        if ("name" in webapp and isinstance(webapp["name"], (str, unicode)) and
+                len(webapp["name"]) > 12):
             err.warning(
                 err_id=("webapp", "b2g", "name_truncated"),
                 warning="App name may be truncated on Firefox OS devices.",

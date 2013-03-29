@@ -155,6 +155,12 @@ class TestWebapps(TestCase):
         self.analyze()
         self.assert_failed(with_warnings=True)
 
+    def test_long_name(self):
+        """Test that long names are flagged for truncation in Gaia."""
+        self.data["name"] = None
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
     def test_maxlengths(self):
         """Test that certain elements are capped in length."""
         self.data["name"] = "%" * 129
