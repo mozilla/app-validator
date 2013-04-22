@@ -100,7 +100,7 @@ class TestResourceExceptions(TestCase):
                 appbase.try_get_resource(self.err, None, "/zip/zap", "")
             except DummyException:
                 requests_get.assert_called_once_with(
-                    "ftp://test.com/zip/zap", prefetch=False,
+                    "ftp://test.com/zip/zap", stream=True,
                     allow_redirects=True, timeout=3, headers=appbase.HEADERS)
             else:
                 raise AssertionError("Should have gotten DummyException")
