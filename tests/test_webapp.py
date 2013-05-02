@@ -763,3 +763,23 @@ class TestWebapps(TestCase):
         self.resources.append(("packaged", True))
         self.analyze()
         self.assert_failed(with_errors=True)
+
+    def test_messages_not_list(self):
+        self.data['messages'] = "foo"
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_messages_obj_not_obj(self):
+        self.data['messages'] = ["foo"]
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_messages_multiple_keys(self):
+        self.data['messages'] = [{"a": "1", "b": "2"}]
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_messages_pass(self):
+        self.data['messages'] = [{"key": "val"}, {"key": "val"}]
+        self.analyze()
+        self.assert_silent()
