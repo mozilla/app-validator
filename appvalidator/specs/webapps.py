@@ -156,6 +156,10 @@ class WebappSpec(Spec):
             },
             "csp": {"expected_type": types.StringTypes,
                     "not_empty": True},
+            "messages": {
+                "expected_type": list,
+                "process": lambda s: s.process_messages,
+            },
         }
     }
 
@@ -332,6 +336,26 @@ class WebappSpec(Spec):
                             "`installs_allowed_from` property." %
                                 (constants.DEFAULT_WEBAPP_MRKT_URLS[0],
                                  ", ".join(constants.DEFAULT_WEBAPP_MRKT_URLS)))
+
+    def process_messages(self, node):
+        for message in node:
+            if not isinstance(message, dict):
+                self.err.error(
+                    err_id=("spec", "webapp", "messages_not_obj"),
+                    error="Manifest messages must be objects.",
+                    description="An item in the `messages` field of the "
+                                "manifest is not a key/value pair. See the "
+                                "manifest spec for more information.")
+                continue
+            
+            if len(message.items()) != 1:
+                self.err.error(
+                    err_id=("spec", "webapp", "messages_not_kv"),
+                    error="Manifest message objects may only have one key.",
+                    description="Perhaps unintuitively, the `messages` field "
+                                "of the manifest is a list of objects. Each "
+                                "object may only have one key/value pair.")
+                continue
 
     def process_screen_size(self, node):
         if not node.isdigit():
