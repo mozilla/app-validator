@@ -49,7 +49,8 @@ class WebappSpec(Spec):
                                "default_locale", "installs_allowed_from",
                                "version", "screen_size", "required_features",
                                "orientation", "fullscreen", "appcache_path",
-                               "type", "activities", "permissions", "csp"],
+                               "type", "activities", "permissions", "csp",
+                               "messages"],
         "allowed_nodes": ["developer"],
         "disallowed_nodes": ["widget"],
         "child_nodes": {
