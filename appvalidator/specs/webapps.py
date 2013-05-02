@@ -343,18 +343,20 @@ class WebappSpec(Spec):
                 self.err.error(
                     err_id=("spec", "webapp", "messages_not_obj"),
                     error="Manifest messages must be objects.",
-                    description="An item in the `messages` field of the "
-                                "manifest is not a key/value pair. See the "
-                                "manifest spec for more information.")
+                    description=["An item in the `messages` field of the "
+                                 "manifest is not a key/value pair. See the "
+                                 "manifest spec for more information.",
+                                 self.MORE_INFO])
                 continue
             
             if len(message.items()) != 1:
                 self.err.error(
                     err_id=("spec", "webapp", "messages_not_kv"),
                     error="Manifest message objects may only have one key.",
-                    description="Perhaps unintuitively, the `messages` field "
-                                "of the manifest is a list of objects. Each "
-                                "object may only have one key/value pair.")
+                    description=["Perhaps unintuitively, the `messages` field "
+                                 "of the manifest is a list of objects. Each "
+                                 "object may only have one key/value pair.",
+                                 self.MORE_INFO])
                 continue
 
     def process_screen_size(self, node):
