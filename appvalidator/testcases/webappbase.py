@@ -128,9 +128,9 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
                 err.error(
                     err_id=("resources", "packaged", "not_found"),
                     error="Resource in packaged app not found.",
-                    description=["A resource within a packaged app is "
-                                 "referenced, but the path used does not "
-                                 "point to a valid item in the package.",
+                    description=["A %s within a packaged app is referenced, "
+                                 "but the path used does not point to a valid "
+                                 "item in the package." % resource_type,
                                  "Requested resource: %s" % url],
                     filename=filename)
                 return
@@ -343,8 +343,8 @@ def test_app_resources(err, package):
 
     if "launch_path" in manifest:
         try_get_resource(err, package, manifest["launch_path"],
-                         filename="webapp.manifest", resource_type="origin",
-                         max_size=False)
+                         filename="webapp.manifest",
+                         resource_type="launch_path", max_size=False)
 
     if "appcache_path" in manifest:
         try_get_resource(err, package, manifest["appcache_path"],
