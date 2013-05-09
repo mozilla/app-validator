@@ -27,10 +27,10 @@ class WebappSpec(Spec):
         "desktop-notification", "device-storage:apps", "device-storage:music",
         "device-storage:pictures", "device-storage:sdcard",
         "device-storage:videos", "embed-apps", "fmradio", "geolocation",
-        "idle", "mobileconnection", "network-events", "networkstats-manage",
-        "open-remote-window", "permissions", "power", "settings", "sms",
-        "storage", "systemXHR", "tcp-socket", "telephony", "time", "voicemail",
-        "webapps-manage", "wifi-manage")
+        "idle", "mobileconnection", "mobilenetwork", "network-events",
+        "networkstats-manage", "open-remote-window", "permissions", "power",
+        "settings", "sms", "storage", "systemXHR", "tcp-socket", "telephony",
+        "time", "voicemail", "webapps-manage", "wifi-manage")
     PERMISSIONS_ACCESS = {
         "contacts": _FULL_PERMISSIONS,
         "device-storage:apps": _FULL_PERMISSIONS,
