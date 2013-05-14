@@ -29,14 +29,14 @@ class WebappSpec(Spec):
         "device-storage:videos", "embed-apps", "fmradio", "geolocation",
         "idle", "mobileconnection", "mobilenetwork", "network-events",
         "networkstats-manage", "open-remote-window", "permissions", "power",
-        "settings", "sms", "storage", "systemXHR", "tcp-socket", "telephony",
-        "time", "voicemail", "webapps-manage", "wifi-manage")
+        "push", "settings", "sms", "storage", "systemXHR", "tcp-socket",
+        "telephony", "time", "voicemail", "webapps-manage", "wifi-manage")
     PERMISSIONS_ACCESS = {
         "contacts": _FULL_PERMISSIONS,
         "device-storage:apps": _FULL_PERMISSIONS,
         "device-storage:music": _FULL_PERMISSIONS,
         "device-storage:pictures": _FULL_PERMISSIONS,
-        "device-storage:sdcards": _FULL_PERMISSIONS,
+        "device-storage:sdcard": _FULL_PERMISSIONS,
         "device-storage:videos": _FULL_PERMISSIONS,
         "settings": ("readonly", "readwrite"),
     }
@@ -349,7 +349,7 @@ class WebappSpec(Spec):
                                  "manifest spec for more information.",
                                  self.MORE_INFO])
                 continue
-            
+
             if len(message.items()) != 1:
                 self.err.error(
                     err_id=("spec", "webapp", "messages_not_kv"),
