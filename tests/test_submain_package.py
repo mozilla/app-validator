@@ -32,14 +32,4 @@ class TestSubmainPackage(TestCase):
         with open(name) as pack:
             result = submain.test_package(self.err, pack, name)
 
-        self.assert_failed()
-
-    def test_package_corrupt(self):
-        "Tests the test_package function fails with a corrupt file"
-
-        self.setup_err()
-
-        name = "tests/resources/corrupt.xpi"
-        result = submain.test_package(self.err, name, name)
-
-        self.assert_failed(with_errors=True, with_warnings=True)
+        assert self.err.errors

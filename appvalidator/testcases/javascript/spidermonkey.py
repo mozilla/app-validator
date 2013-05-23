@@ -105,11 +105,19 @@ def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
     try:
         cmd = [shell, "-e", data, "-U"]
         shell_obj = subprocess.Popen(
-            cmd, shell=False,
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE)
+            cmd, shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 
         data, stderr = shell_obj.communicate()
+        # Spidermonkey dropped the -U flag on 29 Oct 2012
+        if stderr and ("Invalid short option: -U" in stderr or
+                       "usage: js [options] [scriptfile]" in stderr):
+            cmd.remove("-U")
+            shell_obj = subprocess.Popen(
+                cmd, shell=False,
+                stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+
+            data, stderr = shell_obj.communicate()
+
         if stderr:
             raise RuntimeError('Error calling %r: %s' % (cmd, stderr))
 

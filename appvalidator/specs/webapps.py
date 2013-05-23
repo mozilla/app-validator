@@ -1,7 +1,8 @@
-import copy
 import simplejson as json
 import types
 import urlparse
+
+import appvalidator.python.copy as copy
 
 from ..constants import DESCRIPTION_TYPES
 from ..specprocessor import Spec, LITERAL_TYPE

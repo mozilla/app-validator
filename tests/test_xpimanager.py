@@ -72,15 +72,3 @@ class TestBadZipFile(TestCase):
     def test_missing_file(self):
         """Tests that the XPI manager correctly reports a missing XPI file."""
         ZipPackage("foo.bar")
-
-    def test_corrupt_zip(self):
-        """Tests that the XPI manager correctly reports a missing XPI file."""
-        x = ZipPackage(get_path("corrupt.xpi"))
-        try:
-            x.read("install.rdf")
-        except Exception:
-            pass
-        else:
-            raise "Exception should have been raised on corrupt file access."
-
-        assert "install.rdf" in x.broken_files

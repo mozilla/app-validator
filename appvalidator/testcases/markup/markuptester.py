@@ -7,7 +7,7 @@ from . import csstester
 from appvalidator.contextgenerator import ContextGenerator
 from appvalidator.constants import *
 from appvalidator.csp import warn as message_csp
-from patchedhtmlparser import htmlparser, PatchedHTMLParser
+from appvalidator.python.HTMLParser import HTMLParser
 
 
 DEBUG = False
@@ -25,11 +25,11 @@ DOM_MUTATION_HANDLERS = set([
         "ondomnoderemovedfromdocument", "ondomsubtreemodified", ])
 
 
-class MarkupParser(PatchedHTMLParser):
+class MarkupParser(HTMLParser):
     """Parse and analyze the versious components of markup files."""
 
     def __init__(self, err, strict=True, debug=False):
-        PatchedHTMLParser.__init__(self)
+        HTMLParser.__init__(self)
         self.err = err
         self.is_jetpack = "is_jetpack" in err.metadata  # Cache this value.
         self.line = 0

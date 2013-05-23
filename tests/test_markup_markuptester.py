@@ -156,16 +156,6 @@ def test_html_ignore_comment():
     _test_xul("tests/resources/markup/markuptester/ignore_comments.html")
 
 
-def test_invalid_markup():
-    "Tests an markup file that is simply broken."
-
-    result = _test_xul("tests/resources/markup/markuptester/bad.xml", True)
-    assert result.warnings
-    result = _test_xul("tests/resources/markup/markuptester/bad_script.xml",
-                       False)
-    assert result.notices
-
-
 def test_bad_encoding():
     """Test that bad encodings don't cause the parser to fail."""
     _test_xul("tests/resources/markup/encoding.txt")

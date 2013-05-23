@@ -35,22 +35,6 @@ class TestControlChars(TestCase):
         self.assert_failed(with_warnings=True)
         eq_(self.err.warnings[0]["id"][2], "syntax_error")
 
-    def test_controlchars_utf8_ok(self):
-        """Test that multi-byte characters are decoded properly (utf-8)."""
-
-        self.run_test("tests/resources/controlchars/controlchars_utf-8_ok.js")
-        self.assert_silent()
-
-    def test_controlchars_utf8_warn(self):
-        """
-        Tests that multi-byte characters are decoded properly (utf-8) but remaining
-        non-ASCII characters raise warnings.
-        """
-
-        self.run_test("tests/resources/controlchars/controlchars_utf-8_warn.js")
-        self.assert_failed(with_warnings=True)
-        eq_(self.err.warnings[0]["id"][2], "syntax_error")
-
     @raises(JSONDecodeError)
     def test_controlchar_in_webapp(self):
         """

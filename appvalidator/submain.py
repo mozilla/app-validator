@@ -67,6 +67,14 @@ def prepare_package(err, path, timeout=None):
     return err
 
 
+def write_zip_error(err):
+    return err.error(
+            err_id=("submain", "badzipfile"),
+            error="Corrupt ZIP file",
+            description="We were unable to decompress all or part of the zip "
+                        "file.")
+
+
 def test_package(err, file_, name):
     """Begins tests for the package."""
 
@@ -80,10 +88,7 @@ def test_package(err, file_, name):
             error="The package could not be opened.")
     except (BadZipfile, zlib_error):
         # Die if the zip file is corrupt.
-        return err.error(
-            err_id=("submain", "_load_install_rdf", "badzipfile"),
-            error="Corrupt ZIP file",
-            description="We were unable to decompress the zip file.")
+        return write_zip_error(err)
 
     try:
         output = test_inner_package(err, package)
@@ -109,8 +114,11 @@ def test_inner_package(err, package):
         err.set_tier(tier)
 
         # Iterate through each test of our detected type.
-        for test in testcases._get_tests(tier):
-            test(err, package)
+        try:
+            for test in testcases._get_tests(tier):
+                test(err, package)
+        except (BadZipfile, zlib_error):
+            write_zip_error(err)
 
         # Return any errors at the end of the tier if undetermined.
         if err.failed(fail_on_warnings=False) and not err.determined:
