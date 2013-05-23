@@ -327,6 +327,13 @@ class TestWebapps(TestCase):
         self.assert_failed(with_errors=True)
         self.assert_got_errid(("spec", "webapp", "iaf_bad_mrkt_protocol", ))
 
+    def test_launch_path_packaged(self):
+        """Test that the launch path is present in a packaged app."""
+        del self.data["launch_path"]
+        self.resources.append(('packaged', True))
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
     def test_launch_path_not_string(self):
         """Test that the launch path is a string."""
         self.data["launch_path"] = [123]

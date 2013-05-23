@@ -180,6 +180,9 @@ class WebappSpec(Spec):
         # version.
         sparse_nodes = copy.deepcopy(sparse_nodes)
 
+        if err.get_resource("packaged"):
+            self.SPEC["required_nodes"].append("launch_path")
+
         # Allow the developer to avoid localizing their name.
         del sparse_nodes["developer"]["required_nodes"]
         sparse_nodes["developer"]["allowed_once_nodes"].append("name")
