@@ -157,6 +157,12 @@ class TestWebapps(TestCase):
 
     def test_long_name(self):
         """Test that long names are flagged for truncation in Gaia."""
+        self.data["locales"]["es"]["name"] = "This is a long name."
+        self.analyze()
+        self.assert_failed(with_warnings=True)
+
+    def test_long_name(self):
+        """Test that long names are flagged for truncation in Gaia."""
         self.data["name"] = None
         self.analyze()
         self.assert_failed(with_errors=True)
