@@ -43,7 +43,7 @@ class WebappSpec(Spec):
 
     SPEC = {
         "expected_type": dict,
-        "required_nodes": ["name", "description"],
+        "required_nodes": ["name", "description", "developer"],
         "required_nodes_when": {"default_locale": lambda n: "locales" in n},
         "allowed_once_nodes": ["launch_path", "icons", "locales",
                                "default_locale", "installs_allowed_from",
@@ -51,7 +51,7 @@ class WebappSpec(Spec):
                                "orientation", "fullscreen", "appcache_path",
                                "type", "activities", "permissions", "csp",
                                "messages"],
-        "allowed_nodes": ["developer"],
+        "allowed_nodes": [],
         "disallowed_nodes": ["widget"],
         "child_nodes": {
             "name": {"expected_type": types.StringTypes,
