@@ -356,10 +356,10 @@ class TestWebapps(TestCase):
         self.assert_failed(with_errors=True)
 
     def test_dev_missing(self):
-        """Test that the developer property can be absent."""
+        """Test that the developer property cannot be absent."""
         del self.data["developer"]
         self.analyze()
-        self.assert_silent()
+        self.assert_failed(with_errors=True)
 
     def test_dev_not_dict(self):
         """Test that the developer property must be a dict."""
