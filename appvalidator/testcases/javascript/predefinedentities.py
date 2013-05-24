@@ -11,9 +11,6 @@ from jstypes import JSWrapper
 # See https://github.com/mattbasta/amo-validator/wiki/JS-Predefined-Entities
 # for details on entity properties.
 
-# This will be populated later, we just need to reserve its name now.
-CONTENT_DOCUMENT = None
-
 
 def get_global(*args):
     def wrap(t):
@@ -175,15 +172,5 @@ GLOBAL_ENTITIES = {
     u"innerWidth": MUTABLE,
     u"width": MUTABLE,
     u"height": MUTABLE,
-
-    u"content":
-        {"context": "content",
-         "value": {u"document": {"value": get_global("document")}}},
-    u"contentWindow":
-        {"context": "content",
-         "value": global_identity()},
-    u"_content": {"value": get_global("content")},
     u"opener": {"value": global_identity()},
 }
-
-CONTENT_DOCUMENT = GLOBAL_ENTITIES[u"content"]["value"][u"document"]
