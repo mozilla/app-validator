@@ -21,4 +21,3 @@ class TestJSArrays(TestCase):
         var a = x * 3;
         """)
         self.assert_var_eq("a", 12)
-

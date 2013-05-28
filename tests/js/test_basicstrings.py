@@ -96,4 +96,3 @@ class TestBasicStrings(TestCase):
         """ % ("x" * (MAX_STR_SIZE / 2)))
         self.assert_silent()
         eq_(len(self.get_var("x")), MAX_STR_SIZE)
-
