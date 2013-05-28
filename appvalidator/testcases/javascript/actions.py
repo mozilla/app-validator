@@ -1,13 +1,13 @@
-import copy
 import math
 import re
 import types
 
-from appvalidator.constants import (BUGZILLA_BUG, DESCRIPTION_TYPES,
-                                    MAX_STR_SIZE)
 import spidermonkey
 import instanceactions
 import instanceproperties
+from appvalidator.python.copy import deepcopy
+from appvalidator.constants import (BUGZILLA_BUG, DESCRIPTION_TYPES,
+                                    MAX_STR_SIZE)
 from jstypes import *
 
 
@@ -57,14 +57,6 @@ def _expand_globals(traverser, node):
         else:
             output = JSWrapper(result, traverser)
 
-        # Set the node context.
-        if "context" in node.value:
-            traverser._debug("CONTEXT>>%s" % node.value["context"])
-            output.context = node.value["context"]
-        else:
-            traverser._debug("CONTEXT>>INHERITED")
-            output.context = node.context
-
         return output
 
     return node
@@ -80,25 +72,15 @@ def trace_member(traverser, node, instantiate=False):
         base = trace_member(traverser, node["object"], instantiate)
         base = _expand_globals(traverser, base)
 
-        # Handle the various global entity properties.
-        if base.is_global:
-            # If we've got an XPCOM wildcard, return a copy of the entity.
-            if "xpcom_wildcard" in base.value:
-                traverser._debug("MEMBER_EXP>>XPCOM_WILDCARD")
-                base.value = base.value.copy()
-                del base.value["xpcom_wildcard"]
-                return base
-
         identifier = _get_member_exp_property(traverser, node)
 
-        traverser._debug("MEMBER_EXP>>PROPERTY: %s" % identifier)
+        traverser._debug("MEMBER_EXP>>PROPERTY (%s)" % identifier)
         output = base.get(
             traverser=traverser, instantiate=instantiate, name=identifier)
-        output.context = base.context
         return output
 
     elif node["type"] == "Identifier":
-        traverser._debug("MEMBER_EXP>>ROOT:IDENTIFIER")
+        traverser._debug("MEMBER_EXP>>ROOT:IDENTIFIER (%s)" % node["name"])
 
         # If we're supposed to instantiate the object and it doesn't already
         # exist, instantitate the object.
@@ -212,9 +194,7 @@ def _define_var(traverser, node):
             # The variables are not initialized
             if declaration["init"] is None:
                 # Simple instantiation; no initialization
-                for var in vars:
-                    if not var:
-                        continue
+                for var in filter(None, vars):
                     traverser._declare_variable(var, None)
 
             # The variables are declared inline
@@ -229,7 +209,6 @@ def _define_var(traverser, node):
 
             # It's being assigned by a JSArray (presumably)
             elif declaration["init"]["type"] == "ArrayExpression":
-
                 assigner = traverser._traverse_node(declaration["init"])
                 for value in assigner.value.elements:
                     if vars[0]:
@@ -401,8 +380,9 @@ def _new(traverser, node):
         elem = JSWrapper(elem, traverser=traverser)
     if elem.is_global:
         traverser._debug("Making overwritable")
-        elem.value = copy.deepcopy(elem.value)
+        elem.value = deepcopy(elem.value)
         elem.value["overwritable"] = True
+        elem.value["readonly"] = False
     return elem
 
 
@@ -410,7 +390,6 @@ def _ident(traverser, node):
     "Initiates an object lookup on the traverser based on an identifier token"
 
     name = node["name"]
-
     if traverser._is_defined(name):
         return traverser._seek_variable(name)
 
@@ -445,17 +424,15 @@ def _expr_assignment(traverser, node):
             if global_overwrite:
                 from predefinedentities import GLOBAL_ENTITIES
                 global_dict = GLOBAL_ENTITIES[node_left["name"]]
-                readonly_value = (global_dict["readonly"] if
-                                  "readonly" in global_dict else
-                                  True)
+                readonly_value = global_dict.get("readonly", True)
 
             traverser._declare_variable(node_left["name"], right, type_="glob")
+            
         elif node_left["type"] == "MemberExpression":
             member_object = trace_member(traverser, node_left["object"],
                                          instantiate=True)
             global_overwrite = (member_object.is_global and
-                                not ("overwritable" in member_object.value and
-                                     member_object.value["overwritable"]))
+                                not member_object.value.get("overwritable"))
             member_property = _get_member_exp_property(traverser, node_left)
             traverser._debug("ASSIGNMENT:MEMBER_PROPERTY(%s)" % member_property)
             traverser._debug("ASSIGNMENT:GLOB_OV::%s" % global_overwrite)
@@ -472,16 +449,16 @@ def _expr_assignment(traverser, node):
                     pass
 
             elif "value" in member_object.value:
-                member_object_value = _expand_globals(traverser,
-                                                      member_object).value
+                member_object_value = _expand_globals(
+                    traverser, member_object).value
                 if member_property in member_object_value["value"]:
 
                     # If it's a global and the actual member exists, test
                     # whether it can be safely overwritten.
                     member = member_object_value["value"][member_property]
-                    readonly_value = (member["readonly"] if
-                                      "readonly" in member else
-                                      True)
+                    if callable(member.get("value")):
+                        member = member["value"](t=traverser)
+                    readonly_value = member.get("readonly", True)
 
         traverser._debug("ASSIGNMENT:DIRECT:GLOB_OVERWRITE %s" %
                              global_overwrite)

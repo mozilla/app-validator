@@ -121,10 +121,8 @@ class Traverser(object):
                     action_debug = (action_result.output() if
                                     isinstance(action_result, JSWrapper) else
                                     action_result)
-                self._debug("ACTION>>%s (%s)" % (action_debug,
-                                                 node["type"]))
+                self._debug("ACTION>>%s (%s)" % (action_debug, node["type"]))
 
-        # print node["type"], branches
         if action_result is None:
             self.debug_level += 1
             # Use the node definition to determine and subsequently traverse
@@ -290,3 +288,11 @@ class Traverser(object):
 
         context.set(name, value)
         return value
+
+    def log_feature(self, feature):
+        self.err.feature_profile.add(feature)
+        self.err.feature_usage[feature].append({
+            'file': self.filename,
+            'line': self.line,
+            'col': self.position,
+        })

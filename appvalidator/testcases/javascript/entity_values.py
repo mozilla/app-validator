@@ -17,10 +17,7 @@ def entity(name, result=None):
         output = ENTITIES[name](traverser=t)
         if result is not None:
             return result
-        elif output is not None:
-            return output
-        else:
-            return {"value": {}}
+        return output or {"value": {}}
     return {"value": return_wrap}
 
 

@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 
 class MetadataMixin(object):
     """
@@ -13,6 +15,9 @@ class MetadataMixin(object):
         self.final_context = None
 
         self.metadata = {}
+
+        self.feature_profile = set()
+        self.feature_usage = defaultdict(list)
 
         super(MetadataMixin, self).__init__(*args, **kwargs)
 
@@ -52,5 +57,7 @@ class MetadataMixin(object):
     def _extend_json(self):
         """Output the metadata as part of the main JSON blob."""
         extension = super(MetadataMixin, self)._extend_json() or {}
-        extension.update(metadata=self.metadata)
+        extension.update(metadata=self.metadata,
+                         feature_profile=list(self.feature_profile),
+                         feature_usage=dict(self.feature_usage))
         return extension

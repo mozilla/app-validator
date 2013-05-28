@@ -100,7 +100,18 @@ def setAttribute(args, traverser, node, wrapper):
              violation_type="setAttribute-on")
 
 
-INSTANCE_DEFINITIONS = {"createElement": createElement,
-                        "createElementNS": createElementNS,
-                        "insertAdjacentHTML": insertAdjacentHTML,
-                        "setAttribute": setAttribute}
+def feature(constant):
+    def wrap(args, traverser, node, wrapper):
+        traverser.log_feature(constant)
+    return wrap
+
+
+INSTANCE_DEFINITIONS = {
+    u"createElement": createElement,
+    u"createElementNS": createElementNS,
+    u"insertAdjacentHTML": insertAdjacentHTML,
+    u"setAttribute": setAttribute,
+    u"requestFullScreen": feature("FULLSCREEN"),
+    u"mozRequestFullScreen": feature("FULLSCREEN"),
+    u"webkitRequestFullScreen": feature("FULLSCREEN"),
+}

@@ -80,8 +80,22 @@ def set_on_event(new_value, traverser):
             context=traverser.context)
 
 
-OBJECT_DEFINITIONS = {"innerHTML": {"set": set_innerHTML},
-                      "outerHTML": {"set": set_outerHTML},}
+def feature(constant, fallback=None):
+    def wrap(traverser):
+        traverser.log_feature(constant)
+        return fallback
+    return {"get": wrap, "set": lambda nv, t: wrap(t)}
+
+
+OBJECT_DEFINITIONS = {
+    "innerHTML": {"set": set_innerHTML},
+    "outerHTML": {"set": set_outerHTML},
+
+    "ontouchstart": feature("TOUCH"),
+    "ontouchend": feature("TOUCH"),
+    "ontouchmove": feature("TOUCH"),
+    "ontouchcancel": feature("TOUCH"),
+}
 
 
 def get_operation(mode, property):

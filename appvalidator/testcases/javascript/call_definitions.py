@@ -118,11 +118,6 @@ def math_log(wrapper, arguments, traverser):
     return JSWrapper(arg, traverser=traverser)
 
 
-def math_random(wrapper, arguments, traverser):
-    """Return a "random" value for Math.random()."""
-    return JSWrapper(0.5, traverser=traverser)
-
-
 def math_round(wrapper, arguments, traverser):
     """Return a better value than the standard python round function."""
     args = map(traverser._traverse_node, arguments)
