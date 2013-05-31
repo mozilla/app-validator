@@ -132,7 +132,9 @@ class WebappSpec(Spec):
                                            "process":
                                                lambda s: s.process_act_type,
                                            "not_empty": True}}
-                            }
+                            },
+                            "returnValue": {
+                                "expected_type": bool}
                         }
                     }
                 }
