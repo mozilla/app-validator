@@ -1,7 +1,5 @@
 import math
 
-import actions
-from actions import _get_as_str
 import call_definitions
 from call_definitions import python_wrap
 from entity_values import entity
@@ -216,6 +214,7 @@ GLOBAL_ENTITIES = {
              u"removeIdleObserver": feature("IDLE"),
              u"connection": feature("NETWORK_INFO"),
              u"mozConnection": feature("NETWORK_INFO"),
+             u"mozMobileConnection": feature("NETWORK_INFO"),
              u"networkStats": feature("NETWORK_STATS"),
              u"mozNetworkStats": feature("NETWORK_STATS"),
              u"push": feature("PUSH"),
