@@ -796,3 +796,56 @@ class TestWebapps(TestCase):
         self.data['messages'] = [{"key": "val"}, {"key": "val"}]
         self.analyze()
         self.assert_silent()
+
+    def test_redirects_pass(self):
+        self.data['redirects'] = [
+            {"to": "asdf", "from": "qwer"},
+            {"to": "asdf", "from": "qwer"},
+        ]
+        self.analyze()
+        self.assert_silent()
+
+    def test_redirects_type(self):
+        self.data['redirects'] = 'asdf'
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_redirects_subtype(self):
+        self.data['redirects'] = [
+            'asdf',
+            {"to": "asdf", "from": "qwer"},
+        ]
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_redirects_required_nodes(self):
+        self.data['redirects'] = [
+            {"bar": "asdf", "foo": "qwer"},
+            {"to": "asdf", "from": "qwer"},
+        ]
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+
+    def test_redirects_missing_nodes(self):
+        self.data['redirects'] = [
+            {"to": "asdf"},
+            {"to": "asdf", "from": "qwer"},
+        ]
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_origin_pass(self):
+        self.data['origin'] = 'app://hello'
+        self.analyze()
+        self.assert_silent()
+
+    def test_origin_type(self):
+        self.data['origin'] = 123
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_origin_format(self):
+        self.data['origin'] = 'http://asdf'
+        self.analyze()
+        self.assert_failed(with_errors=True)

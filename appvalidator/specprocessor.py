@@ -191,7 +191,16 @@ class Spec(object):
                                       len(branch)),
                                  self.MORE_INFO])
 
-            # We've got nothing else to do with non-object nodes.
+            # The rest of the tests are for child items.
+            if not isinstance(branch, list):
+                return
+
+            if "child_nodes" in spec_branch:
+                for child in branch:
+                    self.iterate(branch_name + " descendant", child,
+                                 spec_branch["child_nodes"])
+
+            # We've got nothing else to do with lists.
             return
 
         # If we need to process the child nodes individually, do that now.

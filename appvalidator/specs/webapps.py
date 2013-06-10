@@ -16,7 +16,7 @@ class WebappSpec(Spec):
 
     SPEC_NAME = "Web App Manifest"
     MORE_INFO = ("You can find more information at "
-                 "https://developer.mozilla.org/docs/Apps/Manifest")
+                 "https://developer.mozilla.org/docs/Web/Apps/Manifest")
     MIN_REQUIRED_ICON_SIZE = 128
 
     PERMISSIONS = (
@@ -51,7 +51,8 @@ class WebappSpec(Spec):
                                "version", "screen_size", "required_features",
                                "orientation", "fullscreen", "appcache_path",
                                "type", "activities", "permissions", "csp",
-                               "messages"],
+                               "messages", "origin", "redirects",
+                               "permissions"],
         "allowed_nodes": [],
         "disallowed_nodes": ["widget"],
         "child_nodes": {
@@ -164,6 +165,23 @@ class WebappSpec(Spec):
                 "expected_type": list,
                 "process": lambda s: s.process_messages,
             },
+            "redirects": {
+                "expected_type": list,
+                "child_nodes": {
+                    "expected_type": dict,
+                    "required_nodes": ["to", "from"],
+                    "child_nodes": {
+                        "to": {"expected_type": types.StringTypes,
+                               "not_empty": True},
+                        "from": {"expected_type": types.StringTypes,
+                                 "not_empty": True},
+                    }
+                },
+            },
+            "origin": {
+                "expected_type": types.StringTypes,
+                "value_matches": r"app://.+",
+            }
         }
     }
 
