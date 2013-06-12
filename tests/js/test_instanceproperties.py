@@ -95,14 +95,3 @@ class TestOnProperties(TestCase):
         x.onclick = y;
         """)
         self.assert_silent()
-
-    def test_on_event_handleEvent_fail(self):
-        """
-        Objects with `handleEvent` methods should be flagged as errors when
-        add-ons target Gecko version 18.
-        """
-
-        self.run_script("""
-        foo.onclick = {handleEvent: function() {alert("bar");}};
-        """)
-        self.assert_failed(with_errors=True)
