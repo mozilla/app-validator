@@ -66,18 +66,6 @@ def set_on_event(new_value, traverser):
              column=traverser.position,
              context=traverser.context,
              violation_type="setting_on-event")
-    elif not is_literal and new_value.has_property("handleEvent"):
-        traverser.err.error(
-            err_id=("js", "on*", "handleEvent"),
-            error="`handleEvent` no longer implemented in Gecko 18.",
-            description="As of Gecko 18, objects with `handleEvent` methods "
-                        "may no longer be assigned to `on*` properties. Doing "
-                        "so will be equivalent to assigning `null` to the "
-                        "property.",
-            filename=traverser.filename,
-            line=traverser.line,
-            column=traverser.position,
-            context=traverser.context)
 
 
 def feature(constant, fallback=None):
