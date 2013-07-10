@@ -169,6 +169,7 @@ class MockXPI:
         return True
 
     def info(self, name):
+        name = name.split('/')[-1]
         return {"name_lower": name.lower(),
                 "extension": name.lower().split(".")[-1]}
 

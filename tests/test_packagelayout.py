@@ -32,14 +32,26 @@ def test_duplicate_files():
     """Test that duplicate files in a package are caught."""
 
     package = MagicMock()
-    package.subpackage = False
-    zf = MagicMock()
+    package.zf = zf = MagicMock()
     zf.namelist.return_value = ["foo.bar", "foo.bar"]
-    package.zf = zf
 
     err = ErrorBundle()
     packagelayout.test_layout_all(err, package)
     assert err.failed()
+
+
+def test_spaces_in_names():
+    """Test that spaces in filenames are errors."""
+
+    package = MockXPI({
+        "foo/bar/foo.bar ": None,
+        "foo/bar/ foo.bar": None,
+    })
+
+    err = ErrorBundle()
+    packagelayout.test_blacklisted_files(err, package)
+    assert err.failed()
+    assert len(err.errors) == 2
 
 
 class TestMETAINF(TestCase):

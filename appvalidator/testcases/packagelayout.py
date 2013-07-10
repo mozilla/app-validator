@@ -29,6 +29,19 @@ def test_blacklisted_files(err, package=None):
 
     for name in package:
         file_ = package.info(name)
+
+        if (file_["name_lower"].startswith(" ") or
+            file_["name_lower"].endswith(" ")):
+            err.error(
+                err_id=("packagelayout", "invalid_name"),
+                error="Filename starts with or ends with invalid character.",
+                description=["A filename within the package was found to "
+                             "begin or end with a space. This is not "
+                             "allowed.",
+                             "Detected filename: '%s'" % name],
+                filename=name)
+            continue
+
         # Simple test to ensure that the extension isn't blacklisted
         extension = file_["extension"]
         if extension in blacklisted_extensions:
