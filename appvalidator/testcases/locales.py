@@ -37,6 +37,17 @@ def validate_locales(err, package=None):
     if not manifest:
         return
 
+    def inspect_value(value):
+        if "_" in value:
+            err.warning(
+                err_id=("locales", "probably_wrong"),
+                warning="Potentially invalid locale used.",
+                description=["A locale was detected that doesn't appear to be "
+                             "valid. Locales should be in the form of "
+                             "`xx-YY`. Hyphens should be used, not "
+                             "underscores.",
+                             "Locale: %s" % value])
+
     locales = set()
     if "default_locale" in manifest:
         locales.add(manifest["default_locale"])

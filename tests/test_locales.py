@@ -67,3 +67,14 @@ class TestLocales(TestCase):
         self.manifest["locales"]["foo"] = {}
         self.run()
         self.assert_failed(with_errors=True)
+
+    def test_warngs_invalid_default(self):
+        self.manifest["default_locale"] = "en_US"
+        self.manifest["locales"]["pt-BR"] = {}
+        self.run()
+        self.assert_failed(with_warnings=True)
+
+    def test_warngs_invalid_locales(self):
+        self.manifest["locales"]["pt_BR"] = {}
+        self.run()
+        self.assert_failed(with_warnings=True)
