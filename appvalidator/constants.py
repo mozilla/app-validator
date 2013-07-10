@@ -39,6 +39,23 @@ PERMISSIONS = {
     ]),
 }
 
+SHORT_LOCALES = {
+    'en': 'en-US', 'ga': 'ga-IE', 'pt': 'pt-PT', 'sv': 'sv-SE', 'zh': 'zh-CN'
+}
+
+# Taken from Fireplace's hearth/media/js/l10n.js
+SUPPORTED_LOCALES = [
+    'de', 'en-US', 'es', 'fr', 'pl', 'pt-BR',
+
+    # List of languages from AMO's settings (excluding mkt's active locales).
+    'af', 'ar', 'bg', 'ca', 'cs', 'da', 'el', 'eu', 'fa',
+    'fi', 'ga-IE', 'he', 'hu', 'id', 'it', 'ja', 'ko', 'mn', 'nl',
+    'pt-PT', 'ro', 'ru', 'sk', 'sl', 'sq', 'sv-SE', 'uk', 'vi',
+    'zh-CN', 'zh-TW',
+    # The hidden list from AMO's settings:
+    'cy', 'sr', 'tr',
+]
+
 # Graciously provided by @kumar in bug 614574
 if (not SPIDERMONKEY_INSTALLATION or
     not os.path.exists(SPIDERMONKEY_INSTALLATION)):
