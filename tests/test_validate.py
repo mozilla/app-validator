@@ -30,3 +30,12 @@ def test_packaged_app_bundle():
     out = validate_packaged_app("tests/resources/packaged_app.zip",
                                 listed=False, format=None)
     assert out.get_resource("packaged")
+
+
+@safe
+def test_server_name_indication():
+    # Make sure this doesn't raise an ImportError.
+    # This is a sanity check to make sure all requirements are installed
+    # to handle SSL Server Name Indication.
+    # See https://bugzilla.mozilla.org/show_bug.cgi?id=875142
+    from requests.packages.urllib3.contrib import pyopenssl
