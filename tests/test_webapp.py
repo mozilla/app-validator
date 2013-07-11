@@ -842,9 +842,24 @@ class TestWebapps(TestCase):
         self.assert_failed(with_errors=True)
 
     def test_origin_pass(self):
-        self.data['origin'] = 'app://hello'
+        self.data['origin'] = 'app://domain.com'
         self.analyze()
         self.assert_silent()
+
+    def test_origin_dashes(self):
+        self.data['origin'] = 'app://my-domain.com'
+        self.analyze()
+        self.assert_silent()
+
+    def test_origin_subdomains(self):
+        self.data['origin'] = 'app://sub.domain.com'
+        self.analyze()
+        self.assert_silent()
+
+    def test_origin_non_fqdn(self):
+        self.data['origin'] = 'app://hello'
+        self.analyze()
+        self.assert_failed(with_errors=True)
 
     def test_origin_type(self):
         self.data['origin'] = 123
@@ -853,5 +868,15 @@ class TestWebapps(TestCase):
 
     def test_origin_format(self):
         self.data['origin'] = 'http://asdf'
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_origin_path(self):
+        self.data['origin'] = 'app://domain.com/path'
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_origin_path_trailing_slash(self):
+        self.data['origin'] = 'app://domain.com/'
         self.analyze()
         self.assert_failed(with_errors=True)
