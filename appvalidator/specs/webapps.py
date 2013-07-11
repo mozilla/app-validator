@@ -180,7 +180,8 @@ class WebappSpec(Spec):
             },
             "origin": {
                 "expected_type": types.StringTypes,
-                "value_matches": r"app://.+",
+                "value_matches": r"^app://[a-z0-9]+([-.]{1}[a-z0-9]+)*"
+                                 r"\.[a-z]{2,5}$"
             }
         }
     }
