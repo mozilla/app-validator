@@ -58,6 +58,7 @@ class TestWebapps(TestCase):
             "icons": {
                 "16": "/img/icon-16.png",
                 "48": "/img/icon-48.png",
+                "60": "/img/icon-60.png",
                 "128": "/img/icon-128.png"
             },
             "developer": {
@@ -224,6 +225,11 @@ class TestWebapps(TestCase):
 
         for icon in ['/foo/bar', 'http://foo.com/bar', 'https://foo.com/bar']:
             yield test_icon, self, icon
+
+    def test_icons_has_60(self):
+        del self.data["icons"]["60"]
+        self.analyze()
+        self.assert_failed(with_warnings=True)
 
     def test_icons_has_min_selfhosted(self):
         del self.data["icons"]["128"]

@@ -12,7 +12,7 @@ def test_webapp_new():
     with open("tests/resources/testwebapp.webapp") as file_:
         out = validate_app(file_.read())
     j = json.loads(out)
-    assert j["success"], "Expected not to fail"
+    assert j["success"], "Expected not to fail: %s" % j
 
 
 @safe
@@ -21,7 +21,7 @@ def test_packaged_app_new():
     out = validate_packaged_app("tests/resources/packaged_app.zip",
                                 listed=False)
     j = json.loads(out)
-    assert j["success"], "Expected not to fail"
+    assert j["success"], "Expected not to fail: %s" % j
 
 
 @safe

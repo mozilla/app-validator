@@ -5,6 +5,7 @@
   "icons":{
     "16":"http://testmanifest.com/icon-16.png",
     "48":"http://testmanifest.com/icon-48.png",
+    "60":"http://testmanifest.com/icon-60.png",
     "128":"http://testmanifest.com/icon-128.png"
   },
   "installs_allowed_from":[

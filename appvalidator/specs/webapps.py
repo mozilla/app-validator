@@ -300,6 +300,14 @@ class WebappSpec(Spec):
                     description="An icon with a minimum size of 128x128 must "
                                 "be provided by each app.")
 
+        if "60" not in node:
+            self.err.warning(
+                err_id=("spec", "webapp", "fxos_icon"),
+                warning="60x60px icon should be provided for Firefox OS.",
+                description="An icon of size 60x60 should be provided "
+                            "for the app. Firefox OS will look for this "
+                            "icon size before any other.")
+
     def process_dev_url(self, node):
         if not self._path_valid(node, can_have_protocol=True):
             self.err.error(
