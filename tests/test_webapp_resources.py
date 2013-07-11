@@ -45,6 +45,11 @@ class TestPackagedAppLocalResource(TestCase):
                 self.err, self.package, "/local.txt", ""), "read")
         self.package.read.assert_called_once_with("local.txt")
 
+    def test_local_url_with_hash(self):
+        eq_(appbase.try_get_resource(
+                self.err, self.package, "/local.txt#foo", ""), "read")
+        self.package.read.assert_called_once_with("local.txt")
+
     def test_local_url_relative(self):
         eq_(appbase.try_get_resource(
                 self.err, self.package, "local.txt", ""), "read")

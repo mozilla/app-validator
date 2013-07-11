@@ -118,6 +118,10 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
                 filename=filename)
         return
 
+    # Kill hashes in URLs.
+    if "#" in url:
+        url, _ = url.split("#", 1)
+
     # Pull in whatever packaged app resources are required.
     if "://" not in url:
         if err.get_resource("packaged"):
