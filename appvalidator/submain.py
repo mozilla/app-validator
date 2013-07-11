@@ -53,7 +53,7 @@ def prepare_package(err, path, timeout=None):
             # sequential validators, like in the test suite.
             return err
         ex = ValidationTimeout(timeout)
-        log.error("%s; Package: %s" % (str(ex), path))
+        log.error("%s; Package: %s" % (str(ex), path), exc_info=True)
         raise ex
 
     with open(path, "rb") as package:
