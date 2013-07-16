@@ -20,7 +20,7 @@ def test_js_file(err, filename, data, line=0, context=None):
                     err and err.get_resource("SPIDERMONKEY") or
                     SPIDERMONKEY_INSTALLATION)
     if not tree:
-        err.metadata.ran_js_tests = "no;missing ast"
+        err.metadata["ran_js_tests"] = "no;missing ast"
         if err is not None:
             err.set_tier(before_tier)
         return
@@ -29,7 +29,7 @@ def test_js_file(err, filename, data, line=0, context=None):
         err, filename, line, context=context or ContextGenerator(data))
     trav.run(tree)
 
-    err.metadata.ran_js_tests = "yes"
+    err.metadata["ran_js_tests"] = "yes"
 
     # Reset the tier so we don't break the world
     if err is not None:
