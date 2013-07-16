@@ -1,5 +1,5 @@
 ===================================
- marketplace.mozilla.org Validator
+ marketplace.firefox.com Validator
 ===================================
 
 The Apps Validator is a tool designed to scan open web apps for
