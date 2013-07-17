@@ -8,6 +8,8 @@ from ..constants import DESCRIPTION_TYPES
 from ..specprocessor import Spec, LITERAL_TYPE
 
 
+STYLEGUIDE_URL = "http://www.mozilla.org/styleguide/products/firefoxos/"
+
 _FULL_PERMISSIONS = ("readonly", "readwrite", "readcreate", "createonly")
 
 
@@ -305,9 +307,10 @@ class WebappSpec(Spec):
             self.err.warning(
                 err_id=("spec", "webapp", "fxos_icon"),
                 warning="60x60px icon should be provided for Firefox OS.",
-                description="An icon of size 60x60 should be provided "
-                            "for the app. Firefox OS will look for this "
-                            "icon size before any other.")
+                description=["An icon of size 60x60 should be provided "
+                             "for the app. Firefox OS will look for this "
+                             "icon size before any other.",
+                             STYLEGUIDE_URL + "icons/"])
 
     def process_dev_url(self, node):
         if not self._path_valid(node, can_have_protocol=True):
