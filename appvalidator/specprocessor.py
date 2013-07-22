@@ -78,7 +78,12 @@ class Spec(object):
 
     def _err_message(self, func, *args, **kwargs):
         if self.path:
-            kwargs['description'].append("Node: %s" % self._get_path())
+            nodepath = "Node: %s" % self._get_path()
+            if isinstance(kwargs["description"], list):
+                kwargs["description"].append(nodepath)
+            else:
+                kwargs["description"] = [
+                    kwargs["description"], nodepath]
         func(*args, **kwargs)
 
     def _message(self, type_, *args, **kwargs):
