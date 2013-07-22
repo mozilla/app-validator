@@ -222,6 +222,14 @@ class WebappSpec(Spec):
 
         super(WebappSpec, self).__init__(data, err, **kwargs)
 
+    def _err_message(self, func, *args, **kwargs):
+        # If there's no specified filename, set it to "manifest.webapp",
+        # but only do it for packaged apps.
+        if self.err.get_resource("packaged") and "filename" not in kwargs:
+            kwargs["filename"] = "manifest.webapp"
+        
+        super(WebappSpec, self)._err_message(func, *args, **kwargs)
+
     def _path_valid(self, path, can_be_asterisk=False, can_be_absolute=False,
                     can_be_relative=False, can_be_data=False,
                     can_have_protocol=False):
@@ -268,7 +276,7 @@ class WebappSpec(Spec):
 
     def process_icon_size(self, node_name, node):
         if not node_name.isdigit():
-            self.err.error(
+            self.error(
                 err_id=("spec", "webapp", "icon_not_num"),
                 error="`icons` size is not a number.",
                 description=["Icon sizes (keys) must be natural numbers.",
@@ -279,7 +287,7 @@ class WebappSpec(Spec):
                                 can_have_protocol=True,
                                 can_be_data=True,
                                 can_be_relative=True):
-            self.err.error(
+            self.error(
                 err_id=("spec", "webapp", "icon_path"),
                 error="`icons` paths must be absolute paths.",
                 description=["Paths to icons must be absolute paths, relative "
@@ -295,7 +303,7 @@ class WebappSpec(Spec):
         if self.err.get_resource("listed"):
             max_size = max(int(x) for x in node.keys() if x.isdigit())
             if max_size < self.MIN_REQUIRED_ICON_SIZE:
-                self.err.error(
+                self.error(
                     err_id=("spec", "webapp", "icon_minsize"),
                     error="An icon of at least %dx%d pixels must be provided." %
                             (self.MIN_REQUIRED_ICON_SIZE,
@@ -304,7 +312,7 @@ class WebappSpec(Spec):
                                 "be provided by each app.")
 
         if "60" not in node:
-            self.err.warning(
+            self.warning(
                 err_id=("spec", "webapp", "fxos_icon"),
                 warning="60x60px icon should be provided for Firefox OS.",
                 description=["An icon of size 60x60 should be provided "
@@ -314,7 +322,7 @@ class WebappSpec(Spec):
 
     def process_dev_url(self, node):
         if not self._path_valid(node, can_have_protocol=True):
-            self.err.error(
+            self.error(
                 err_id=("spec", "webapp", "dev_url"),
                 error="Developer URLs must be full or absolute URLs.",
                 description=["`url`s provided for the `developer` element must "
@@ -332,7 +340,7 @@ class WebappSpec(Spec):
         for index, item in enumerate(node):
             name = "`installs_allowed_from[%d]`" % index
             if not isinstance(item, types.StringTypes):
-                self.err.error(
+                self.error(
                     err_id=("spec", "webapp", "iaf_type"),
                     error="%s must be a string." % name,
                     description=["%s was found in `installs_allowed_from`, "
@@ -340,7 +348,7 @@ class WebappSpec(Spec):
                                  self.MORE_INFO])
             elif not self._path_valid(item, can_be_asterisk=True,
                                       can_have_protocol=True):
-                self.err.error(
+                self.error(
                     err_id=("spec", "webapp", "iaf_invalid"),
                     error="Bad `installs_allowed_from` URL.",
                     description=["URLs included in `installs_allowed_from` "
@@ -350,7 +358,7 @@ class WebappSpec(Spec):
                                  self.MORE_INFO])
             elif (item.startswith("http://") and "https://%s" % item[7:] in
                       constants.DEFAULT_WEBAPP_MRKT_URLS):
-                self.err.error(
+                self.error(
                     err_id=("spec", "webapp", "iaf_bad_mrkt_protocol"),
                     error="Marketplace URL must use HTTPS.",
                     description=["You included a Marketplace URL in the "
@@ -365,7 +373,7 @@ class WebappSpec(Spec):
                 market_urls.add(item)
 
         if self.err.get_resource("listed") and not market_urls:
-            self.err.error(
+            self.error(
                 err_id=("spec", "webapp", "iaf_no_amo"),
                 error="App must allow installs from Marketplace for inclusion.",
                 description="To be included on %s, a webapp needs to include "
@@ -377,7 +385,7 @@ class WebappSpec(Spec):
     def process_messages(self, node):
         for message in node:
             if not isinstance(message, dict):
-                self.err.error(
+                self.error(
                     err_id=("spec", "webapp", "messages_not_obj"),
                     error="Manifest messages must be objects.",
                     description=["An item in the `messages` field of the "
@@ -387,7 +395,7 @@ class WebappSpec(Spec):
                 continue
 
             if len(message.items()) != 1:
-                self.err.error(
+                self.error(
                     err_id=("spec", "webapp", "messages_not_kv"),
                     error="Manifest message objects may only have one key.",
                     description=["Perhaps unintuitively, the `messages` field "
@@ -398,7 +406,7 @@ class WebappSpec(Spec):
 
     def process_screen_size(self, node):
         if not node.isdigit():
-            self.err.error(
+            self.error(
                 err_id=("spec", "webapp", "screensize_format"),
                 error="`screen_size` values must be numeric.",
                 description=["The values for `min_height` and `min_width` must "
@@ -408,7 +416,7 @@ class WebappSpec(Spec):
 
     def process_appcache_path(self, node):
         if self.err.get_resource("packaged"):
-            self.err.error(
+            self.error(
                 err_id=("spec", "webapp", "appcache_packaged"),
                 error="`appcache_path` is not allowed for packaged apps.",
                 description=["Packaged apps cannot use Appcache. The "
@@ -418,7 +426,7 @@ class WebappSpec(Spec):
             return
 
         if not self._path_valid(node, can_be_absolute=True):
-            self.err.error(
+            self.error(
                 err_id=("spec", "webapp", "appcache_not_absolute"),
                 error="`appcache_path` is not an absolute path.",
                 description=["The `appcache_path` must be a full, absolute URL "
@@ -428,7 +436,7 @@ class WebappSpec(Spec):
 
     def process_type(self, node):
         if unicode(node) not in (u"web", u"privileged", u"certified", ):
-            self.err.error(
+            self.error(
                 err_id=("spec", "webapp", "type_not_known"),
                 error="`type` is not a recognized value",
                 description=["The `type` key does not contain a recognized "
@@ -438,7 +446,7 @@ class WebappSpec(Spec):
                              self.MORE_INFO])
 
         if self.err.get_resource("listed") and node == "certified":
-            self.err.error(
+            self.error(
                 err_id=("spec", "webapp", "type_denied"),
                 error="Certified apps cannot be listed on the Marketplace.",
                 description=["Apps marked as `certified` cannot be listed on "
@@ -446,7 +454,7 @@ class WebappSpec(Spec):
                              self.MORE_INFO])
 
         if not self.err.get_resource("packaged") and node != "web":
-            self.err.error(
+            self.error(
                 err_id=("spec", "webapp", "type_denied_web"),
                 error="Web apps may not be privileged.",
                 description=["Web apps may not have a `type` of `privileged` "
@@ -457,7 +465,7 @@ class WebappSpec(Spec):
     def process_act_href(self, node):
         if not self._path_valid(node, can_be_absolute=True,
                                 can_be_relative=True):
-            self.err.error(
+            self.error(
                 err_id=("spec", "webapp", "act_href_path"),
                 error="Activity `href` is not a valid path.",
                 description=["The `href` value for an activity must be a an "
@@ -468,7 +476,7 @@ class WebappSpec(Spec):
     def process_act_type(self, node):
         if (isinstance(node, list) and
             not all(isinstance(s, types.StringTypes) for s in node)):
-            self.err.error(
+            self.error(
                 err_id=("spec", "webapp", "act_type"),
                 error="Activity `type` is not valid.",
                 description=["The `type` value for an activity must either be "
@@ -489,7 +497,7 @@ class WebappSpec(Spec):
             # conditionals.
             if unicode(node) in values:
                 return
-            self.err.error(
+            self.error(
                 err_id=("spec", "webapp", "orientation", "str"),
                 error="Webapp `orientation` is not a valid value.",
                 description=[message,
@@ -498,7 +506,7 @@ class WebappSpec(Spec):
                              self.MORE_INFO])
         elif isinstance(node, list):
             if not node:
-                self.err.error(
+                self.error(
                     err_id=("spec", "webapp", "orientation", "listempty"),
                     error="Webapp `orientation` must contain at least one "
                           "valid orientation.",
@@ -508,7 +516,7 @@ class WebappSpec(Spec):
                                  self.MORE_INFO])
             for value in node:
                 if not isinstance(value, types.StringTypes):
-                    self.err.error(
+                    self.error(
                         err_id=("spec", "webapp", "orientation", "listtype"),
                         error="Webapp `orientation` array does not contain "
                               "string values.",
@@ -519,7 +527,7 @@ class WebappSpec(Spec):
                                      "Found value: %s" % value,
                                      self.MORE_INFO])
                 elif unicode(value) not in values:
-                    self.err.error(
+                    self.error(
                         err_id=("spec", "webapp", "orientation", "listval"),
                         error="Webapp `orientation` array contains invalid "
                               "values.",
@@ -530,7 +538,7 @@ class WebappSpec(Spec):
                                          ", ".join(values),
                                      self.MORE_INFO])
         else:
-            self.err.error(
+            self.error(
                 err_id=("spec", "webapp", "orientation", "type"),
                 error="Webapp `orientation` is not a valid type.",
                 description=[message,
@@ -545,7 +553,7 @@ class WebappSpec(Spec):
                 continue
 
             if "access" not in per_node:
-                self.err.error(
+                self.error(
                     err_id=("spec", "webapp", "permission", "missing_access"),
                     error="Webapp permission missing `access` node.",
                     description=["The permission '%s' requires that an "
@@ -559,7 +567,7 @@ class WebappSpec(Spec):
 
             access_value = per_node.get("access")
             if access_value not in self.PERMISSIONS_ACCESS[permission]:
-                self.err.error(
+                self.error(
                     err_id=("spec", "webapp", "permission", "bad_access"),
                     error="Webapp permission missing `access` node.",
                     description=["The permission '%s' was given an invalid "
@@ -581,11 +589,11 @@ class WebappSpec(Spec):
 
     def validate_root_node(self, root):
         if not isinstance(root, dict):
-            self.err.error(
-                    err_id=("spec", "webapp", "root_type"),
-                    error="App manifest root is not an object.",
-                    description="The root of the manifest is expected to be an "
-                                "object. It may not be a list or a literal.")
+            self.error(
+                err_id=("spec", "webapp", "root_type"),
+                error="App manifest root is not an object.",
+                description="The root of the manifest is expected to be an "
+                            "object. It may not be a list or a literal.")
             return False
 
     def get_root_node(self, data):
