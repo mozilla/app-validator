@@ -46,6 +46,7 @@ def test_permissions(err, package):
         return
 
     app_type = err.get_resource("app_type")
+    packaged = err.get_resource("packaged")
 
     def error(permission):
         err.error(
@@ -55,7 +56,8 @@ def test_permissions(err, package):
                          "for the app's type. See %s for more information." %
                              TYPE_URL,
                          "Requested permission: %s" % permission,
-                         "App's type: %s" % app_type])
+                         "App's type: %s" % app_type],
+            filename="manifest.webapp" if packaged else "")
 
     if app_type == "web":
         for perm in err.get_resource("permissions"):
@@ -283,7 +285,7 @@ def test_icon(err, data, url, size):
                              "width and height. All icons must be square.",
                              "%dpx icon (%s)" % (size, url),
                              "Dimensions: %d != %d" % (width, height)],
-                filename="webapp.manifest")
+                filename="manifest.webapp")
         elif width != size:
             err.error(
                 err_id=("resources", "icon", "size"),
@@ -293,7 +295,7 @@ def test_icon(err, data, url, size):
                              "was.",
                              "[Purported] %dpx icon (%s)" % (size, url),
                              "Found size: %dpx" % width],
-                filename="webapp.manifest")
+                filename="manifest.webapp")
 
 
 @register_test(tier=2)
@@ -334,11 +336,11 @@ def test_app_resources(err, package):
                              "unnecessary load on a web server." %
                                  constants.ICON_LIMIT,
                              "Found %d icons." % len(icons)],
-                filename="webapp.manifest")
+                filename="manifest.webapp")
             break
 
         icon_data = try_get_resource(err, package,
-                                     url, "webapp.manifest", "icon")
+                                     url, "manifest.webapp", "icon")
         if not icon_data:
             continue
 
@@ -347,18 +349,18 @@ def test_app_resources(err, package):
 
     if "launch_path" in manifest:
         try_get_resource(err, package, manifest["launch_path"],
-                         filename="webapp.manifest",
+                         filename="manifest.webapp",
                          resource_type="launch_path", max_size=False)
 
     if "appcache_path" in manifest:
         try_get_resource(err, package, manifest["appcache_path"],
-                         filename="webapp.manifest", resource_type="manifest",
+                         filename="manifest.webapp", resource_type="manifest",
                          max_size=False)
 
     def test_developer(branch):
         if branch and "url" in branch:
             try_get_resource(err, package, branch["url"],
-                             filename="webapp.manifest",
+                             filename="manifest.webapp",
                              resource_type="developer url",
                              max_size=False, simulate=True)
 
