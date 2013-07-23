@@ -80,15 +80,27 @@ def try_get_data_uri(data_url):
     # Strip off the leading "data:"
     data_url = data_url[5:]
 
+    mime = None
     if ";" in data_url:
-        data_url = data_url[data_url.find(";") + 1:]
+        mime, data_url = data_url.split(";", 1)
+    encoding = None
     if "," in data_url:
-        data_url = data_url[data_url.find(",") + 1:]
+        encoding, data_url = data_url.split(",", 1)
+
+    if not encoding:
+        # Don't decode unencoded strings.
+        return data_url
 
     try:
+        data_url = str(data_url)  # Because Python.
         decoded = base64.urlsafe_b64decode(data_url)
     except (TypeError, ValueError):
-        raise DataURIException("Could not decode `data:` URI.")
+        if mime:
+            raise DataURIException(
+                "Could not decode `data:` URI with MIME `%s` encoded as `%s`" %
+                (mime, encoding))
+        else:
+            raise DataURIException("Could not decode `data:` URI")
     else:
         return decoded
 

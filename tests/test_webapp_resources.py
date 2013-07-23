@@ -29,6 +29,18 @@ class TestWebappDataURL(TestCase):
                 self.err, None, uri, "webapp.manifest", "icon")
             eq_(b64decode.call_args[0][0], "foo")
 
+    def test_data_uri_unencoded(self):
+        eq_(appbase.try_get_data_uri(u'data:this is a test'),
+            'this is a test')
+
+    def test_data_uri_unencoded_mime(self):
+        eq_(appbase.try_get_data_uri(u'data:test/html;this is a test'),
+            'this is a test')
+
+    def test_data_uri_decode(self):
+        eq_(appbase.try_get_data_uri(u'data:base64,dGhpcyBpcyBhIHRlc3Q='),
+            'this is a test')
+
 
 class TestPackagedAppLocalResource(TestCase):
 
