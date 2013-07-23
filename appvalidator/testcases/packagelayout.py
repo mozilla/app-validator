@@ -116,7 +116,7 @@ def test_layout_all(err, package):
             error="Package contains duplicate entries",
             description="The package contains multiple entries with the same "
                         "name. This practice has been banned. Try unzipping "
-                        "and re-zipping your add-on package and try again.")
+                        "and re-zipping your app and try again.")
 
     if any(name.startswith('META-INF/') for name in package_nameset):
         err.error(
