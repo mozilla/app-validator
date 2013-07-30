@@ -286,6 +286,9 @@ class Traverser(object):
         if not context:
             context = self.contexts[0]
 
+        if not isinstance(value, JSWrapper):
+            value = JSWrapper(value, traverser=self)
+
         context.set(name, value)
         return value
 
