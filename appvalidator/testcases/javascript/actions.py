@@ -47,7 +47,7 @@ def _get_member_exp_property(traverser, node):
 def _expand_globals(traverser, node):
     """Expands a global object that has a lambda value."""
     
-    if not isinstance(result, JSWrapper):
+    if not isinstance(node, JSWrapper):
         return node
 
     if node.is_global and callable(node.value.get("value")):
