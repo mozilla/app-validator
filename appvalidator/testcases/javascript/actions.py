@@ -48,6 +48,7 @@ def _expand_globals(traverser, node):
     """Expands a global object that has a lambda value."""
     
     if not isinstance(node, JSWrapper):
+        print 'jsw', node, traverser.filename, traverser.line
         return JSWrapper(node, traverser=traverser)
 
     if node.is_global and callable(node.value.get("value")):

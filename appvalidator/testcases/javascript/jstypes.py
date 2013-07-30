@@ -33,8 +33,13 @@ class JSObject(object):
             if modifier:
                 modifier(traverser)
 
+        dirty = False
         if output is None:
-            return JSWrapper(JSObject(), dirty=True, traverser=traverser)
+            dirty = True
+            output = JSObject()
+
+        if dirty or not isinstance(output, JSWrapper):
+            output = JSWrapper(output, dirty=dirty, traverser=traverser)
         return output
 
     def get_literal_value(self):

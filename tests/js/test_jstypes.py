@@ -76,3 +76,14 @@ class TestTracebacks(TestCase):
         baz("zap" in x);
         """)
         self.assert_silent()
+
+    def test_jsobject_set_get(self):
+        """
+        Test that values fetched from a JSObject are always wrapped in
+        JSWrappers.
+        """
+        jso = jstypes.JSObject()
+        jso.set('foo', 123)
+        assert isinstance(jso.get('foo'), jstypes.JSWrapper)
+        assert isinstance(jso.get('prototype'), jstypes.JSWrapper)
+        assert isinstance(jso.get('prototype').value, jstypes.JSPrototype)
