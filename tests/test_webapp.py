@@ -880,3 +880,28 @@ class TestWebapps(TestCase):
         self.data['origin'] = 'app://domain.com/'
         self.analyze()
         self.assert_failed(with_errors=True)
+
+    def test_chrome(self):
+        self.data['chrome'] = {'navigation': True}
+        self.analyze()
+        self.assert_silent()
+
+    def test_chrome_alt(self):
+        self.data['chrome'] = {'navigation': False}
+        self.analyze()
+        self.assert_silent()
+
+    def test_chrome_bad_navigation(self):
+        self.data['chrome'] = {'navigation': 123}
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_chrome_bad_keys(self):
+        self.data['chrome'] = {'haldo': 123}
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_chrome_bad_type(self):
+        self.data['chrome'] = []
+        self.analyze()
+        self.assert_failed(with_errors=True)

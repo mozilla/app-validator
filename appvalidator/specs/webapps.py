@@ -54,7 +54,7 @@ class WebappSpec(Spec):
                                "orientation", "fullscreen", "appcache_path",
                                "type", "activities", "permissions", "csp",
                                "messages", "origin", "redirects",
-                               "permissions"],
+                               "permissions", "chrome"],
         "allowed_nodes": [],
         "disallowed_nodes": ["widget"],
         "child_nodes": {
@@ -184,7 +184,15 @@ class WebappSpec(Spec):
                 "expected_type": types.StringTypes,
                 "value_matches": r"^app://[a-z0-9]+([-.]{1}[a-z0-9]+)*"
                                  r"\.[a-z]{2,5}$"
-            }
+            },
+            "chrome": {
+                "expected_type": dict,
+                "unknown_node_level": "error",
+                "allowed_nodes": ["navigation"],
+                "child_nodes": {
+                    "navigation": {"expected_type": bool},
+                }
+            },
         }
     }
 
