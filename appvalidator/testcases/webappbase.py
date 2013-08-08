@@ -9,9 +9,10 @@ from PIL import Image
 from . import register_test
 from .. import constants
 from ..webapp import detect_webapp_string
+from markup.remote import RemoteHTMLParser
 
 
-TYPE_URL = "https://developer.mozilla.org/en-US/docs/Apps/Manifest#type"
+MANIFEST_URL = "https://developer.mozilla.org/docs/Web/Apps/Manifest#%s"
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Mobile; rv:18.0) Gecko/18.0 Firefox/18.0"
 }
@@ -54,7 +55,7 @@ def test_permissions(err, package):
             error="App requested unavailable permission",
             description=["A permission requested by the app is not available "
                          "for the app's type. See %s for more information." %
-                             TYPE_URL,
+                             MANIFEST_URL % "type",
                          "Requested permission: %s" % permission,
                          "App's type: %s" % app_type],
             filename="manifest.webapp" if packaged else "")
@@ -360,9 +361,25 @@ def test_app_resources(err, package):
         icon_urls.add(url)
 
     if "launch_path" in manifest:
-        try_get_resource(err, package, manifest["launch_path"],
-                         filename="manifest.webapp",
-                         resource_type="launch_path", max_size=False)
+        launch_page = try_get_resource(
+            err, package, manifest["launch_path"], filename="manifest.webapp",
+            resource_type="launch_path", max_size=False)
+        if launch_page and not err.get_resource("packaged"):
+            parser = RemoteHTMLParser(err)
+            parser.feed(launch_page)
+
+            if ("appcache" in err.metadata and
+                not manifest.get("appcache_path")):
+                err.warning(
+                    err_id=("resources", "appcache", "found_hosted"),
+                    warning="Appcache manifest found",
+                    description=[
+                        "An appcache manifest was found in the remote "
+                        "`launch_path`, but there was no `appcache_path` "
+                        "listed in the manifest. Without an `appcache_path`, "
+                        "the app will not be available to users offline.",
+                        "Found appcache: %s" % err.metadata["appcache"],
+                        "See more: %s" % MANIFEST_URL % "appcache_path"])
 
     if "appcache_path" in manifest:
         try_get_resource(err, package, manifest["appcache_path"],

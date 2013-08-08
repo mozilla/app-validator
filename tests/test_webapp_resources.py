@@ -228,6 +228,7 @@ class TestResourcePolling(TestCase):
         self.setup_err()
         manifest = {}
         self.err.save_resource("manifest", manifest)
+        self.err.save_resource("packaged", True)
         return manifest
 
     @patch("appvalidator.testcases.webappbase.test_icon")
@@ -269,12 +270,36 @@ class TestResourcePolling(TestCase):
 
     @patch("appvalidator.testcases.webappbase.try_get_resource")
     def test_launch_path(self, tgr):
+        tgr.return_value = False
         self.setup_manifest()["launch_path"] = "fizz"
+        self.err.save_resource('packaged', False)
         appbase.test_app_resources(self.err, None)
         eq_(tgr.call_args[0][2], "fizz")
         # Test that we don't warn the dev that their origin exceeds a size
         # limit.
         eq_(tgr.call_args[1]["max_size"], False)
+
+    @patch("appvalidator.testcases.webappbase.try_get_resource")
+    def test_launch_path_no_appcache(self, tgr):
+        tgr.return_value = """
+        <html haldo="trogdor"></html>
+        """
+        self.setup_manifest()["launch_path"] = "fizz"
+        self.err.save_resource('packaged', False)
+        appbase.test_app_resources(self.err, None)
+        eq_(tgr.call_args[0][2], "fizz")
+        assert not self.err.failed()
+
+    @patch("appvalidator.testcases.webappbase.try_get_resource")
+    def test_launch_path_appcache(self, tgr):
+        tgr.return_value = """
+        <html manifest="hello"></html>
+        """
+        self.setup_manifest()["launch_path"] = "fizz"
+        self.err.save_resource('packaged', False)
+        appbase.test_app_resources(self.err, None)
+        eq_(tgr.call_args[0][2], "fizz")
+        assert self.err.failed(fail_on_warnings=True)
 
     @patch("appvalidator.testcases.webappbase.try_get_resource")
     def test_root_developer_absent(self, tgr):
