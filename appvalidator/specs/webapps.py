@@ -599,6 +599,16 @@ class WebappSpec(Spec):
         self.err.save_resource("permissions", list(requested_permissions))
 
     def process_origin(self, node):
+        app_type = self.data.get("type", "web")
+        if app_type not in ("privileged", "certified"):
+            self.error(
+                err_id=("spec", "webapp", "origin", "unprivileged"),
+                error="Unprivileged cannot use the `origin` field.",
+                description=["Apps that are not privileged may not use the "
+                             "`origin` field of the manifest.",
+                             "Found origin: %s" % node,
+                             self.MORE_INFO])
+
         for banned_origin in BANNED_ORIGINS:
             if node.endswith(banned_origin):
                 self.error(

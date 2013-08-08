@@ -100,6 +100,11 @@ class TestWebapps(TestCase):
 
         self.resources = [("app_type", "web")]
 
+    def make_privileged(self):
+        self.resources = [("app_type", "privileged"),
+                          ("packaged", True)]
+        self.data["type"] = "privileged"
+
     def analyze(self):
         """Run the webapp tests on the file."""
         self.detected_type = appvalidator.constants.PACKAGE_WEBAPP
@@ -841,72 +846,86 @@ class TestWebapps(TestCase):
         self.analyze()
         self.assert_failed(with_errors=True)
 
+    def test_origin_unprivileged(self):
+        self.data['origin'] = 'app://domain.com'
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
     def test_origin_pass(self):
+        self.make_privileged()
         self.data['origin'] = 'app://domain.com'
         self.analyze()
         self.assert_silent()
 
     def test_origin_dashes(self):
-        self.data['origin'] = 'app://my-domain.com'
+        self.make_privileged()
+        self.data["origin"] = "app://my-domain.com"
         self.analyze()
         self.assert_silent()
 
     def test_origin_subdomains(self):
-        self.data['origin'] = 'app://sub.domain.com'
+        self.make_privileged()
+        self.data["origin"] = "app://sub.domain.com"
         self.analyze()
         self.assert_silent()
 
     def test_origin_non_fqdn(self):
-        self.data['origin'] = 'app://hello'
+        self.make_privileged()
+        self.data["origin"] = "app://hello"
         self.analyze()
         self.assert_failed(with_errors=True)
 
     def test_origin_type(self):
-        self.data['origin'] = 123
+        self.make_privileged()
+        self.data["origin"] = 123
         self.analyze()
         self.assert_failed(with_errors=True)
 
     def test_origin_format(self):
-        self.data['origin'] = 'http://asdf'
+        self.make_privileged()
+        self.data["origin"] = "http://asdf"
         self.analyze()
         self.assert_failed(with_errors=True)
 
     def test_origin_path(self):
-        self.data['origin'] = 'app://domain.com/path'
+        self.make_privileged()
+        self.data["origin"] = "app://domain.com/path"
         self.analyze()
         self.assert_failed(with_errors=True)
 
     def test_origin_path_trailing_slash(self):
-        self.data['origin'] = 'app://domain.com/'
+        self.make_privileged()
+        self.data["origin"] = "app://domain.com/"
         self.analyze()
         self.assert_failed(with_errors=True)
 
     def test_origin_banned(self):
-        self.data['origin'] = 'app://marketplace.firefox.com'
+        self.make_privileged()
+        self.data["origin"] = "app://marketplace.firefox.com"
         self.analyze()
         self.assert_failed(with_errors=True)
 
     def test_chrome(self):
-        self.data['chrome'] = {'navigation': True}
+        self.data["chrome"] = {"navigation": True}
         self.analyze()
         self.assert_silent()
 
     def test_chrome_alt(self):
-        self.data['chrome'] = {'navigation': False}
+        self.data["chrome"] = {"navigation": False}
         self.analyze()
         self.assert_silent()
 
     def test_chrome_bad_navigation(self):
-        self.data['chrome'] = {'navigation': 123}
+        self.data["chrome"] = {"navigation": 123}
         self.analyze()
         self.assert_failed(with_errors=True)
 
     def test_chrome_bad_keys(self):
-        self.data['chrome'] = {'haldo': 123}
+        self.data["chrome"] = {"haldo": 123}
         self.analyze()
         self.assert_failed(with_errors=True)
 
     def test_chrome_bad_type(self):
-        self.data['chrome'] = []
+        self.data["chrome"] = []
         self.analyze()
         self.assert_failed(with_errors=True)
