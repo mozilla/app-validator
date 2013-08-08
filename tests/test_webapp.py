@@ -881,6 +881,11 @@ class TestWebapps(TestCase):
         self.analyze()
         self.assert_failed(with_errors=True)
 
+    def test_origin_banned(self):
+        self.data['origin'] = 'app://marketplace.firefox.com'
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
     def test_chrome(self):
         self.data['chrome'] = {'navigation': True}
         self.analyze()

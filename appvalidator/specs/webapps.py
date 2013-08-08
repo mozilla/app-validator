@@ -8,6 +8,13 @@ from ..constants import DESCRIPTION_TYPES
 from ..specprocessor import Spec, LITERAL_TYPE
 
 
+BANNED_ORIGINS = [
+    "gaiamobile.org",
+    "firefox.com",
+    "mozilla.com",
+    "mozilla.org",
+]
+
 STYLEGUIDE_URL = "http://www.mozilla.org/styleguide/products/firefoxos/"
 
 _FULL_PERMISSIONS = ("readonly", "readwrite", "readcreate", "createonly")
@@ -183,7 +190,8 @@ class WebappSpec(Spec):
             "origin": {
                 "expected_type": types.StringTypes,
                 "value_matches": r"^app://[a-z0-9]+([-.]{1}[a-z0-9]+)*"
-                                 r"\.[a-z]{2,5}$"
+                                 r"\.[a-z]{2,5}$",
+                "process": lambda s: s.process_origin,
             },
             "chrome": {
                 "expected_type": dict,
@@ -589,6 +597,17 @@ class WebappSpec(Spec):
             requested_permissions.add(permission)
 
         self.err.save_resource("permissions", list(requested_permissions))
+
+    def process_origin(self, node):
+        for banned_origin in BANNED_ORIGINS:
+            if node.endswith(banned_origin):
+                self.error(
+                    err_id=("spec", "webapp", "origin", banned_origin),
+                    error="Origin cannot use `%s` origin." % banned_origin,
+                    description=["App origins may not reference `%s`." %
+                                     banned_origin,
+                                 "Found origin: %s" % node,
+                                 self.MORE_INFO])
 
     def parse(self, data):
         if isinstance(data, types.StringTypes):
