@@ -7,7 +7,7 @@ from . import csstester
 from appvalidator.contextgenerator import ContextGenerator
 from appvalidator.constants import *
 from appvalidator.csp import warn as message_csp
-from appvalidator.python.HTMLParser import HTMLParser
+from appvalidator.python.HTMLParser import HTMLParser, HTMLParseError
 
 
 DEBUG = False
@@ -107,7 +107,7 @@ class MarkupParser(HTMLParser):
             # There's no recovering from a unicode error here. We've got the
             # unicodehelper; if that doesn't help us, nothing will.
             return
-        except HTMLParser.HTMLParseError as inst:
+        except HTMLParseError as inst:
             if DEBUG:  # pragma: no cover
                 print self.xml_state, inst
 
