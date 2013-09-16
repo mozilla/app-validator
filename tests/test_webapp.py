@@ -588,13 +588,6 @@ class TestWebapps(TestCase):
 
     def test_type_web_priv_fail(self):
         """Test that web apps cannot be privileged or certified."""
-        self.data["type"] = "privileged"
-        self.resources.append(("packaged", False))
-        self.analyze()
-        self.assert_failed(with_errors=True)
-
-    def test_type_web_priv_fail(self):
-        """Test that web apps cannot be privileged or certified."""
         self.data["type"] = "web"
         self.resources.append(("packaged", False))
         self.analyze()
@@ -622,7 +615,7 @@ class TestWebapps(TestCase):
         self.data["activities"] = {
             "foo": {"href": "/foo/bar",
                     "disposition": "window",
-                    "filters": {"type": "foo"}},
+                    "filters": {"type": "foo", "number": 1}},
             "bar": {"href": "foo/bar",
                     "disposition": "inline",
                     "filters": {"whatever": ["foo", "bar"]}}

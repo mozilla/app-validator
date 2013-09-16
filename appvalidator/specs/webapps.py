@@ -142,7 +142,8 @@ class WebappSpec(Spec):
                                     {"*": {"expected_type": DESCRIPTION_TYPES,
                                            "process":
                                                lambda s: s.process_act_type,
-                                           "not_empty": True}}
+                                           "not_empty": True},
+                                     "number": {"expected_type": LITERAL_TYPE}}
                             },
                             "returnValue": {
                                 "expected_type": bool}
@@ -244,7 +245,7 @@ class WebappSpec(Spec):
         # but only do it for packaged apps.
         if self.err.get_resource("packaged") and "filename" not in kwargs:
             kwargs["filename"] = "manifest.webapp"
-        
+
         super(WebappSpec, self)._err_message(func, *args, **kwargs)
 
     def _path_valid(self, path, can_be_asterisk=False, can_be_absolute=False,
