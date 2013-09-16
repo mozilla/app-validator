@@ -107,7 +107,7 @@ class MarkupParser(HTMLParser):
             # There's no recovering from a unicode error here. We've got the
             # unicodehelper; if that doesn't help us, nothing will.
             return
-        except htmlparser.HTMLParseError as inst:
+        except HTMLParser.HTMLParseError as inst:
             if DEBUG:  # pragma: no cover
                 print self.xml_state, inst
 
