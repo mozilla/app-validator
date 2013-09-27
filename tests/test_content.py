@@ -136,9 +136,28 @@ class TestContent(TestCase):
             mock_package = MockXPI(
                 dict([(structure, "tests/resources/content/junk.xpi")]))
             content.test_packed_packages(self.err, mock_package)
+            print structure
             print self.err.print_summary(verbose=True)
             self.assert_failed()
 
         for structure in (".hidden", "dir/__MACOSX/foo", "dir/.foo.swp",
                           "dir/file.old", "dir/file.xul~"):
             yield test_structure, structure
+
+    def test_too_much_garbage(self):
+        """Tests that hidden files are reported."""
+        self.setup_err()
+        mock_package = MockXPI(
+            {".junky": "tests/resources/content/junk.xpi"},
+            default_size=50 * 1024)
+
+        content.test_packed_packages(self.err, mock_package)
+        self.assert_failed(with_warnings=True)
+
+        mock_package = MockXPI(
+            {".junky": "tests/resources/content/junk.xpi",
+             ".morejunk": "tests/resources/content/junk.xpi",},
+            default_size=50 * 1024)
+
+        content.test_packed_packages(self.err, mock_package)
+        self.assert_failed(with_warnings=True, with_errors=True)

@@ -158,12 +158,13 @@ class MockZipFile:
 
 class MockXPI:
 
-    def __init__(self, data=None):
+    def __init__(self, data=None, default_size=100):
         if not data:
             data = {}
         self.zf = MockZipFile()
         self.data = data
         self.filename = "mock_xpi.xpi"
+        self.default_size = default_size
 
     def test(self):
         return True
@@ -171,6 +172,7 @@ class MockXPI:
     def info(self, name):
         name = name.split('/')[-1]
         return {"name_lower": name.lower(),
+                "size": self.default_size,
                 "extension": name.lower().split(".")[-1]}
 
     def __iter__(self):
@@ -182,4 +184,3 @@ class MockXPI:
 
     def read(self, name):
         return open(self.data[name]).read()
-

@@ -17,6 +17,8 @@ blacklisted_magic_numbers = (
         (0x43, 0x57, 0x53),  # ZLIB compressed SWF
 )
 
+VC_DIRS = (".git", ".svn", )
+
 
 @register_test(tier=1)
 def test_blacklisted_files(err, package=None):
@@ -26,6 +28,7 @@ def test_blacklisted_files(err, package=None):
         return
 
     flagged_files = []
+    flagged_for_vc = False
 
     for name in package:
         file_ = package.info(name)
@@ -50,6 +53,22 @@ def test_blacklisted_files(err, package=None):
             flagged_files.append(name)
             continue
 
+        if any(x in VC_DIRS for x in name.lower().split("/")):
+            if flagged_for_vc:
+                continue
+
+            flagged_for_vc = True
+            err.error(
+                err_id=("packagelayout", "version_control"),
+                error="Version control detected in package",
+                description=["A version control directory was detected in "
+                             "your package. Version control may not be "
+                             "included as part of a packaged app due to size "
+                             "and potentially sensitive data.",
+                             "Detected file: %s" % name],
+                filename=name)
+            continue
+
         # Perform a deep inspection to detect magic numbers for known binary
         # and executable file types.
         try:
@@ -71,8 +90,7 @@ def test_blacklisted_files(err, package=None):
             # Note that there is binary content in the metadata
             err.metadata["contains_binary_content"] = True
             err.warning(
-                err_id=("testcases_packagelayout",
-                        "test_blacklisted_files",
+                err_id=("testcases_packagelayout", "test_blacklisted_files",
                         "disallowed_file_type"),
                 warning="Flagged file type found",
                 description=["A file was found to contain flagged content "
@@ -83,26 +101,20 @@ def test_blacklisted_files(err, package=None):
                 filename=name)
 
     if flagged_files:
-        # Detect Java JAR files:
         err.warning(
-            err_id=("testcases_packagelayout",
-                    "test_blacklisted_files",
+            err_id=("testcases_packagelayout", "test_blacklisted_files",
                     "disallowed_extension"),
             warning="Flagged file extensions found.",
             description=["Files whose names end with flagged extensions have "
-                         "been found in the add-on.",
+                         "been found in the app.",
                          "The extension of these files are flagged because "
-                         "they usually identify binary components. Please see "
-                         "http://addons.mozilla.org/developers/docs/"
-                             "policies/reviews#section-binary"
-                         " for more information on the binary content review "
-                         "process.", "\n".join(flagged_files)],
-            filename=name)
+                         "they usually identify binary components, which can "
+                         "contain malware.", "\n".join(flagged_files)])
 
 
 @register_test(tier=1)
 def test_layout_all(err, package):
-    """Tests the well-formedness of extensions."""
+    """Tests the well-formedness of apps."""
 
     if not package:
         return

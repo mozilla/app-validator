@@ -26,6 +26,8 @@ MAX_RESOURCE_SIZE = 2 * 1024 * 1024
 
 ICON_LIMIT = 10
 
+MAX_GARBAGE = 100 * 1024
+
 PERMISSIONS = {
     'web': set([
         'geolocation', 'alarms', 'fmradio', 'desktop-notification', 'storage',

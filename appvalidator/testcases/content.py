@@ -24,51 +24,50 @@ def test_packed_packages(err, package=None):
         return
 
     processed_files = 0
-    pretested_files = err.get_resource("pretested_files") or []
+
+    garbage_files = 0
 
     # Iterate each item in the package.
     for name in package:
+        file_info = package.info(name)
+        file_name = file_info["name_lower"]
+        file_size = file_info["size"]
 
-        # Warn for things like __MACOSX directories and .old files.
-        if ("__MACOSX" in name or
-            name.split("/")[-1].startswith(".")):
+        if "__MACOSX" in name or file_name[0] in (".", "_", ):
             err.warning(
                 err_id=("testcases_content", "test_packed_packages",
                         "hidden_files"),
-                warning="Hidden files and folders flagged",
+                warning="Unused files or directories flagged.",
                 description="Hidden files and folders can make the review process "
                             "difficult and may contain sensitive information "
                             "about the system that generated the zip. Please "
                             "modify the packaging process so that these files "
                             "aren't included.",
                 filename=name)
+            garbage_files += file_size
             continue
         elif (any(name.endswith(ext) for ext in FLAGGED_EXTENSIONS) or
               name in FLAGGED_FILES):
             err.warning(
                 err_id=("testcases_content", "test_packaged_packages",
                         "flagged_files"),
-                warning="Flagged filename found",
+                warning="Garbage file detected",
                 description="Files were found that are either unnecessary "
                             "or have been included unintentionally. They "
                             "should be removed.",
                 filename=name)
-            continue
-
-        # Skip the file if it's in the pre-tested file resources.
-        if name in pretested_files:
+            garbage_files += file_size
             continue
 
         # Read the file from the archive if possible.
         file_data = u""
         try:
             file_data = package.read(name)
-        except KeyError:  # pragma: no cover
+        except KeyError:
             pass
 
         # Skip over whitelisted hashes unless we are checking for compatibility.
-        hash = hashlib.sha1(file_data).hexdigest()
-        if hash in hash_blacklist:
+        if hashlib.sha1(file_data).hexdigest() in hash_blacklist:
             continue
 
         # Process the file.
@@ -82,6 +81,16 @@ def test_packed_packages(err, package=None):
         # This aids in creating unit tests.
         processed_files += 1
 
+    if garbage_files >= MAX_GARBAGE:
+        err.error(
+            err_id=("testcases_content", "garbage"),
+            error="Too much garbage in package",
+            description="Your app contains too many unused or garbage files. "
+                        "These include temporary files, 'dot files', IDE and "
+                        "editor backup and configuration, and operating "
+                        "system hidden files. They must be removed before "
+                        "your app can be submitted.")
+
     return processed_files
 
 
@@ -90,24 +99,23 @@ def _process_file(err, package, name, file_data):
 
     name_lower = name.lower()
 
-    if name_lower.endswith((".css", ".js", ".xml", ".html", ".xhtml")):
+    if not name_lower.endswith((".css", ".js", ".xml", ".html", ".xhtml")):
+        return False
 
-        if not file_data:
-            return None
+    if not file_data:
+        return None
 
-        # Convert the file data to unicode
-        file_data = unicodehelper.decode(file_data)
+    # Convert the file data to unicode
+    file_data = unicodehelper.decode(file_data)
 
-        if name_lower.endswith(".css"):
-            testendpoint_css.test_css_file(err, name, file_data)
+    if name_lower.endswith(".css"):
+        testendpoint_css.test_css_file(err, name, file_data)
 
-        elif name_lower.endswith(".js"):
-            testendpoint_js.test_js_file(err, name, file_data)
+    elif name_lower.endswith(".js"):
+        testendpoint_js.test_js_file(err, name, file_data)
 
-        elif name_lower.endswith((".xml", ".html", ".xhtml")):
-            p = testendpoint_markup.MarkupParser(err)
-            p.process(name, file_data, package.info(name)["extension"])
+    elif name_lower.endswith((".xml", ".html", ".xhtml")):
+        p = testendpoint_markup.MarkupParser(err)
+        p.process(name, file_data, package.info(name)["extension"])
 
-        return True
-
-    return False
+    return True

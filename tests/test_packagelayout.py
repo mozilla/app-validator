@@ -40,6 +40,16 @@ def test_duplicate_files():
     assert err.failed()
 
 
+def test_version_control():
+    """Test that version control in a package are caught."""
+
+    package = MockXPI({".git/foo/bar": None})
+
+    err = ErrorBundle()
+    packagelayout.test_blacklisted_files(err, package)
+    assert err.failed()
+
+
 def test_spaces_in_names():
     """Test that spaces in filenames are errors."""
 
