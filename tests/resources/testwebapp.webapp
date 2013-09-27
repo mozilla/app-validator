@@ -4,9 +4,13 @@
   "version":"1.0",
   "icons":{
     "16":"http://testmanifest.com/icon-16.png",
+    "32":"http://testmanifest.com/icon-32.png",
     "48":"http://testmanifest.com/icon-48.png",
     "60":"http://testmanifest.com/icon-60.png",
-    "128":"http://testmanifest.com/icon-128.png"
+    "90":"http://testmanifest.com/icon-90.png",
+    "120":"http://testmanifest.com/icon-120.png",
+    "128":"http://testmanifest.com/icon-128.png",
+    "256":"http://testmanifest.com/icon-256.png"
   },
   "installs_allowed_from":[
     "*"

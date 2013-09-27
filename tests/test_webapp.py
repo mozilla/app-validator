@@ -57,9 +57,13 @@ class TestWebapps(TestCase):
             "description": descr,
             "icons": {
                 "16": "/img/icon-16.png",
+                "32": "/img/icon-32.png",
                 "48": "/img/icon-48.png",
                 "60": "/img/icon-60.png",
-                "128": "/img/icon-128.png"
+                "90": "/img/icon-90.png",
+                "120": "/img/icon-120.png",
+                "128": "/img/icon-128.png",
+                "256": "/img/icon-256.png",
             },
             "developer": {
                 "name": "Mozilla Labs",
@@ -246,8 +250,14 @@ class TestWebapps(TestCase):
         self.data["installs_allowed_from"] = \
                 appvalidator.constants.DEFAULT_WEBAPP_MRKT_URLS
         del self.data["icons"]["128"]
+        del self.data["icons"]["256"]
         self.analyze()
         self.assert_failed(with_errors=True)
+
+    def test_icons_has_os_sizes(self):
+        del self.data["icons"]["256"]
+        self.analyze()
+        self.assert_notices()
 
     def test_no_locales(self):
         """Test that locales are not required."""
