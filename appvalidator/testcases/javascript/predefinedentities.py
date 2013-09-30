@@ -49,6 +49,50 @@ MOZAPPS = {
 }
 
 
+NAVIGATOR = {
+    u"apps": feature("APPS", MOZAPPS),
+    u"mozApps": feature("APPS", MOZAPPS),
+    u"pay": feature("PAY"),
+    u"mozPay": feature("PAY"),
+    u"battery": feature("BATTERY"),
+    u"bluetooth": feature("BLUETOOTH"),
+    u"mozBluetooth": feature("BLUETOOTH"),
+    u"contacts": feature("CONTACTS"),
+    u"mozContacts": feature("CONTACTS"),
+    u"getDeviceStorage": feature("DEVICE_STORAGE"),
+    u"geolocation": feature("GEOLOCATION"),
+    u"getCurrentPosition": feature("GEOLOCATION"),
+    u"addIdleObserver": feature("IDLE"),
+    u"removeIdleObserver": feature("IDLE"),
+    u"connection": feature("NETWORK_INFO"),
+    u"mozConnection": feature("NETWORK_INFO"),
+    u"mozMobileConnection": feature("NETWORK_INFO"),
+    u"networkStats": feature("NETWORK_STATS"),
+    u"mozNetworkStats": feature("NETWORK_STATS"),
+    u"push": feature("PUSH"),
+    u"mozPush": feature("PUSH"),
+    u"time": feature("TIME_CLOCK"),
+    u"mozTime": feature("TIME_CLOCK"),
+    u"vibrate": feature("VIBRATE"),
+    u"FM": feature("FM"),
+    u"mozFM": feature("FM"),
+    u"mozFMRadio": feature("FM"),
+    # XXX: The "SMS" API's capitalization seems to be inconsistent at the moment.
+    u"SMS": feature("SMS"),
+    u"mozSMS": feature("SMS"),
+    u"mozSms": feature("SMS"),
+    u"mozNotification": feature("NOTIFICATION"),
+    u"mozAlarms": feature("ALARM"),
+    u"getGamepad": feature("GAMEPAD"),
+    u"mozGetGamepad": feature("GAMEPAD"),
+    u"webkitGetGamepad": feature("GAMEPAD"),
+    u"mozTCPSocket": feature("TCPSOCKET"),
+    u"mozTCPServerSocket": feature("TCPSOCKET"),
+
+    u"getUserMedia": entity("getUserMedia"),
+}
+
+
 # GLOBAL_ENTITIES is also representative of the `window` object.
 GLOBAL_ENTITIES = {
     u"window": {"value": global_identity},
@@ -58,8 +102,6 @@ GLOBAL_ENTITIES = {
         {"value":
             {u"title": MUTABLE,
              u"defaultView": {"value": global_identity},
-             u"createElement": entity("createElement"),
-             u"createElementNS": entity("createElementNS"),
 
              u"cancelFullScreen": feature("FULLSCREEN"),
              u"mozCancelFullScreen": feature("FULLSCREEN"),
@@ -91,52 +133,41 @@ GLOBAL_ENTITIES = {
     u"Object":
         {"value":
              {u"prototype": READONLY,
-              u"constructor":
-                  {"value": get_global("Function")}}},
+              u"constructor": {"value": get_global("Function")}}},
     u"String":
         {"value":
              {u"prototype": READONLY,
-              u"constructor":
-                  {"value": get_global("Function")}},
+              u"constructor": {"value": get_global("Function")}},
          "return": call_definitions.string_global},
     u"Array":
         {"value":
              {u"prototype": READONLY,
-              u"constructor":
-                  {"value": get_global("Function")}},
+              u"constructor": {"value": get_global("Function")}},
          "return": call_definitions.array_global},
     u"Number":
         {"value":
-             {u"prototype":
-                  READONLY,
-              u"constructor":
-                  {"value": get_global("Function")},
-              u"POSITIVE_INFINITY":
-                  {"value": get_constant(float('inf'))},
-              u"NEGATIVE_INFINITY":
-                  {"value": get_constant(float('-inf'))}},
+             {u"prototype": READONLY,
+              u"constructor": {"value": get_global("Function")},
+              u"POSITIVE_INFINITY": {"value": get_constant(float('inf'))},
+              u"NEGATIVE_INFINITY": {"value": get_constant(float('-inf'))}},
          "return": call_definitions.number_global},
     u"Boolean":
         {"value":
              {u"prototype": READONLY,
-              u"constructor":
-                  {"value": get_global("Function")}},
+              u"constructor": {"value": get_global("Function")}},
          "return": call_definitions.boolean_global},
     u"RegExp":
         {"value":
             {u"prototype": READONLY,
-             u"constructor":
-                 {"value": get_global("Function")}}},
+             u"constructor": {"value": get_global("Function")}}},
     u"Date":
         {"value":
             {u"prototype": READONLY,
-             u"constructor":
-                 {"value": get_global("Function")}}},
+             u"constructor": {"value": get_global("Function")}}},
     u"File":
         {"value":
             {u"prototype": READONLY,
-             u"constructor":
-                 {"value": get_global("Function")}}},
+             u"constructor": {"value": get_global("Function")}}},
 
     u"Math":
         {"value":
@@ -172,18 +203,7 @@ GLOBAL_ENTITIES = {
             },
         },
 
-    u"XMLHttpRequest":
-        {"value":
-             {u"open":
-                  {"dangerous":
-                       # Ban synchronous XHR by making sure the third arg
-                       # is absent and false.
-                       lambda a, t, e:
-                           a and len(a) >= 3 and
-                           not t(a[2]).get_literal_value() and
-                           "Synchronous HTTP requests can cause serious UI "
-                           "performance problems, especially to users with "
-                           "slow network connections."}}},
+    u"XMLHttpRequest": entity('XMLHttpRequest'),
 
     # Global properties are inherently read-only, though this formalizes it.
     u"Infinity": {"value": get_global("Number", "POSITIVE_INFINITY")},
@@ -196,44 +216,7 @@ GLOBAL_ENTITIES = {
     u"height": MUTABLE,
     u"opener": {"value": global_identity},
 
-    u"navigator":
-        {"value":
-            {u"apps": feature("APPS", MOZAPPS),
-             u"mozApps": feature("APPS", MOZAPPS),
-             u"pay": feature("PAY"),
-             u"mozPay": feature("PAY"),
-             u"battery": feature("BATTERY"),
-             u"bluetooth": feature("BLUETOOTH"),
-             u"mozBluetooth": feature("BLUETOOTH"),
-             u"contacts": feature("CONTACTS"),
-             u"mozContacts": feature("CONTACTS"),
-             u"getDeviceStorage": feature("DEVICE_STORAGE"),
-             u"geolocation": feature("GEOLOCATION"),
-             u"getCurrentPosition": feature("GEOLOCATION"),
-             u"addIdleObserver": feature("IDLE"),
-             u"removeIdleObserver": feature("IDLE"),
-             u"connection": feature("NETWORK_INFO"),
-             u"mozConnection": feature("NETWORK_INFO"),
-             u"mozMobileConnection": feature("NETWORK_INFO"),
-             u"networkStats": feature("NETWORK_STATS"),
-             u"mozNetworkStats": feature("NETWORK_STATS"),
-             u"push": feature("PUSH"),
-             u"mozPush": feature("PUSH"),
-             u"time": feature("TIME_CLOCK"),
-             u"mozTime": feature("TIME_CLOCK"),
-             u"vibrate": feature("VIBRATE"),
-             u"FM": feature("FM"),
-             u"mozFM": feature("FM"),
-             u"mozFMRadio": feature("FM"),
-             # XXX: The "SMS" API's capitalization seems to be inconsistent at the moment.
-             u"SMS": feature("SMS"),
-             u"mozSMS": feature("SMS"),
-             u"mozSms": feature("SMS"),
-             u"getGamepad": feature("GAMEPAD"),
-             u"mozGetGamepad": feature("GAMEPAD"),
-             u"webkitGetGamepad": feature("GAMEPAD"),
-            },
-        },
+    u"navigator": {"value": NAVIGATOR},
 
     u"Activity": feature("ACTIVITY"),
     u"MozActivity": feature("ACTIVITY"),
@@ -254,4 +237,14 @@ GLOBAL_ENTITIES = {
     u"StorageInfo": feature("QUOTA"),
     u"fullScreen": feature("FULLSCREEN"),
 
+    U"MediaStream": feature("WEBRTC_MEDIA"),
+    u"DataChannel": feature("WEBRTC_DATA"),
+
+    u"RTCPeerConnection": feature("WEBRTC_PEER"),
+    u"mozRTCPeerConnection": feature("WEBRTC_PEER"),
+    u"webkitRTCPeerConnection": feature("WEBRTC_PEER"),
+
+    u"speechSynthesis": feature("SPEECH_SYN"),
+    u"SpeechSynthesisUtterance": feature("SPEECH_SYN"),
+    u"SpeechRecognition": feature("SPEECH_REC"),
 }

@@ -58,7 +58,7 @@ class Traverser(object):
         self._debug("START>>")
         try:
             self.function_collection.append([])
-            self._traverse_node(data)
+            self.traverse_node(data)
 
             func_coll = self.function_collection.pop()
             for func in func_coll:
@@ -75,7 +75,7 @@ class Traverser(object):
             if DEBUG:
                 self.err.final_context = self.contexts[0]
 
-    def _traverse_node(self, node):
+    def traverse_node(self, node):
         "Finds a node's internal blocks and helps manage state."
 
         if node is None:
@@ -133,9 +133,9 @@ class Traverser(object):
                     self.debug_level += 1
                     b = node[branch]
                     if isinstance(b, list):
-                        map(self._traverse_node, b)
+                        map(self.traverse_node, b)
                     else:
-                        self._traverse_node(b)
+                        self.traverse_node(b)
                     self.debug_level -= 1
             self.debug_level -= 1
 

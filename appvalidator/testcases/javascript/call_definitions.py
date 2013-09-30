@@ -17,7 +17,7 @@ from appvalidator.constants import BUGZILLA_BUG
 def string_global(wrapper, arguments, traverser):
     if not arguments:
         return JSWrapper("", traverser=traverser)
-    arg = traverser._traverse_node(arguments[0])
+    arg = traverser.traverse_node(arguments[0])
     value = actions._get_as_str(arg.get_literal_value())
     return JSWrapper(value, traverser=traverser)
 
@@ -25,14 +25,14 @@ def string_global(wrapper, arguments, traverser):
 def array_global(wrapper, arguments, traverser):
     output = JSArray()
     if arguments:
-        output.elements = map(traverser._traverse_node, arguments)
+        output.elements = map(traverser.traverse_node, arguments)
     return JSWrapper(output, traverser=traverser)
 
 
 def number_global(wrapper, arguments, traverser):
     if not arguments:
         return JSWrapper(0, traverser=traverser)
-    arg = traverser._traverse_node(arguments[0])
+    arg = traverser.traverse_node(arguments[0])
     try:
         return float(arg.get_literal_value())
     except (ValueError, TypeError):
@@ -42,7 +42,7 @@ def number_global(wrapper, arguments, traverser):
 def boolean_global(wrapper, arguments, traverser):
     if not arguments:
         return JSWrapper(False, traverser=traverser)
-    arg = traverser._traverse_node(arguments[0])
+    arg = traverser.traverse_node(arguments[0])
     return JSWrapper(bool(arg.get_literal_value()), traverser=traverser)
 
 
@@ -67,7 +67,7 @@ def python_wrap(func, args, nargs=False):
         return literal
 
     def wrap(wrapper, arguments, traverser):
-        passed_args = map(traverser._traverse_node, arguments)
+        passed_args = map(traverser.traverse_node, arguments)
 
         params = []
         if not nargs:
@@ -103,7 +103,7 @@ def python_wrap(func, args, nargs=False):
 
 def math_log(wrapper, arguments, traverser):
     """Return a better value than the standard python log function."""
-    args = map(traverser._traverse_node, arguments)
+    args = map(traverser.traverse_node, arguments)
     if not args:
         return JSWrapper(0, traverser=traverser)
 
@@ -120,7 +120,7 @@ def math_log(wrapper, arguments, traverser):
 
 def math_round(wrapper, arguments, traverser):
     """Return a better value than the standard python round function."""
-    args = map(traverser._traverse_node, arguments)
+    args = map(traverser.traverse_node, arguments)
     if not args:
         return JSWrapper(0, traverser=traverser)
 

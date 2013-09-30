@@ -16,212 +16,90 @@ def uses_feature(name):
 
 
 class FeatureTester(TestCase):
-    def assert_has_feature(self, name):
-        assert name in self.err.feature_profile, (
-            '"%s" not found in feature profile (%s)' % (
-                name, ', '.join(self.err.feature_profile)))
+    def test_all(self):
+        def _test(feature, script):
+            self.setUp()
+            self.setup_err()
+            self.run_script(script)
+            self.assert_has_feature(feature)
+
+        for feature, script in self.TESTS:
+            yield _test, feature, script
 
 
 class TestWindowFeatures(FeatureTester):
     """Tests for feature APIs in the global context."""
 
-    @uses_feature("ACTIVITY")
-    def test_ACTIVITY(self):
-        self.run_script("""
-        var x = new MozActivity();
-        """)
-    
-    @uses_feature("LIGHT_EVENTS")
-    def test_LIGHT_EVENTS(self):
-        self.run_script("""
-        window.ondevicelight = function() {};
-        """)
-    
-    @uses_feature("ARCHIVE")
-    def test_ARCHIVE(self):
-        self.run_script("""
-        var x = new ArchiveReader();
-        """)
-    
-    @uses_feature("INDEXEDDB")
-    def test_INDEXEDDB(self):
-        self.run_script("""
-        var x = new mozIndexedDB();
-        """)
-    
-    @uses_feature("PROXIMITY")
-    def test_PROXIMITY(self):
-        self.run_script("""
-        window.ondeviceproximity = function() {};
-        """)
-    
-    @uses_feature("ORIENTATION")
-    def test_ORIENTATION(self):
-        self.run_script("""
-        window.ondeviceorientation = function() {};
-        """)
-    
-    @uses_feature("TOUCH")
-    def test_TOUCH(self):
-        self.run_script("""
-        window.ontouchstart = function() {};
-        """)
-    
-    @uses_feature("AUDIO")
-    def test_AUDIO(self):
-        self.run_script("""
-        var audio = new Audio();
-        audio.src = 'asdf';
-        """)
-    
-    @uses_feature("WEBAUDIO")
-    def test_WEBAUDIO(self):
-        self.run_script("""
-        var x = new mozAudioContext();
-        """)
-    
-    @uses_feature("QUOTA")
-    def test_QUOTA(self):
-        self.run_script("""
-        var x = new mozPersistentStorage();
-        """)
-    
-    @uses_feature("QUOTA")
-    def test_QUOTA_StorageInfo(self):
-        self.run_script("""
-        var x = new StorageInfo();
-        """)
+    TESTS = [
+        ("ACTIVITY", "var x = new MozActivity();"),
+        ("LIGHT_EVENTS", "window.ondevicelight = function() {};"),
+        ("ARCHIVE", "var x = new ArchiveReader();"),
+        ("INDEXEDDB", "var x = new mozIndexedDB();"),
+        ("PROXIMITY", "window.ondeviceproximity = function() {};"),
+        ("ORIENTATION", "window.ondeviceorientation = function() {};"),
+        ("TOUCH", "window.ontouchstart = function() {};"),
+        ("AUDIO", "var audio = new Audio(); audio.src = 'asdf';"),
+        ("WEBAUDIO", "var x = new mozAudioContext();"),
+        ("QUOTA", "var x = new mozPersistentStorage();"),
+        ("QUOTA", "var x = new StorageInfo();"),
+        ("WEBRTC_MEDIA", "var x = MediaStream;"),
+        ("WEBRTC_DATA", "var x = new DataChannel();"),
+        ("WEBRTC_PEER", "var x = new RTCPeerConnection();"),
+        ("SPEECH_SYN", "var x = speechSynthesis.foo();"),
+        ("SPEECH_REC", "var x = new SpeechRecognition();"),
+        ("POINTER_LOCK", "document.documentElement.requestPointerLock()"),
+    ]
 
 
 class TestNavigatorFeatures(FeatureTester):
     """Tests for feature APIs in the navigator.* object."""
 
-    @uses_feature("APPS")
-    def test_APPS(self):
-        self.run_script("""
-        navigator.mozApps.install('foo/bar.webapp');
-        """)
-
-    @uses_feature("APPS")
-    def test_APPS_not_moz(self):
-        self.run_script("""
-        navigator.apps.install('foo/bar.webapp');
-        """)
-
-    @uses_feature("PACKAGED_APPS")
-    def test_PACKAGED(self):
-        self.run_script("""
-        navigator.apps.installPackage('foo/bar.webapp');
-        """)
-
-    @uses_feature("PAY")
-    def test_PAY(self):
-        self.run_script("""
-        navigator.mozPay.foo();
-        """)
-
-    @uses_feature("BATTERY")
-    def test_BATTERY(self):
-        self.run_script("""
-        navigator.battery.foo();
-        """)
-
-    @uses_feature("BLUETOOTH")
-    def test_BLUETOOTH(self):
-        self.run_script("""
-        navigator.bluetooth.foo();
-        """)
-
-    @uses_feature("CONTACTS")
-    def test_CONTACTS(self):
-        self.run_script("""
-        navigator.mozContacts.foo();
-        """)
-
-    @uses_feature("DEVICE_STORAGE")
-    def test_DEVICE_STORAGE(self):
-        self.run_script("""
-        navigator.getDeviceStorage();
-        """)
-
-    @uses_feature("GEOLOCATION")
-    def test_GEOLOCATION(self):
-        self.run_script("""
-        navigator.getCurrentPosition();
-        """)
-
-    @uses_feature("IDLE")
-    def test_IDLE(self):
-        self.run_script("""
-        navigator.addIdleObserver();
-        """)
-
-    @uses_feature("NETWORK_INFO")
-    def test_NETWORK_INFO(self):
-        self.run_script("""
-        navigator.connection.foo();
-        """)
-
-    @uses_feature("NETWORK_STATS")
-    def test_NETWORK_STATS(self):
-        self.run_script("""
-        navigator.networkStats.foo();
-        """)
-
-    @uses_feature("PUSH")
-    def test_PUSH(self):
-        self.run_script("""
-        navigator.mozPush.foo();
-        """)
-
-    @uses_feature("TIME_CLOCK")
-    def test_TIME_CLOCK(self):
-        self.run_script("""
-        navigator.mozTime.foo();
-        """)
-
-    @uses_feature("VIBRATE")
-    def test_VIBRATE(self):
-        self.run_script("""
-        navigator.vibrate.foo();
-        """)
-
-    @uses_feature("FM")
-    def test_FM(self):
-        self.run_script("""
-        navigator.mozFM();
-        """)
-
-    @uses_feature("FM")
-    def test_FM_FMRadio(self):
-        self.run_script("""
-        navigator.mozFMRadio();
-        """)
-
-    @uses_feature("SMS")
-    def test_SMS(self):
-        self.run_script("""
-        navigator.mozSms.foo();
-        """)
-
-    @uses_feature("GAMEPAD")
-    def test_GAMEPAD(self):
-        self.run_script("""
-        navigator.getGamepad();
-        """)
+    TESTS = [
+        ("APPS", "navigator.mozApps.install('foo/bar.webapp');"),
+        ("APPS", "navigator.apps.install('foo/bar.webapp');"),
+        ("PACKAGED_APPS", "navigator.apps.installPackage('foo/bar.webapp');"),
+        ("PAY", "navigator.mozPay.foo();"),
+        ("BATTERY", "navigator.battery.foo();"),
+        ("BLUETOOTH", "navigator.bluetooth.foo();"),
+        ("CONTACTS", "navigator.mozContacts.foo();"),
+        ("DEVICE_STORAGE", "navigator.getDeviceStorage();"),
+        ("GEOLOCATION", "navigator.getCurrentPosition();"),
+        ("IDLE", "navigator.addIdleObserver();"),
+        ("NETWORK_INFO", "navigator.connection.foo();"),
+        ("NETWORK_STATS", "navigator.networkStats.foo();"),
+        ("PUSH", "navigator.mozPush.foo();"),
+        ("TIME_CLOCK", "navigator.mozTime.foo();"),
+        ("VIBRATE", "navigator.vibrate.foo();"),
+        ("FM", "navigator.mozFM();"),
+        ("FM", "navigator.mozFMRadio();"),
+        ("SMS", "navigator.mozSms.foo();"),
+        ("GAMEPAD", "navigator.getGamepad();"),
+        ("NOTIFICATION", "navigator.mozNotification.foo();"),
+        ("ALARM", "navigator.mozAlarms.foo();"),
+        ("TCPSOCKET", "var x = new navigator.mozTCPSocket();"),
+        ("TCPSOCKET", "var x = new navigator.mozTCPServerSocket();"),
+    ]
 
 
 class TestInstMembersFeatures(FeatureTester):
     """Tests for feature APIs in instance properties."""
 
-    @uses_feature("TOUCH")
-    def test_TOUCH(self):
-        self.run_script("""
-        document.getElementById('foo').ontouchstart = function() {};
-        """)
+    TESTS = [
+        ("TOUCH",
+            "document.getElementById('foo').ontouchstart = function() {};"),
+        ("FULLSCREEN",
+            "document.getElementById('foo').requestFullScreen();"),
+    ]
 
-    @uses_feature("FULLSCREEN")
-    def test_FULLSCREEN(self):
-        self.run_script("""
-        document.getElementById('foo').requestFullScreen();
-        """)
+
+class TestGUMFeatures(FeatureTester):
+    """Tests for getUserMedia-related feature APIs."""
+
+    TESTS = [
+        ("CAMERA", "navigator.getUserMedia({video:true})"),
+        ("CAMERA", "navigator.getUserMedia({picture:true})"),
+        ("MIC", "navigator.getUserMedia({audio:true})"),
+        ("SCREEN_CAPTURE",
+            "navigator.getUserMedia({video:{mandatory:"
+            "{chromeMediaSource:'screen'}}})"),
+    ]

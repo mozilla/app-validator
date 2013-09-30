@@ -34,7 +34,7 @@ if __name__ == '__main__':
                 else:
                     print arg["type"]
 
-                a = traverser._traverse_node(arg)
+                a = traverser.traverse_node(arg)
                 print a.output()
 
                 if a.is_global:
@@ -79,7 +79,7 @@ if __name__ == '__main__':
                 continue
             tree = tree["body"]
             for branch in tree:
-                output = trav._traverse_node(branch)
+                output = trav.traverse_node(branch)
                 if output is not None:
                     print output.output()
 

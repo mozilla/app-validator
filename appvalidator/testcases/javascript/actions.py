@@ -40,7 +40,7 @@ def _get_member_exp_property(traverser, node):
     if node["property"]["type"] == "Identifier" and not node["computed"]:
         return unicode(node["property"]["name"])
     else:
-        eval_exp = traverser._traverse_node(node["property"])
+        eval_exp = traverser.traverse_node(node["property"])
         return _get_as_str(eval_exp.get_literal_value())
 
 
@@ -98,7 +98,7 @@ def trace_member(traverser, node, instantiate=False):
     else:
         traverser._debug("MEMBER_EXP>>ROOT:EXPRESSION")
         # It's an expression, so just try your damndest.
-        return traverser._traverse_node(node)
+        return traverser.traverse_node(node)
 
 
 def _function(traverser, node):
@@ -138,7 +138,7 @@ def _function(traverser, node):
             # function.
             local_context.set(param, var)
 
-        traverser._traverse_node(node["body"])
+        traverser.traverse_node(node["body"])
 
         # Since we need to manually manage the "this" stack, pop off that
         # context.
@@ -154,7 +154,7 @@ def _function(traverser, node):
     # Put the function off for traversal at the end of the current block scope.
     traverser.function_collection[-1].append(lambda: wrap(traverser, node))
 
-    return JSWrapper(traverser=traverser, callable=True, dirty=True)
+    return JSWrapper(traverser=traverser, callable_=True, dirty=True)
 
 
 def _define_function(traverser, node):
@@ -168,7 +168,7 @@ _func_expr = _function
 
 
 def _define_with(traverser, node):
-    object_ = traverser._traverse_node(node["object"])
+    object_ = traverser.traverse_node(node["object"])
     if (isinstance(object_, JSWrapper) and
         isinstance(object_.value, JSObject)):
         traverser.contexts[-1] = object_.value
@@ -207,13 +207,13 @@ def _define_var(traverser, node):
                 for value in declaration["init"]["elements"]:
                     if vars[0]:
                         traverser._declare_variable(
-                            vars[0], JSWrapper(traverser._traverse_node(value),
+                            vars[0], JSWrapper(traverser.traverse_node(value),
                                                traverser=traverser))
                     vars = vars[1:]  # Pop off the first value
 
             # It's being assigned by a JSArray (presumably)
             elif declaration["init"]["type"] == "ArrayExpression":
-                assigner = traverser._traverse_node(declaration["init"])
+                assigner = traverser.traverse_node(declaration["init"])
                 for value in assigner.value.elements:
                     if vars[0]:
                         traverser._declare_variable(vars[0], value)
@@ -221,7 +221,7 @@ def _define_var(traverser, node):
 
         elif declaration["id"]["type"] == "ObjectPattern":
 
-            init = traverser._traverse_node(declaration["init"])
+            init = traverser.traverse_node(declaration["init"])
 
             def _proc_objpattern(init_obj, properties):
                 for prop in properties:
@@ -249,7 +249,7 @@ def _define_var(traverser, node):
             var_name = declaration["id"]["name"]
             traverser._debug("NAME>>%s" % var_name)
 
-            var = traverser._traverse_node(declaration["init"])
+            var = traverser.traverse_node(declaration["init"])
             traverser._debug("VALUE>>%s" % (var.output()
                                             if var is not None
                                             else "None"))
@@ -273,7 +273,7 @@ def _define_obj(traverser, node):
         var_name = ""
         key = prop["key"]
         var_name = key["value" if key["type"] == "Literal" else "name"]
-        var_value = traverser._traverse_node(prop["value"])
+        var_value = traverser.traverse_node(prop["value"])
         var.set(var_name, var_value, traverser)
 
         # TODO: Observe "kind"
@@ -287,7 +287,7 @@ def _define_obj(traverser, node):
 def _define_array(traverser, node):
     """Instantiate an array object from the parse tree."""
     arr = JSArray()
-    arr.elements = map(traverser._traverse_node, node["elements"])
+    arr.elements = map(traverser.traverse_node, node["elements"])
     return arr
 
 
@@ -305,14 +305,14 @@ def _define_literal(traverser, node):
 
 def _call_expression(traverser, node):
     args = node["arguments"]
-    map(traverser._traverse_node, args)
+    map(traverser.traverse_node, args)
 
-    member = traverser._traverse_node(node["callee"])
+    member = traverser.traverse_node(node["callee"])
 
     if member.is_global and callable(member.value.get("dangerous")):
 
         dangerous = member.value["dangerous"]
-        t = traverser._traverse_node
+        t = traverser.traverse_node
         result = dangerous(a=args, t=t, e=traverser.err)
         if result and "name" in member.value:
             ## Generate a string representation of the params
@@ -353,9 +353,9 @@ def _call_expression(traverser, node):
 def _expression(traverser, node):
     """
     This is a helper method that allows node definitions to point at
-    `_traverse_node` without needing a reference to a traverser.
+    `traverse_node` without needing a reference to a traverser.
     """
-    return traverser._traverse_node(node["expression"])
+    return traverser.traverse_node(node["expression"])
 
 
 def _get_this(traverser, node):
@@ -375,11 +375,11 @@ def _new(traverser, node):
     args = node["arguments"]
     if isinstance(args, list):
         for arg in args:
-            traverser._traverse_node(arg)
+            traverser.traverse_node(arg)
     else:
-        traverser._traverse_node(args)
+        traverser.traverse_node(args)
 
-    elem = traverser._traverse_node(node["callee"])
+    elem = traverser.traverse_node(node["callee"])
     if not isinstance(elem, JSWrapper):
         elem = JSWrapper(elem, traverser=traverser)
     if elem.is_global:
@@ -387,6 +387,8 @@ def _new(traverser, node):
         elem.value = deepcopy(elem.value)
         elem.value["overwritable"] = True
         elem.value["readonly"] = False
+        if "new" in elem.value:
+            elem = elem.value["new"](traverser, node, elem)
     return elem
 
 
@@ -407,7 +409,7 @@ def _expr_assignment(traverser, node):
     traverser.debug_level += 1
 
     traverser._debug("ASSIGNMENT>>PARSING RIGHT")
-    right = traverser._traverse_node(node["right"])
+    right = traverser.traverse_node(node["right"])
     right = JSWrapper(right, traverser=traverser)
 
     # Treat direct assignment different than augmented assignment.
@@ -476,7 +478,7 @@ def _expr_assignment(traverser, node):
     lit_right = right.get_literal_value()
 
     traverser._debug("ASSIGNMENT>>PARSING LEFT")
-    left = traverser._traverse_node(node["left"])
+    left = traverser.traverse_node(node["left"])
     traverser._debug("ASSIGNMENT>>DONE PARSING LEFT")
     traverser.debug_level -= 1
 
@@ -581,7 +583,7 @@ def _expr_binary(traverser, node):
         left = _expr_binary(traverser, node["left"])
         node["left"]["__traversal"] = left
     else:
-        left = traverser._traverse_node(node["left"])
+        left = traverser.traverse_node(node["left"])
 
     # Traverse the right half of the binary expression.
     traverser._debug("BIN_EXP>>r-value", -1)
@@ -594,7 +596,7 @@ def _expr_binary(traverser, node):
         traverser.debug_level -= 1
         return JSWrapper(True, traverser=traverser)
     else:
-        right = traverser._traverse_node(node["right"])
+        right = traverser.traverse_node(node["right"])
         traverser._debug("Is dirty? %r" % right.dirty, 1)
 
     traverser.debug_level -= 1
@@ -675,7 +677,7 @@ def _expr_binary(traverser, node):
 def _expr_unary(traverser, node):
     """Evaluate a UnaryExpression node."""
 
-    expr = traverser._traverse_node(node["argument"])
+    expr = traverser.traverse_node(node["argument"])
     expr_lit = expr.get_literal_value()
     expr_num = _get_as_num(expr_lit)
 

@@ -23,7 +23,7 @@ def createElement(args, traverser, node, wrapper):
     if not args:
         return
 
-    simple_args = map(traverser._traverse_node, args)
+    simple_args = map(traverser.traverse_node, args)
 
     first_as_str = actions._get_as_str(simple_args[0].get_literal_value())
     if first_as_str.lower() == u"script":
@@ -38,7 +38,7 @@ def createElementNS(args, traverser, node, wrapper):
     if not args or len(args) < 2:
         return
 
-    simple_args = map(traverser._traverse_node, args)
+    simple_args = map(traverser.traverse_node, args)
 
     second_as_str = actions._get_as_str(simple_args[1].get_literal_value())
     if "script" in second_as_str.lower():
@@ -78,7 +78,7 @@ def insertAdjacentHTML(args, traverser, node, wrapper):
     if not args or len(args) < 2:
         return
 
-    content = traverser._traverse_node(args[1])
+    content = traverser.traverse_node(args[1])
     _set_HTML_property("insertAdjacentHTML", content, traverser)
 
 
@@ -88,7 +88,7 @@ def setAttribute(args, traverser, node, wrapper):
     if not args:
         return
 
-    simple_args = [traverser._traverse_node(a) for a in args]
+    simple_args = [traverser.traverse_node(a) for a in args]
 
     first_as_str = actions._get_as_str(simple_args[0].get_literal_value())
     if first_as_str.lower().startswith("on"):
@@ -114,4 +114,7 @@ INSTANCE_DEFINITIONS = {
     u"requestFullScreen": feature("FULLSCREEN"),
     u"mozRequestFullScreen": feature("FULLSCREEN"),
     u"webkitRequestFullScreen": feature("FULLSCREEN"),
+    u"requestPointerLock": feature("POINTER_LOCK"),
+    u"mozRequestPointerLock": feature("POINTER_LOCK"),
+    u"webkitRequestPointerLock": feature("POINTER_LOCK"),
 }

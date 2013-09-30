@@ -1,6 +1,7 @@
 from nose.tools import eq_
 
 from js_helper import TestCase
+from test_features import uses_feature
 
 
 class TestXHR(TestCase):
@@ -22,6 +23,22 @@ class TestXHR(TestCase):
         x.send(null);
         """)
         self.assert_failed()
+
+    @uses_feature("SYSTEMXHR")
+    def test_moz_system(self):
+        self.run_script("""
+        var x = new XMLHttpRequest({mozSystem: true});
+        """)
+        self.assert_silent();
+
+    @uses_feature("SYSTEMXHR")
+    def test_moz_system_sync(self):
+        self.run_script("""
+        var x = new XMLHttpRequest({mozSystem: true});
+        x.open("GET", "http://foo/bar", false);
+        x.send(null);
+        """)
+        self.assert_failed();
 
 
 class TestScope(TestCase):

@@ -96,7 +96,7 @@ class JSWrapper(object):
     """Wraps a JS value and handles contextual functions for it."""
 
     def __init__(self, value=None, dirty=False, lazy=False,
-                 is_global=False, traverser=None, callable=False,
+                 is_global=False, traverser=None, callable_=False,
                  setter=None, context="chrome"):
 
         if is_global:
@@ -127,10 +127,7 @@ class JSWrapper(object):
 
         self.dirty = dirty or self.dirty
         self.lazy = lazy
-        self.callable = callable
-
-        # This will be set in actions.py if needed.
-        self.global_parent = False
+        self.callable = callable_
 
     def set_value(self, value, traverser=None, overwrite_const=False):
         """Assigns a value to the wrapper"""
@@ -182,11 +179,10 @@ class JSWrapper(object):
         self.value = value
         return self
 
-    def has_property(self, property):
+    def has_property(self, prop):
         """Returns a boolean value representing the presence of a property"""
-        if isinstance(self.value, JSLiteral):
-            return False
-        return isinstance(self.value, JSObject)
+        return (getattr(self.value, "has_var") and
+                self.value.has_var(prop))
 
     def get(self, traverser, name, instantiate=False):
         """Retrieve a property from the variable."""
@@ -260,12 +256,11 @@ class JSWrapper(object):
                 err_id=("testcases_js_jstypes", "del_value",
                         "global_member_deletion"),
                 warning="Global member deletion",
-                description="Members of global object cannot be deleted.",
+                description="Members of global objects cannot be deleted.",
                 filename=self.traverser.filename,
                 line=self.traverser.line,
                 column=self.traverser.position,
                 context=self.traverser.context)
-            return
         elif isinstance(self.value, (JSObject, JSPrototype)):
             if member not in self.value.data:
                 return
@@ -322,6 +317,7 @@ class JSWrapper(object):
         Inspect the value of a literal to see whether it contains a flagged
         value.
         """
+        return  # This is currently a noop.
 
         # Don't do any processing if we can't return an error.
         if not self.traverser:
