@@ -99,9 +99,6 @@ class JSWrapper(object):
                  is_global=False, traverser=None, callable_=False,
                  setter=None, context="chrome"):
 
-        if is_global:
-            assert not value
-
         if traverser is not None:
             traverser.debug_level += 1
             traverser._debug("-----New JSWrapper-----")
@@ -119,7 +116,7 @@ class JSWrapper(object):
         # Used for predetermining set operations
         self.setter = setter
 
-        if value is not None:
+        if value is not None and not is_global:
             self.set_value(value, overwrite_const=True)
 
         if not self.is_global:
@@ -169,7 +166,7 @@ class JSWrapper(object):
             # const does not carry over on reassignment
             return self
         elif callable(value):
-            value = value(t=traverser)
+            value = value(traverser)
 
         if not isinstance(value, dict):
             self.is_global = False
@@ -199,7 +196,7 @@ class JSWrapper(object):
                     if name in self.value:
                         output.value[name] = self.value[name]
 
-                map(apply_value, ("dangerous", "readonly", "context", "name"))
+                map(apply_value, ("readonly", "context", "name"))
                 output.is_global = True
                 output.context = self.context
                 return output
@@ -294,7 +291,8 @@ class JSWrapper(object):
 
         if self.is_global:
             if "literal" in self.value:
-                return self.value["literal"](self.traverser)
+                lit = self.value["literal"]
+                return lit(self.traverser) if callable(lit) else lit
             else:
                 return "[object Object]"
         if self.value is None:
@@ -381,9 +379,9 @@ class JSPrototype(JSObject):
 class JSArray(JSObject):
     """A class that represents both a JS Array and a JS list."""
 
-    def __init__(self):
+    def __init__(self, elements=None):
         super(JSArray, self).__init__()
-        self.elements = []
+        self.elements = elements or []
 
     def get(self, index, instantiate=False, traverser=None):
         if index == "length":

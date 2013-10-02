@@ -149,6 +149,11 @@ class TestCase(object):
                    (self.err.errors + self.err.warnings + self.err.notices)), \
                 "%s was expected, but it was not found." % repr(errid)
 
+    def assert_has_feature(self, name):
+        assert name in self.err.feature_profile, (
+            '"%s" not found in feature profile (%s)' % (
+                name, ', '.join(self.err.feature_profile)))
+
 
 class MockZipFile:
 

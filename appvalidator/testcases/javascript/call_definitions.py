@@ -1,9 +1,9 @@
 import math
 import re
 
-import actions
 import traverser as js_traverser
 import predefinedentities
+import utils
 from jstypes import *
 from appvalidator.constants import BUGZILLA_BUG
 
@@ -18,7 +18,7 @@ def string_global(wrapper, arguments, traverser):
     if not arguments:
         return JSWrapper("", traverser=traverser)
     arg = traverser.traverse_node(arguments[0])
-    value = actions._get_as_str(arg.get_literal_value())
+    value = utils.get_as_str(arg.get_literal_value())
     return JSWrapper(value, traverser=traverser)
 
 
@@ -36,7 +36,7 @@ def number_global(wrapper, arguments, traverser):
     try:
         return float(arg.get_literal_value())
     except (ValueError, TypeError):
-        return actions.get_NaN(traverser)
+        return utils.get_NaN(traverser)
 
 
 def boolean_global(wrapper, arguments, traverser):
@@ -61,9 +61,9 @@ def python_wrap(func, args, nargs=False):
 
     def _process_literal(type_, literal):
         if type_ == "string":
-            return actions._get_as_str(literal)
+            return utils.get_as_str(literal)
         elif type_ == "num":
-            return actions._get_as_num(literal)
+            return utils.get_as_num(literal)
         return literal
 
     def wrap(wrapper, arguments, traverser):
@@ -107,7 +107,7 @@ def math_log(wrapper, arguments, traverser):
     if not args:
         return JSWrapper(0, traverser=traverser)
 
-    arg = actions._get_as_num(args[0].get_literal_value())
+    arg = utils.get_as_num(args[0].get_literal_value())
     if arg == 0:
         return JSWrapper(float('-inf'), traverser=traverser)
 
@@ -124,7 +124,7 @@ def math_round(wrapper, arguments, traverser):
     if not args:
         return JSWrapper(0, traverser=traverser)
 
-    arg = actions._get_as_num(args[0].get_literal_value())
+    arg = utils.get_as_num(args[0].get_literal_value())
     # Prevent nasty infinity tracebacks.
     if abs(arg) == float("inf"):
         return args[0]

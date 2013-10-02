@@ -10,7 +10,7 @@ node
     the current node being evaluated
 """
 
-import actions
+import utils
 from appvalidator.constants import BUGZILLA_BUG
 from appvalidator.csp import warn
 from .jstypes import *
@@ -25,7 +25,7 @@ def createElement(args, traverser, node, wrapper):
 
     simple_args = map(traverser.traverse_node, args)
 
-    first_as_str = actions._get_as_str(simple_args[0].get_literal_value())
+    first_as_str = utils.get_as_str(simple_args[0].get_literal_value())
     if first_as_str.lower() == u"script":
         _create_script_tag(traverser)
     elif not simple_args[0].is_literal():
@@ -40,7 +40,7 @@ def createElementNS(args, traverser, node, wrapper):
 
     simple_args = map(traverser.traverse_node, args)
 
-    second_as_str = actions._get_as_str(simple_args[1].get_literal_value())
+    second_as_str = utils.get_as_str(simple_args[1].get_literal_value())
     if "script" in second_as_str.lower():
         _create_script_tag(traverser)
     elif not simple_args[1].is_literal():
@@ -90,7 +90,7 @@ def setAttribute(args, traverser, node, wrapper):
 
     simple_args = [traverser.traverse_node(a) for a in args]
 
-    first_as_str = actions._get_as_str(simple_args[0].get_literal_value())
+    first_as_str = utils.get_as_str(simple_args[0].get_literal_value())
     if first_as_str.lower().startswith("on"):
         warn(traverser.err,
              filename=traverser.filename,

@@ -1,7 +1,6 @@
 import re
 import types
 
-from . import actions
 from .jstypes import *
 from .nodedefinitions import DEFINITIONS
 from .predefinedentities import GLOBAL_ENTITIES
@@ -235,28 +234,12 @@ class Traverser(object):
 
     def _build_global(self, name, entity):
         "Builds an object based on an entity from the predefined entity list"
-
-        if "dangerous" in entity:
-            dang = entity["dangerous"]
-            if dang and not callable(dang):
-                self._debug("DANGEROUS")
-                self.err.warning(
-                    ("js", "traverser", "dangerous_global"),
-                    "Illegal or deprecated access to the `%s` global" % name,
-                    [dang if isinstance(dang, (types.StringTypes, list, tuple))
-                     else "Access to the `%s` property is deprecated "
-                          "for security or other reasons." % name],
-                    filename=self.filename,
-                    line=self.line,
-                    column=self.position,
-                    context=self.context)
-
         entity.setdefault("name", name)
 
         # Build out the wrapper object from the global definition.
         result = JSWrapper(is_global=True, traverser=self, lazy=True)
         result.value = entity
-        result = actions._expand_globals(self, result)
+        result = self.expand_globals(result)
 
         if "context" in entity:
             result.context = entity["context"]
@@ -266,7 +249,7 @@ class Traverser(object):
         return result
 
     def _declare_variable(self, name, value, type_="var"):
-        context = None
+        context = self.contexts[0]
         if type_ == "let":
             context = self.contexts[-1]
         elif type_ in ("var", "const", ):
@@ -283,14 +266,23 @@ class Traverser(object):
                     context = ctx
                     break
 
-        if not context:
-            context = self.contexts[0]
-
-        if not isinstance(value, JSWrapper):
-            value = JSWrapper(value, traverser=self)
-
         context.set(name, value)
         return value
+
+    def expand_globals(self, node):
+        if node.is_global and callable(node.value.get("value")):
+            result = node.value["value"](self)
+
+            if isinstance(result, dict):
+                output = self._build_global("--", result)
+            elif isinstance(result, JSWrapper):
+                output = result
+            else:
+                output = JSWrapper(result, self)
+
+            return output
+
+        return node
 
     def log_feature(self, feature):
         self.err.feature_profile.add(feature)

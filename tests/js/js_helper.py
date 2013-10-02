@@ -91,8 +91,3 @@ class TestCase(helper.TestCase):
             val /= 100000
 
         eq_(val, value)
-
-    def assert_has_feature(self, name):
-        assert name in self.err.feature_profile, (
-            '"%s" not found in feature profile (%s)' % (
-                name, ', '.join(self.err.feature_profile)))

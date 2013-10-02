@@ -33,7 +33,6 @@ def csp_warning_function(traverser):
         return False
 
     return {
-        "dangerous": call_wrap,
         "return": call_wrap,
         "value": call_wrap,
     }
@@ -42,8 +41,8 @@ def csp_warning_function(traverser):
 @register_entity("setTimeout")
 @register_entity("setInterval")
 def csp_warning_timeout(traverser):
-    def wrap(a, t, e):
-        if a and a[0]["type"] != "FunctionExpression":
+    def wrap(wrapper, arguments, traverser):
+        if arguments and arguments[0]["type"] != "FunctionExpression":
             from appvalidator.csp import warn
             warn(err=traverser.err,
                  filename=traverser.filename,
@@ -53,7 +52,7 @@ def csp_warning_timeout(traverser):
                  violation_type="set*")
         return False
 
-    return {"dangerous": wrap}
+    return {"return": wrap}
 
 
 GUM_FEATURES = {
@@ -86,12 +85,20 @@ def getUserMedia(traverser):
 
 @register_entity("XMLHttpRequest")
 def XMLHttpRequest(traverser):
-    def dangerous(a, t, e):
-        print a, e
-        if a and len(a) >= 3 and not t(a[2]).get_literal_value():
-            return ("Synchronous HTTP requests can cause serious UI "
-                    "performance problems, especially to users with "
-                    "slow network connections.")
+    def return_(wrapper, arguments, traverser):
+        if (arguments and len(arguments) >= 3 and
+            not traverser.traverse_node(arguments[2]).get_literal_value()):
+            traverser.err.warning(
+                err_id=("javascript", "xhr", "sync"),
+                warning="Synchronous XHR should not be used",
+                description="Synchronous HTTP requests can cause serious UI "
+                            "performance problems, especially to users with "
+                            "slow network connections.",
+                filename=traverser.filename,
+                line=traverser.line,
+                column=traverser.position,
+                context=traverser.context)
+        return wrapper
 
     def new(traverser, node, elem):
         if not node["arguments"]:  # Ignore XHR without args
@@ -103,6 +110,6 @@ def XMLHttpRequest(traverser):
         return elem
 
     return {
-        "value": {u"open": {"dangerous": dangerous}},
+        "value": {u"open": {"return": return_}},
         "new": new,
     }

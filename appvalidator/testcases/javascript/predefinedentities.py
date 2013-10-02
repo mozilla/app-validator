@@ -10,6 +10,11 @@ from jstypes import JSWrapper
 # for details on entity properties.
 
 
+def get_wrapped_global(traverser, *args):
+    var = JSWrapper(get_global(*args), traverser=traverser)
+    var.is_global = True
+    return var
+
 def get_global(*args):
     def wrap(t):
         element = GLOBAL_ENTITIES[args[0]]
@@ -25,7 +30,7 @@ def get_global(*args):
 get_constant = lambda val: lambda t: JSWrapper(val, traverser=t)
 get_constant_method = lambda val: lambda **kw: JSWrapper(
         val, traverser=kw['traverser'])
-global_identity = lambda t: {"value": GLOBAL_ENTITIES}
+global_identity = lambda *args: {"value": GLOBAL_ENTITIES}
 
 MUTABLE = {"overwriteable": True, "readonly": False}
 READONLY = {"readonly": True}
@@ -132,42 +137,35 @@ GLOBAL_ENTITIES = {
     u"Function": entity("Function"),
     u"Object":
         {"value":
-             {u"prototype": READONLY,
-              u"constructor": {"value": get_global("Function")}}},
+             {"constructor": {"value": get_global("Function")}}},
     u"String":
         {"value":
-             {u"prototype": READONLY,
-              u"constructor": {"value": get_global("Function")}},
+             {u"constructor": {"value": get_global("Function")}},
          "return": call_definitions.string_global},
     u"Array":
         {"value":
-             {u"prototype": READONLY,
-              u"constructor": {"value": get_global("Function")}},
+             {u"constructor": {"value": get_global("Function")}},
          "return": call_definitions.array_global},
     u"Number":
         {"value":
-             {u"prototype": READONLY,
-              u"constructor": {"value": get_global("Function")},
+             {u"constructor": {"value": get_global("Function")},
               u"POSITIVE_INFINITY": {"value": get_constant(float('inf'))},
-              u"NEGATIVE_INFINITY": {"value": get_constant(float('-inf'))}},
+              u"NEGATIVE_INFINITY": {"value": get_constant(float('-inf'))},
+              u"isNaN": get_constant("isNaN")},
          "return": call_definitions.number_global},
     u"Boolean":
         {"value":
-             {u"prototype": READONLY,
-              u"constructor": {"value": get_global("Function")}},
+             {u"constructor": {"value": get_global("Function")}},
          "return": call_definitions.boolean_global},
     u"RegExp":
         {"value":
-            {u"prototype": READONLY,
-             u"constructor": {"value": get_global("Function")}}},
+            {u"constructor": {"value": get_global("Function")}}},
     u"Date":
         {"value":
-            {u"prototype": READONLY,
-             u"constructor": {"value": get_global("Function")}}},
+            {u"constructor": {"value": get_global("Function")}}},
     u"File":
         {"value":
-            {u"prototype": READONLY,
-             u"constructor": {"value": get_global("Function")}}},
+            {u"constructor": {"value": get_global("Function")}}},
 
     u"Math":
         {"value":
@@ -208,7 +206,7 @@ GLOBAL_ENTITIES = {
     # Global properties are inherently read-only, though this formalizes it.
     u"Infinity": {"value": get_global("Number", "POSITIVE_INFINITY")},
     u"NaN": READONLY,
-    u"undefined": READONLY,
+    u"undefined": {"readonly": True, "undefined": True, "literal": None},
 
     u"innerHeight": MUTABLE,
     u"innerWidth": MUTABLE,
