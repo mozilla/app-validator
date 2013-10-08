@@ -15,7 +15,7 @@ BANNED_ORIGINS = [
     "mozilla.org",
 ]
 
-STYLEGUIDE_URL = "http://www.mozilla.org/styleguide/products/firefox-os/icons/"
+STYLEGUIDE_URL = "http://www.mozilla.org/styleguide/products/firefox-os/"
 
 _FULL_PERMISSIONS = ("readonly", "readwrite", "readcreate", "createonly")
 
