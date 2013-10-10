@@ -60,3 +60,10 @@ def get_NaN(traverser):
     # Cache it so we don't need to do this again.
     traverser.NAN_CACHE = ncache
     return ncache
+
+
+def evaluate_lambdas(traverser, node):
+    if callable(node):
+        return evaluate_lambdas(traverser, node(traverser))
+    else:
+        return node

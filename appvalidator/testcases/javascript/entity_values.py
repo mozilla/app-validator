@@ -1,6 +1,3 @@
-from appvalidator.constants import BUGZILLA_BUG
-
-
 ENTITIES = {}
 def register_entity(name):
     """Allow an entity's modifier to be registered for use."""
@@ -11,18 +8,18 @@ def register_entity(name):
 
 
 def entity(name, result=None):
-    def return_wrap(t):
-        output = ENTITIES[name](traverser=t)
-        if result is not None:
-            return result
-        return output or {"value": {}}
-    return {"value": return_wrap}
+    ent = ENTITIES[name]
+    if callable(ent):
+        ent = ent()
+        ENTITIES[name] = ent
+    return ent or {"value": {}}
 
 
 @register_entity("Function")
 @register_entity("eval")
-def csp_warning_function(traverser):
+def csp_warning_function():
     def call_wrap(*args, **kwargs):
+        traverser = kwargs.get("traverser") or args[-1]
         from appvalidator.csp import warn
         warn(err=traverser.err,
              filename=traverser.filename,
@@ -30,9 +27,9 @@ def csp_warning_function(traverser):
              column=traverser.position,
              context=traverser.context,
              violation_type="script")
-        return False
 
     return {
+        "new": call_wrap,
         "return": call_wrap,
         "value": call_wrap,
     }
@@ -40,9 +37,9 @@ def csp_warning_function(traverser):
 
 @register_entity("setTimeout")
 @register_entity("setInterval")
-def csp_warning_timeout(traverser):
+def csp_warning_timeout():
     def wrap(wrapper, arguments, traverser):
-        if arguments and arguments[0]["type"] != "FunctionExpression":
+        if arguments and not arguments[0].callable:
             from appvalidator.csp import warn
             warn(err=traverser.err,
                  filename=traverser.filename,
@@ -50,7 +47,6 @@ def csp_warning_timeout(traverser):
                  column=traverser.position,
                  context=traverser.context,
                  violation_type="set*")
-        return False
 
     return {"return": wrap}
 
@@ -62,18 +58,18 @@ GUM_FEATURES = {
 }
 
 @register_entity("getUserMedia")
-def getUserMedia(traverser):
+def getUserMedia():
     def method(wrapper, arguments, traverser):
         if not arguments:
             return False
-        options = traverser.traverse_node(arguments[0])
+        options = arguments[0]
         for feature in GUM_FEATURES:
-            if (options.has_property(feature) and
+            if (options.has_var(feature) and
                 options.get(traverser, feature).get_literal_value() == True):
                 traverser.log_feature(GUM_FEATURES[feature])
 
-        if (options.has_property("video") and
-            options.get(traverser, "video").has_property("mandatory") and
+        if (options.has_var("video") and
+            options.get(traverser, "video").has_var("mandatory") and
             options.get(traverser, "video").get(traverser, "mandatory") and
             options.get(traverser, "video").get(traverser, "mandatory"
                 ).get(traverser, "chromeMediaSource"
@@ -84,10 +80,10 @@ def getUserMedia(traverser):
 
 
 @register_entity("XMLHttpRequest")
-def XMLHttpRequest(traverser):
+def XMLHttpRequest():
     def return_(wrapper, arguments, traverser):
         if (arguments and len(arguments) >= 3 and
-            not traverser.traverse_node(arguments[2]).get_literal_value()):
+            not arguments[2].get_literal_value()):
             traverser.err.warning(
                 err_id=("javascript", "xhr", "sync"),
                 warning="Synchronous XHR should not be used",
@@ -100,14 +96,13 @@ def XMLHttpRequest(traverser):
                 context=traverser.context)
         return wrapper
 
-    def new(traverser, node, elem):
+    def new(node, arguments, traverser):
         if not node["arguments"]:  # Ignore XHR without args
-            return elem
+            return
         arg = traverser.traverse_node(node["arguments"][0])
-        if (arg.has_property("mozSystem") and
+        if (arg.has_var("mozSystem") and
             arg.get(traverser, "mozSystem").get_literal_value()):
             traverser.log_feature("SYSTEMXHR")
-        return elem
 
     return {
         "value": {u"open": {"return": return_}},

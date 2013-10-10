@@ -23,12 +23,10 @@ def createElement(args, traverser, node, wrapper):
     if not args:
         return
 
-    simple_args = map(traverser.traverse_node, args)
-
-    first_as_str = utils.get_as_str(simple_args[0].get_literal_value())
+    first_as_str = utils.get_as_str(args[0].get_literal_value())
     if first_as_str.lower() == u"script":
         _create_script_tag(traverser)
-    elif not simple_args[0].is_literal():
+    elif not args[0].is_literal():
         _create_variable_element(traverser)
 
 
@@ -38,12 +36,10 @@ def createElementNS(args, traverser, node, wrapper):
     if not args or len(args) < 2:
         return
 
-    simple_args = map(traverser.traverse_node, args)
-
-    second_as_str = utils.get_as_str(simple_args[1].get_literal_value())
+    second_as_str = utils.get_as_str(args[1].get_literal_value())
     if "script" in second_as_str.lower():
         _create_script_tag(traverser)
-    elif not simple_args[1].is_literal():
+    elif not args[1].is_literal():
         _create_variable_element(traverser)
 
 
@@ -78,8 +74,7 @@ def insertAdjacentHTML(args, traverser, node, wrapper):
     if not args or len(args) < 2:
         return
 
-    content = traverser.traverse_node(args[1])
-    _set_HTML_property("insertAdjacentHTML", content, traverser)
+    _set_HTML_property("insertAdjacentHTML", args[1], traverser)
 
 
 def setAttribute(args, traverser, node, wrapper):
@@ -88,9 +83,7 @@ def setAttribute(args, traverser, node, wrapper):
     if not args:
         return
 
-    simple_args = [traverser.traverse_node(a) for a in args]
-
-    first_as_str = utils.get_as_str(simple_args[0].get_literal_value())
+    first_as_str = utils.get_as_str(args[0].get_literal_value())
     if first_as_str.lower().startswith("on"):
         warn(traverser.err,
              filename=traverser.filename,

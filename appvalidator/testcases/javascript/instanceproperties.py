@@ -56,10 +56,8 @@ def _set_HTML_property(function, new_value, traverser):
 def set_on_event(new_value, traverser):
     """Ensure that on* properties are not assigned string values."""
 
-    is_literal = new_value.is_literal()
-
-    if is_literal and isinstance(new_value.get_literal_value(),
-                                 types.StringTypes):
+    if new_value.is_literal() and isinstance(
+        new_value.get_literal_value(), types.StringTypes):
         warn(traverser.err,
              filename=traverser.filename,
              line=traverser.line,

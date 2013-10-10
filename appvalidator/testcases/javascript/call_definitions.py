@@ -15,26 +15,22 @@ from appvalidator.constants import BUGZILLA_BUG
 
 # Global object function definitions:
 def string_global(wrapper, arguments, traverser):
-    if not arguments:
-        return JSWrapper("", traverser=traverser)
-    arg = traverser.traverse_node(arguments[0])
-    value = utils.get_as_str(arg.get_literal_value())
+    if (not arguments or
+        not arguments[0].get_literal_value()):
+        return JSWrapper(JSObject(), traverser=traverser)
+    value = utils.get_as_str(arguments[0].get_literal_value())
     return JSWrapper(value, traverser=traverser)
 
 
 def array_global(wrapper, arguments, traverser):
-    output = JSArray()
-    if arguments:
-        output.elements = map(traverser.traverse_node, arguments)
-    return JSWrapper(output, traverser=traverser)
+    return JSWrapper(JSArray(arguments), traverser=traverser)
 
 
 def number_global(wrapper, arguments, traverser):
     if not arguments:
         return JSWrapper(0, traverser=traverser)
-    arg = traverser.traverse_node(arguments[0])
     try:
-        return float(arg.get_literal_value())
+        return JSWrapper(float(arguments[0].get_literal_value()), traverser=traverser)
     except (ValueError, TypeError):
         return utils.get_NaN(traverser)
 
@@ -42,8 +38,8 @@ def number_global(wrapper, arguments, traverser):
 def boolean_global(wrapper, arguments, traverser):
     if not arguments:
         return JSWrapper(False, traverser=traverser)
-    arg = traverser.traverse_node(arguments[0])
-    return JSWrapper(bool(arg.get_literal_value()), traverser=traverser)
+    return JSWrapper(bool(arguments[0].get_literal_value()),
+                     traverser=traverser)
 
 
 def python_wrap(func, args, nargs=False):
@@ -67,15 +63,13 @@ def python_wrap(func, args, nargs=False):
         return literal
 
     def wrap(wrapper, arguments, traverser):
-        passed_args = map(traverser.traverse_node, arguments)
-
         params = []
         if not nargs:
             # Handle definite argument lists.
             for type_, def_value in args:
-                if passed_args:
-                    parg = passed_args[0]
-                    passed_args = passed_args[1:]
+                if arguments:
+                    parg = arguments[0]
+                    arguments = arguments[1:]
 
                     passed_literal = parg.get_literal_value()
                     passed_literal = _process_literal(type_, passed_literal)
@@ -84,7 +78,7 @@ def python_wrap(func, args, nargs=False):
                     params.append(def_value)
         else:
             # Handle dynamic argument lists.
-            for arg in passed_args:
+            for arg in arguments:
                 literal = arg.get_literal_value()
                 params.append(_process_literal(args[0], literal))
 
@@ -103,11 +97,10 @@ def python_wrap(func, args, nargs=False):
 
 def math_log(wrapper, arguments, traverser):
     """Return a better value than the standard python log function."""
-    args = map(traverser.traverse_node, arguments)
-    if not args:
+    if not arguments:
         return JSWrapper(0, traverser=traverser)
 
-    arg = utils.get_as_num(args[0].get_literal_value())
+    arg = utils.get_as_num(arguments[0].get_literal_value())
     if arg == 0:
         return JSWrapper(float('-inf'), traverser=traverser)
 
@@ -120,14 +113,13 @@ def math_log(wrapper, arguments, traverser):
 
 def math_round(wrapper, arguments, traverser):
     """Return a better value than the standard python round function."""
-    args = map(traverser.traverse_node, arguments)
-    if not args:
+    if not arguments:
         return JSWrapper(0, traverser=traverser)
 
-    arg = utils.get_as_num(args[0].get_literal_value())
+    arg = utils.get_as_num(arguments[0].get_literal_value())
     # Prevent nasty infinity tracebacks.
     if abs(arg) == float("inf"):
-        return args[0]
+        return arguments[0]
 
     # Python rounds away from zero, JS rounds "up".
     if arg < 0 and int(arg) != arg:

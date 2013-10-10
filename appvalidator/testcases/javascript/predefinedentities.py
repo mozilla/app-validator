@@ -3,7 +3,7 @@ import math
 import call_definitions
 from call_definitions import python_wrap
 from entity_values import entity
-from jstypes import JSWrapper
+from jstypes import JSGlobal, JSWrapper
 
 
 # See https://github.com/mattbasta/amo-validator/wiki/JS-Predefined-Entities
@@ -11,9 +11,8 @@ from jstypes import JSWrapper
 
 
 def get_wrapped_global(traverser, *args):
-    var = JSWrapper(get_global(*args), traverser=traverser)
-    var.is_global = True
-    return var
+    var = JSGlobal(get_global(*args), traverser=traverser)
+    return JSWrapper(var, traverser=traverser)
 
 def get_global(*args):
     def wrap(t):
@@ -26,13 +25,11 @@ def get_global(*args):
         return element
     return wrap
 
-
-get_constant = lambda val: lambda t: JSWrapper(val, traverser=t)
+get_constant = lambda v: lambda t: JSWrapper(v, traverser=t)
 get_constant_method = lambda val: lambda **kw: JSWrapper(
         val, traverser=kw['traverser'])
-global_identity = lambda *args: {"value": GLOBAL_ENTITIES}
+global_identity = {"value": lambda *args: GLOBAL_ENTITIES}
 
-MUTABLE = {"overwriteable": True, "readonly": False}
 READONLY = {"readonly": True}
 
 
@@ -42,11 +39,10 @@ def feature(constant, fallback=None):
         t._debug("Found feature: %s" % constant)
         if fallback:
             t._debug("Feature has fallback: %s" % repr(fallback))
-        return {"value": fallback} if fallback else {}
+        return lambda *a: fallback if fallback else {}
 
     return {'value': wrap,
-            'return': lambda traverser, *a, **kw:
-                traverser.log_feature(constant)}
+            'return': lambda **kw: kw['traverser'].log_feature(constant)}
 
 
 MOZAPPS = {
@@ -100,13 +96,12 @@ NAVIGATOR = {
 
 # GLOBAL_ENTITIES is also representative of the `window` object.
 GLOBAL_ENTITIES = {
-    u"window": {"value": global_identity},
-    u"null": {"literal": get_constant(None)},
+    u"window": global_identity,
+    u"null": {"literal": None},
 
     u"document":
         {"value":
-            {u"title": MUTABLE,
-             u"defaultView": {"value": global_identity},
+            {u"defaultView": {"value": global_identity},
 
              u"cancelFullScreen": feature("FULLSCREEN"),
              u"mozCancelFullScreen": feature("FULLSCREEN"),
@@ -136,27 +131,33 @@ GLOBAL_ENTITIES = {
     u"eval": entity("eval"),
     u"Function": entity("Function"),
     u"Object":
-        {"value":
-             {"constructor": {"value": get_global("Function")}}},
+        {"value": {u"constructor": {"value": get_global("Function")}}},
     u"String":
         {"value":
              {u"constructor": {"value": get_global("Function")}},
-         "return": call_definitions.string_global},
+         "return": call_definitions.string_global,
+         "new": call_definitions.string_global,
+         "typeof": "string"},
     u"Array":
         {"value":
              {u"constructor": {"value": get_global("Function")}},
-         "return": call_definitions.array_global},
+         "return": call_definitions.array_global,
+         "new": call_definitions.array_global},
     u"Number":
         {"value":
              {u"constructor": {"value": get_global("Function")},
               u"POSITIVE_INFINITY": {"value": get_constant(float('inf'))},
               u"NEGATIVE_INFINITY": {"value": get_constant(float('-inf'))},
               u"isNaN": get_constant("isNaN")},
-         "return": call_definitions.number_global},
+         "return": call_definitions.number_global,
+         "new": call_definitions.number_global,
+         "typeof": "number"},
     u"Boolean":
         {"value":
              {u"constructor": {"value": get_global("Function")}},
-         "return": call_definitions.boolean_global},
+         "return": call_definitions.boolean_global,
+         "new": call_definitions.boolean_global,
+         "typeof": "boolean"},
     u"RegExp":
         {"value":
             {u"constructor": {"value": get_global("Function")}}},
@@ -169,14 +170,14 @@ GLOBAL_ENTITIES = {
 
     u"Math":
         {"value":
-             {u"PI": {"value": get_constant(math.pi)},
-              u"E": {"value": get_constant(math.e)},
-              u"LN2": {"value": get_constant(math.log(2))},
-              u"LN10": {"value": get_constant(math.log(10))},
-              u"LOG2E": {"value": get_constant(math.log(math.e, 2))},
-              u"LOG10E": {"value": get_constant(math.log10(math.e))},
-              u"SQRT2": {"value": get_constant(math.sqrt(2))},
-              u"SQRT1_2": {"value": get_constant(math.sqrt(1/2))},
+             {u"PI": {"literal": math.pi},
+              u"E": {"literal": math.e},
+              u"LN2": {"literal": math.log(2)},
+              u"LN10": {"literal": math.log(10)},
+              u"LOG2E": {"literal": math.log(math.e, 2)},
+              u"LOG10E": {"literal": math.log10(math.e)},
+              u"SQRT2": {"literal": math.sqrt(2)},
+              u"SQRT1_2": {"literal": math.sqrt(1/2)},
               u"abs": {"return": python_wrap(abs, [("num", 0)])},
               u"acos": {"return": python_wrap(math.acos, [("num", 0)])},
               u"asin": {"return": python_wrap(math.asin, [("num", 0)])},
@@ -204,14 +205,10 @@ GLOBAL_ENTITIES = {
     u"XMLHttpRequest": entity('XMLHttpRequest'),
 
     # Global properties are inherently read-only, though this formalizes it.
-    u"Infinity": {"value": get_global("Number", "POSITIVE_INFINITY")},
+    u"Infinity": get_global("Number", "POSITIVE_INFINITY"),
     u"NaN": READONLY,
     u"undefined": {"readonly": True, "undefined": True, "literal": None},
 
-    u"innerHeight": MUTABLE,
-    u"innerWidth": MUTABLE,
-    u"width": MUTABLE,
-    u"height": MUTABLE,
     u"opener": {"value": global_identity},
 
     u"navigator": {"value": NAVIGATOR},

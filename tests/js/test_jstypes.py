@@ -83,7 +83,8 @@ class TestTracebacks(TestCase):
         JSWrappers.
         """
         jso = jstypes.JSObject()
-        jso.set('foo', 123)
-        assert isinstance(jso.get('foo'), jstypes.JSWrapper)
-        assert isinstance(jso.get('prototype'), jstypes.JSWrapper)
-        assert isinstance(jso.get('prototype').value, jstypes.JSPrototype)
+        jso.set('foo', jstypes.JSWrapper(jstypes.JSLiteral(123)))
+        assert isinstance(jso.get(None, 'foo'), jstypes.JSWrapper)
+        assert isinstance(jso.get(None, 'foo').value, jstypes.JSLiteral)
+        assert isinstance(jso.get(None, 'prototype'), jstypes.JSWrapper)
+        assert isinstance(jso.get(None, 'prototype').value, jstypes.JSObject)

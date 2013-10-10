@@ -36,9 +36,6 @@ if __name__ == '__main__':
 
                 a = traverser.traverse_node(arg)
                 print a.output()
-
-                if a.is_global:
-                    print a.value
                 print "Context: %s" % a.context
                 print "<"
             print "~" * 50
@@ -59,11 +56,9 @@ if __name__ == '__main__':
             elif line == "disable bootstrap\n":
                 err.save_resource("em:bootstrap", False)
                 continue
-            elif line.startswith(("inspect ", "isglobal ")):
-                actions = {"inspect": lambda wrap: wrap.value if
-                                                    wrap.is_global else
-                                                    wrap.output(),
-                           "isglobal": lambda wrap: wrap.is_global}
+            elif line.startswith(("inspect ", "type ")):
+                actions = {"inspect": lambda wrap: wrap.output(),
+                           "type": lambda wrap: type(wrap.value)}
                 vars = line.split()
                 final_context = trav.contexts[-1]
                 for var in vars[1:]:
@@ -82,4 +77,3 @@ if __name__ == '__main__':
                 output = trav.traverse_node(branch)
                 if output is not None:
                     print output.output()
-

@@ -79,7 +79,7 @@ class TestCase(helper.TestCase):
             raise ("Test seeking variable (%s) not found in final context." %
                        name)
 
-    def assert_var_eq(self, name, value):
+    def assert_var_eq(self, name, value, explanation=None):
         """
         Assert that the value of a variable from the final script context
         contains the value specified.
@@ -90,4 +90,5 @@ class TestCase(helper.TestCase):
             val = round(val)
             val /= 100000
 
-        eq_(val, value)
+        eq_(val, value,
+            explanation or "%s doesn't equal %s" % (val, value))

@@ -5,7 +5,8 @@ from appvalidator.python.copy import deepcopy
 
 import instanceactions
 import utils
-from jstypes import JSArray, JSContext, JSLiteral, JSObject, JSWrapper
+from jstypes import (JSArray, JSContext, JSGlobal, JSLiteral, JSObject,
+                     JSWrapper)
 
 
 NUMERIC_TYPES = (int, long, float, complex)
@@ -60,7 +61,7 @@ def _function(traverser, node):
 
         local_context = traverser._peek_context(1)
         for param in params:
-            var = JSWrapper(lazy=True, traverser=traverser)
+            var = JSWrapper(JSObject(), traverser=traverser)
 
             # We can assume that the params are static because we don't care
             # about what calls the function. We want to know whether the
@@ -84,7 +85,7 @@ def _function(traverser, node):
     # Put the function off for traversal at the end of the current block scope.
     traverser.function_collection[-1].append(lambda: wrap(traverser, node))
 
-    return JSWrapper(traverser=traverser, callable_=True, dirty=True)
+    return JSWrapper(JSObject(), traverser=traverser, callable_=True)
 
 
 def FunctionDeclaration(traverser, node):
@@ -121,7 +122,7 @@ def VariableDeclaration(traverser, node):
                 # Simple instantiation; no initialization
                 for var in filter(None, vars):
                     traverser._declare_variable(
-                        var, JSWrapper(None, traverser=traverser))
+                        var, JSWrapper(JSObject(), traverser=traverser))
 
             # The variables are declared inline
             elif declaration["init"]["type"] == "ArrayPattern":
@@ -180,10 +181,9 @@ def VariableDeclaration(traverser, node):
 
 def ThisExpression(traverser, node):
     "Returns the `this` object"
-
     if not traverser.this_stack:
         from predefinedentities import global_identity
-        return traverser._build_global("window", global_identity())
+        return traverser._build_global("window", global_identity)
     return traverser.this_stack[-1]
 
 
@@ -192,38 +192,31 @@ def ArrayExpression(traverser, node):
 
 
 def ObjectExpression(traverser, node):
-    var = JSObject()
+    var = JSObject(traverser=traverser)
     for prop in node["properties"]:
         key = prop["key"]
         var.set(key["value" if key["type"] == "Literal" else "name"],
                 traverser.traverse_node(prop["value"]), traverser)
-
         # TODO: Observe "kind"
 
-    return JSWrapper(var, lazy=True, traverser=traverser)
+    return var
 
 
 def _expr_unary_typeof(wrapper):
     """Evaluate the "typeof" value for a JSWrapper object."""
-    if (wrapper.callable or
-        (wrapper.is_global and "return" in wrapper.value and
-         "value" not in wrapper.value)):
+    if wrapper.callable:
         return "function"
+    elif wrapper.is_global:
+        if "typeof" in wrapper.value.global_data:
+            return wrapper.value.global_data["typeof"]
+        if ("return" in wrapper.value.global_data and
+            "value" not in wrapper.value.global_data):
+            return "function"
 
-    # import pdb; pdb.set_trace()
-    if wrapper.is_global and "undefined" in wrapper.value:
+    if wrapper.is_global and "undefined" in wrapper.value.global_data:
         return "undefined"
 
-    value = wrapper.value
-    if isinstance(value, JSLiteral):
-        value = value.value
-        if isinstance(value, bool):
-            return "boolean"
-        elif isinstance(value, (int, long, float)):
-            return "number"
-        elif isinstance(value, types.StringTypes):
-            return "string"
-    return "object"
+    return wrapper.value.TYPEOF
 
 
 UNARY_OPERATORS = {
@@ -232,7 +225,6 @@ UNARY_OPERATORS = {
     "!": lambda e: not e.get_literal_value(),
     "~": lambda e: -1 * (utils.get_as_num(e.get_literal_value()) + 1),
     "typeof": _expr_unary_typeof,
-    "delete": lambda e: None,
 }
 
 def UnaryExpression(traverser, node):
@@ -333,7 +325,8 @@ def BinaryExpression(traverser, node):
 
         output = BINARY_OPERATORS[operator](left, right, gleft, gright)
     elif operator == "in":
-        output = right_wrap.contains(left)
+        output = right_wrap.has_var(left, traverser=traverser)
+    #TODO: `delete` operator
 
     # Cap the length of analyzed strings.
     if isinstance(output, types.StringTypes) and len(output) > MAX_STR_SIZE:
@@ -387,7 +380,8 @@ def AssignmentExpression(traverser, node):
                 readonly_value = global_dict.get("readonly", False)
 
             traverser._declare_variable(node_left["name"], right, type_="glob")
-            
+
+        # TODO: WTF does this even do?
         elif node_left["type"] == "MemberExpression":
             member_object = MemberExpression(traverser, node_left["object"],
                                              instantiate=True)
@@ -397,27 +391,10 @@ def AssignmentExpression(traverser, node):
             if member_object.value is None:
                 member_object.value = JSObject()
 
-            # Don't do the assignment if we're facing a global.
-            elif (not member_object.is_global and
-                member_object.value.get("overwritable")):
-
-                if not member_object.is_global:
-                    member_object.value.set(member_property, right, traverser)
-
-            elif "value" in member_object.value:
-                member_object_value = traverser.expand_globals(
-                    member_object).value
-                if member_property in member_object_value["value"]:
-
-                    # If it's a global and the actual member exists, test
-                    # whether it can be safely overwritten.
-                    member = member_object_value["value"][member_property]
-                    if callable(member.get("value")):
-                        member = member["value"](t=traverser)
-                    readonly_value = member.get("readonly", True)
+            member_object.value.set(member_property, right, traverser)
 
         if callable(readonly_value):
-            readonly_value(t=traverser, r=right, rn=node["right"])
+            readonly_value(traverser, right, node["right"])
 
         return right
 
@@ -482,31 +459,32 @@ def AssignmentExpression(traverser, node):
 
 
 def NewExpression(traverser, node):
-    # We don't actually process the arguments as part of the flow because of
-    # the Angry T-Rex effect. For now, we just traverse them to ensure they
-    # don't contain anything dangerous.
-    args = node["arguments"]
-    if isinstance(args, list):
-        for arg in args:
-            traverser.traverse_node(arg)
-    else:
-        traverser.traverse_node(args)
-
+    args = [traverser.traverse_node(arg) for arg in node["arguments"]]
     elem = traverser.traverse_node(node["callee"])
     if elem.is_global:
         traverser._debug("Making overwritable")
-
-        elem.value = deepcopy(elem.value)
-        elem.value["overwritable"] = True
-        elem.value["readonly"] = False
-        if "new" in elem.value:
-            elem = elem.value["new"](traverser, node, elem)
+        global_data = dict(elem.value.global_data)
+        global_data.update(overwritable=True, readonly=False)
+        temp = JSGlobal(global_data, traverser=traverser)
+        temp.data = deepcopy(elem.value.data) if elem.value.data else {}
+        if "new" in temp.global_data:
+            new_temp = temp.global_data["new"](node, args, traverser)
+            if new_temp is not None:
+                # typeof new Boolean() === "object"
+                traverser._debug("Stripping global typeof")
+                new_temp.value.TYPEOF = "object"
+                return new_temp
+        elif "return" in temp.global_data:
+            new_temp = temp.global_data["return"](
+                wrapper=node, arguments=args, traverser=traverser)
+            if new_temp is not None:
+                return new_temp
+        elem.value = temp
     return elem
 
 
 def CallExpression(traverser, node):
-    args = node["arguments"]
-    map(traverser.traverse_node, args)
+    args = [traverser.traverse_node(a) for a in node["arguments"]]
 
     member = traverser.traverse_node(node["callee"])
 
@@ -518,14 +496,18 @@ def CallExpression(traverser, node):
         # for additional conditions.
         identifier_name = node["callee"]["property"]["name"]
         if identifier_name in instanceactions.INSTANCE_DEFINITIONS:
+            traverser._debug('Calling instance action...')
             result = instanceactions.INSTANCE_DEFINITIONS[identifier_name](
                         args, traverser, node, wrapper=member)
             return result
 
-    if member.is_global and "return" in member.value:
-        return member.value["return"](wrapper=member, arguments=args,
-                                      traverser=traverser)
-    return JSWrapper(JSObject(), dirty=True, traverser=traverser)
+    if member.is_global and "return" in member.value.global_data:
+        traverser._debug("EVALUATING RETURN...")
+        output = member.value.global_data["return"](
+            wrapper=member, arguments=args, traverser=traverser)
+        if output is not None:
+            return output
+    return JSObject(traverser=traverser)
 
 
 def _get_member_exp_property(traverser, node):
@@ -546,13 +528,10 @@ def MemberExpression(traverser, node, instantiate=False):
         # x.y or x[y]
         # x = base
         base = MemberExpression(traverser, node["object"], instantiate)
-        base = traverser.expand_globals(base)
-
         identifier = _get_member_exp_property(traverser, node)
 
         traverser._debug("MEMBER_EXP>>PROPERTY (%s)" % identifier)
-        return base.get(
-            traverser=traverser, instantiate=instantiate, name=identifier)
+        return base.get(traverser, identifier, instantiate=instantiate)
 
     elif node["type"] == "Identifier":
         traverser._debug("MEMBER_EXP>>ROOT:IDENTIFIER (%s)" % node["name"])
@@ -565,7 +544,7 @@ def MemberExpression(traverser, node, instantiate=False):
         else:
             output = traverser._seek_variable(node["name"])
 
-        return traverser.expand_globals(output)
+        return output
     else:
         traverser._debug("MEMBER_EXP>>ROOT:EXPRESSION")
         # It's an expression, so just try your damndest.
@@ -579,8 +558,8 @@ def Literal(traverser, node):
     """
     value = node["value"]
     if isinstance(value, dict):
-        value = JSObject()
-    return JSWrapper(value, traverser=traverser)
+        return JSObject(traverser=traverser)
+    return JSLiteral(value, traverser=traverser)
 
 
 def Identifier(traverser, node):
@@ -590,7 +569,7 @@ def Identifier(traverser, node):
     if traverser._is_defined(name):
         return traverser._seek_variable(name)
 
-    return JSWrapper(JSObject(), traverser=traverser, dirty=True)
+    return JSObject(traverser=traverser)
 
 
 #(branches,
@@ -635,6 +614,7 @@ DEFINITIONS = {
     "ForStatement": node(branches=("init", "test", "update", "body"),
                          is_block=True),
     "ForInStatement": node(branches=("left", "right", "body"), is_block=True),
+    "ForOfStatement": node(branches=("left", "right", "body"), is_block=True),
 
     "FunctionDeclaration": node(branches=("body", ), dynamic=True,
                                 action=FunctionDeclaration, is_block=True),

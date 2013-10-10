@@ -17,7 +17,8 @@ class TestMathFuncs(TestCase):
     def do_expr(self, expr, output):
         self.setUp()
         self.run_script("var x = %s" % expr)
-        self.assert_var_eq("x", output)
+        self.assert_var_eq(
+            "x", output)
 
     def test_abs(self):
         """Test that the abs() function works properly."""

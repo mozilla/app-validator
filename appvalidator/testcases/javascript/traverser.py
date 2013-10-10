@@ -78,7 +78,7 @@ class Traverser(object):
         "Finds a node's internal blocks and helps manage state."
 
         if node is None:
-            return JSWrapper(JSObject(), traverser=self, dirty=True)
+            return JSWrapper(JSObject(), traverser=self)
 
         # Simple caching to prevent retraversal
         if "__traversal" in node and node["__traversal"] is not None:
@@ -87,7 +87,7 @@ class Traverser(object):
         if isinstance(node, types.StringTypes):
             return JSWrapper(JSLiteral(node), traverser=self)
         elif "type" not in node or node["type"] not in DEFINITIONS:
-            return JSWrapper(JSObject(), traverser=self, dirty=True)
+            return JSWrapper(JSObject(), traverser=self)
 
         self._debug("TRAVERSE>>%s" % node["type"])
         self.debug_level += 1
@@ -157,7 +157,7 @@ class Traverser(object):
             return action_result
 
         node["__traversal"] = None
-        return JSWrapper(JSObject(), traverser=self, dirty=True)
+        return JSWrapper(JSObject(), traverser=self)
 
     def _push_block_context(self):
         "Adds a block context to the current interpretation frame"
@@ -187,9 +187,10 @@ class Traverser(object):
         self._debug(popped_context)
 
     def _peek_context(self, depth=1):
-        """Returns the most recent context. Note that this should NOT be used
-        for variable lookups."""
-
+        """
+        Returns the most recent context. Note that this should NOT be used
+        for variable lookups.
+        """
         return self.contexts[len(self.contexts) - depth]
 
     def _seek_variable(self, variable):
@@ -217,35 +218,28 @@ class Traverser(object):
 
     def _is_local_variable(self, variable):
         """Return whether a variable is defined in the current scope."""
-        return any(ctx.has_var(variable) for ctx in self.contexts)
+        return any(ctx.has_var(variable, traverser=self) for
+                   ctx in self.contexts)
 
     def _seek_local_variable(self, variable):
         # Loop through each context in reverse order looking for the defined
         # variable.
         for context in reversed(self.contexts):
             # If it has the variable, return it
-            if context.has_var(variable):
+            if context.has_var(variable, traverser=self):
                 self._debug("SEEK>>FOUND")
-                return context.get(variable, traverser=self)
+                return context.get(self, variable)
 
     def _is_global(self, name):
         "Returns whether a name is a global entity"
         return not self._is_local_variable(name) and name in GLOBAL_ENTITIES
 
     def _build_global(self, name, entity):
-        "Builds an object based on an entity from the predefined entity list"
-        entity.setdefault("name", name)
+        if isinstance(entity, dict):
+            entity.setdefault("name", name)
 
         # Build out the wrapper object from the global definition.
-        result = JSWrapper(is_global=True, traverser=self, lazy=True)
-        result.value = entity
-        result = self.expand_globals(result)
-
-        if "context" in entity:
-            result.context = entity["context"]
-
-        self._debug("BUILT_GLOBAL")
-
+        result = JSWrapper(JSGlobal(entity, traverser=self), traverser=self)
         return result
 
     def _declare_variable(self, name, value, type_="var"):
@@ -253,36 +247,21 @@ class Traverser(object):
         if type_ == "let":
             context = self.contexts[-1]
         elif type_ in ("var", "const", ):
-            contexts = ([self.contexts[0]] +
-                        filter(lambda c: c.type_ == "default",
-                               self.contexts[1:]))
+            contexts = (
+                [self.contexts[0]] + filter(lambda c: c.type_ == "default",
+                                            self.contexts[1:]))
             context = contexts[-1]
         elif type_ == "glob":
             # Look down through the lexical scope. If the variable being
             # assigned is present in one of those objects, use that as the
             # target context.
             for ctx in reversed(self.contexts[1:]):
-                if ctx.has_var(name):
+                if ctx.has_var(name, traverser=self):
                     context = ctx
                     break
 
         context.set(name, value)
         return value
-
-    def expand_globals(self, node):
-        if node.is_global and callable(node.value.get("value")):
-            result = node.value["value"](self)
-
-            if isinstance(result, dict):
-                output = self._build_global("--", result)
-            elif isinstance(result, JSWrapper):
-                output = result
-            else:
-                output = JSWrapper(result, self)
-
-            return output
-
-        return node
 
     def log_feature(self, feature):
         self.err.feature_profile.add(feature)
