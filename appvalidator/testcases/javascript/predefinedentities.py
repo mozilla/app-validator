@@ -3,33 +3,25 @@ import math
 import call_definitions
 from call_definitions import python_wrap
 from entity_values import entity
-from jstypes import JSGlobal, JSWrapper
+from jstypes import JSGlobal, JSLiteral
 
 
-# See https://github.com/mattbasta/amo-validator/wiki/JS-Predefined-Entities
+# See https://github.com/mozilla/app-validator/wiki/JS-Predefined-Entities
 # for details on entity properties.
 
-
-def get_wrapped_global(traverser, *args):
-    var = JSGlobal(get_global(*args), traverser=traverser)
-    return JSWrapper(var, traverser=traverser)
+def resolve_entity(traverser, *args):
+    element = GLOBAL_ENTITIES[args[0]]
+    for layer in args[1:]:
+        value = element["value"]
+        while callable(value):
+            value = value(t=t)
+        element = value[layer]
+    return element
 
 def get_global(*args):
-    def wrap(t):
-        element = GLOBAL_ENTITIES[args[0]]
-        for layer in args[1:]:
-            value = element["value"]
-            while callable(value):
-                value = value(t=t)
-            element = value[layer]
-        return element
-    return wrap
+    return lambda trav: resolve_entity(trav, *args)
 
-get_constant = lambda v: lambda t: JSWrapper(v, traverser=t)
-get_constant_method = lambda val: lambda **kw: JSWrapper(
-        val, traverser=kw['traverser'])
 global_identity = {"value": lambda *args: GLOBAL_ENTITIES}
-
 READONLY = {"readonly": True}
 
 
@@ -146,9 +138,9 @@ GLOBAL_ENTITIES = {
     u"Number":
         {"value":
              {u"constructor": {"value": get_global("Function")},
-              u"POSITIVE_INFINITY": {"value": get_constant(float('inf'))},
-              u"NEGATIVE_INFINITY": {"value": get_constant(float('-inf'))},
-              u"isNaN": get_constant("isNaN")},
+              u"POSITIVE_INFINITY": {"literal": float('inf')},
+              u"NEGATIVE_INFINITY": {"literal": float('-inf')},
+              u"isNaN": get_global("isNaN")},
          "return": call_definitions.number_global,
          "new": call_definitions.number_global,
          "typeof": "number"},
@@ -194,7 +186,7 @@ GLOBAL_ENTITIES = {
               u"pow": {"return": python_wrap(math.pow, [("num", 0),
                                                         ("num", 0)])},
               # Random always returns 0.5 in our fantasy land.
-              u"random": {"return": get_constant_method(0.5)},
+              u"random": {"return": lambda **kw: JSLiteral(0.5)},
               u"round": {"return": call_definitions.math_round},
               u"sin": {"return": python_wrap(math.sin, [("num", 0)])},
               u"sqrt": {"return": python_wrap(math.sqrt, [("num", 1)])},

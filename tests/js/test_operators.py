@@ -75,7 +75,7 @@ class TestMath(TestCase):
         """Test that the typeof operator does good."""
 
         self.run_script("""
-        var a = typeof void(0),
+        var a = typeof void 0,
             b = typeof null,
             c = typeof true,
             d = typeof false,
@@ -167,7 +167,7 @@ class TestMath(TestCase):
             // f = !(),
             g = !(0),
             h = !(-0),
-            // i = !(NaN),
+            i = !(NaN),
             j = !(Infinity),
             k = !(-Infinity),
             l = !(Math.PI),

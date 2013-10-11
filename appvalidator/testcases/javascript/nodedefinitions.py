@@ -5,8 +5,7 @@ from appvalidator.python.copy import deepcopy
 
 import instanceactions
 import utils
-from jstypes import (JSArray, JSContext, JSGlobal, JSLiteral, JSObject,
-                     JSWrapper)
+from jstypes import JSArray, JSContext, JSGlobal, JSLiteral, JSObject
 
 
 NUMERIC_TYPES = (int, long, float, complex)
@@ -24,9 +23,8 @@ def ExpressionStatement(traverser, node):
 
 def WithStatement(traverser, node):
     obj = traverser.traverse_node(node["object"])
-    if not isinstance(obj.value, dict):
-        traverser.contexts[-1] = obj.value
-        traverser.contexts.append(JSContext("block"))
+    traverser.contexts[-1] = obj
+    traverser.contexts.append(JSContext("block"))
 
 
 def _function(traverser, node):
@@ -61,7 +59,7 @@ def _function(traverser, node):
 
         local_context = traverser._peek_context(1)
         for param in params:
-            var = JSWrapper(JSObject(), traverser=traverser)
+            var = JSObject(traverser=traverser)
 
             # We can assume that the params are static because we don't care
             # about what calls the function. We want to know whether the
@@ -85,7 +83,7 @@ def _function(traverser, node):
     # Put the function off for traversal at the end of the current block scope.
     traverser.function_collection[-1].append(lambda: wrap(traverser, node))
 
-    return JSWrapper(JSObject(), traverser=traverser, callable_=True)
+    return JSObject(traverser=traverser, callable_=True)
 
 
 def FunctionDeclaration(traverser, node):
@@ -122,7 +120,7 @@ def VariableDeclaration(traverser, node):
                 # Simple instantiation; no initialization
                 for var in filter(None, vars):
                     traverser._declare_variable(
-                        var, JSWrapper(JSObject(), traverser=traverser))
+                        var, JSObject(traverser=traverser))
 
             # The variables are declared inline
             elif declaration["init"]["type"] == "ArrayPattern":
@@ -136,7 +134,7 @@ def VariableDeclaration(traverser, node):
             # It's being assigned by a JSArray (presumably)
             elif declaration["init"]["type"] == "ArrayExpression":
                 assigner = traverser.traverse_node(declaration["init"])
-                for value, var in zip(assigner.value.elements, vars):
+                for value, var in zip(assigner.elements, vars):
                     traverser._declare_variable(var, value)
 
         elif declaration["id"]["type"] == "ObjectPattern":
@@ -203,20 +201,19 @@ def ObjectExpression(traverser, node):
 
 
 def _expr_unary_typeof(wrapper):
-    """Evaluate the "typeof" value for a JSWrapper object."""
+    """Evaluate the "typeof" value for a JS object."""
     if wrapper.callable:
         return "function"
-    elif wrapper.is_global:
-        if "typeof" in wrapper.value.global_data:
-            return wrapper.value.global_data["typeof"]
-        if ("return" in wrapper.value.global_data and
-            "value" not in wrapper.value.global_data):
+    elif isinstance(wrapper, JSGlobal):
+        if "typeof" in wrapper.global_data:
+            return wrapper.global_data["typeof"]
+        if ("return" in wrapper.global_data and
+            "value" not in wrapper.global_data):
             return "function"
+        if wrapper.global_data.get("undefined", False):
+            return "undefined"
 
-    if wrapper.is_global and "undefined" in wrapper.value.global_data:
-        return "undefined"
-
-    return wrapper.value.TYPEOF
+    return wrapper.TYPEOF
 
 
 UNARY_OPERATORS = {
@@ -224,20 +221,32 @@ UNARY_OPERATORS = {
     "+": lambda e: utils.get_as_num(e.get_literal_value()),
     "!": lambda e: not e.get_literal_value(),
     "~": lambda e: -1 * (utils.get_as_num(e.get_literal_value()) + 1),
-    "typeof": _expr_unary_typeof,
 }
 
 def UnaryExpression(traverser, node):
-    if node["operator"] in UNARY_OPERATORS:
-        output = UNARY_OPERATORS[node["operator"]](
-            traverser.traverse_node(node["argument"]))
-    elif node["operator"] == "void":
-        from predefinedentities import get_wrapped_global
-        output = get_wrapped_global(traverser, "undefined")
+    operator = node["operator"]
+    arg = traverser.traverse_node(node["argument"])
+    if (isinstance(arg, JSGlobal) and
+        "literal" in arg.global_data and
+        not (operator == "typeof" and "undefined" in arg.global_data)):
+        arg = JSLiteral(
+            utils.evaluate_lambdas(traverser, arg.global_data["literal"]),
+            traverser=traverser)
+    if operator in UNARY_OPERATORS:
+        traverser._debug("Defined unary operator (%s)" % operator)
+        return JSLiteral(UNARY_OPERATORS[node["operator"]](arg),
+                         traverser=traverser)
+    elif operator == "void":
+        traverser._debug("Void unary operator")
+        from predefinedentities import resolve_entity
+        return JSGlobal(resolve_entity(traverser, "undefined"),
+                        traverser=traverser)
+    elif operator == "typeof":
+        traverser._debug("Typeof unary operator")
+        return JSLiteral(_expr_unary_typeof(arg))
     else:
-        output = None
-
-    return JSWrapper(output, traverser=traverser)
+        traverser._debug("Undefined unary operator")
+        return JSObject(traverser=traverser)
 
 
 BINARY_OPERATORS = {
@@ -289,7 +298,7 @@ def BinaryExpression(traverser, node):
         # We make an exception for instanceof's r-value if it's a dangerous
         # global, specifically Function.
         traverser.debug_level -= 1
-        return JSWrapper(True, traverser=traverser)
+        return JSLiteral(True, traverser=traverser)
     else:
         right = traverser.traverse_node(node["right"])
 
@@ -306,10 +315,11 @@ def BinaryExpression(traverser, node):
 
     if operator in (">>", "<<", ">>>"):
         if left is None or right is None or gright < 0:
-            return JSWrapper(False, traverser=traverser)
+            return JSLiteral(False, traverser=traverser)
         elif abs(gleft) == float('inf') or abs(gright) == float('inf'):
             return utils.get_NaN(traverser)
 
+    output = None
     if operator in BINARY_OPERATORS:
         # Concatenation can be silly, so always turn undefineds into empty
         # strings and if there are strings, make everything strings.
@@ -325,14 +335,15 @@ def BinaryExpression(traverser, node):
 
         output = BINARY_OPERATORS[operator](left, right, gleft, gright)
     elif operator == "in":
-        output = right_wrap.has_var(left, traverser=traverser)
+        return JSLiteral(right_wrap.has_var(left, traverser=traverser),
+                         traverser=traverser)
     #TODO: `delete` operator
 
     # Cap the length of analyzed strings.
     if isinstance(output, types.StringTypes) and len(output) > MAX_STR_SIZE:
         output = output[:MAX_STR_SIZE]
 
-    return JSWrapper(output, traverser=traverser)
+    return JSLiteral(output, traverser=traverser)
 
 
 ASSIGNMENT_OPERATORS = {
@@ -357,17 +368,17 @@ def AssignmentExpression(traverser, node):
     traverser._debug("ASSIGNMENT>>PARSING RIGHT")
     right = traverser.traverse_node(node["right"])
 
+    traverser._debug("ASSIGNMENT>>PARSING LEFT")
+    orig_left = left = traverser.traverse_node(node["left"])
+
     operator = node["operator"]
 
-    # Treat direct assignment different than augmented assignment.
-    if operator == "=":
+    def set_lvalue(value):
+        node_left = node["left"]
+        traverser._debug("ASSIGNING:DIRECT(%s)" % node_left["type"])
 
         global_overwrite = False
         readonly_value = True
-
-        node_left = node["left"]
-        traverser._debug("ASSIGNMENT:DIRECT(%s)" % node_left["type"])
-
         if node_left["type"] == "Identifier":
             # Identifiers just need the ID name and a value to push.
             # Raise a global overwrite issue if the identifier is global.
@@ -379,23 +390,22 @@ def AssignmentExpression(traverser, node):
                 global_dict = GLOBAL_ENTITIES[node_left["name"]]
                 readonly_value = global_dict.get("readonly", False)
 
-            traverser._declare_variable(node_left["name"], right, type_="glob")
+            traverser._declare_variable(node_left["name"], value, type_="glob")
 
-        # TODO: WTF does this even do?
         elif node_left["type"] == "MemberExpression":
             member_object = MemberExpression(traverser, node_left["object"],
                                              instantiate=True)
             member_property = _get_member_exp_property(traverser, node_left)
             traverser._debug("ASSIGNMENT:MEMBER_PROPERTY(%s)" % member_property)
 
-            if member_object.value is None:
-                member_object.value = JSObject()
+            if member_object is None:
+                member_object = JSObject()
 
-            member_object.value.set(member_property, right, traverser)
+            member_object.set(member_property, value, traverser)
 
-        if callable(readonly_value):
-            readonly_value(traverser, right, node["right"])
-
+    # Treat direct assignment different than augmented assignment.
+    if operator == "=":
+        set_lvalue(right)
         return right
 
     elif operator not in ASSIGNMENT_OPERATORS:
@@ -403,8 +413,19 @@ def AssignmentExpression(traverser, node):
         traverser._debug("ASSIGNMENT>>OPERATOR NOT FOUND", 1)
         return left
 
-    traverser._debug("ASSIGNMENT>>PARSING LEFT")
-    orig_left = left = traverser.traverse_node(node["left"])
+    if left.const:
+        traverser.err.warning(
+            err_id=("js", "AssignmentExpression", "aug_const_overwrite"),
+            warning="Overwritten constant value",
+            description="A variable declared as constant has been "
+                        "overwritten in some JS code by an augmented "
+                        "assignment.",
+            filename=traverser.filename,
+            line=traverser.line,
+            column=traverser.position,
+            context=traverser.context)
+        return
+
     traverser._debug("ASSIGNMENT>>DONE PARSING LEFT")
     traverser.debug_level -= 1
 
@@ -412,7 +433,7 @@ def AssignmentExpression(traverser, node):
     # NaN.
     if (operator in NUMERIC_OPERATORS and
         not isinstance(left.get_literal_value() or 0, NUMERIC_TYPES)):
-        left.set_value(utils.get_NaN(traverser), traverser=traverser)
+        set_lvalue(utils.get_NaN(traverser))
         return left
 
     gleft, gright = utils.get_as_num(left), utils.get_as_num(right)
@@ -421,12 +442,12 @@ def AssignmentExpression(traverser, node):
     if operator in ("<<=", ">>=", ">>>=") and gright < 0:
         # The user is doing weird bitshifting that will return 0 in JS but
         # not in Python.
-        left.set_value(0, traverser=traverser)
+        set_lvalue(JSLiteral(0, traverser=traverser))
         return left
     elif (operator in ("<<=", ">>=", ">>>=", "|=", "^=", "&=") and
           (abs(gleft) == float('inf') or abs(gright) == float('inf'))):
         # Don't bother handling infinity for integer-converted operations.
-        left.set_value(utils.get_NaN(traverser), traverser=traverser)
+        set_lvalue(utils.get_NaN(traverser))
         return left
 
     if operator == '+=':
@@ -454,33 +475,34 @@ def AssignmentExpression(traverser, node):
         output = output[:MAX_STR_SIZE]
 
     traverser._debug("ASSIGNMENT::New value >> %s" % output, 1)
-    orig_left.set_value(output, traverser=traverser)
+    set_lvalue(JSLiteral(output, traverser=traverser))
     return orig_left
 
 
 def NewExpression(traverser, node):
     args = [traverser.traverse_node(arg) for arg in node["arguments"]]
     elem = traverser.traverse_node(node["callee"])
-    if elem.is_global:
-        traverser._debug("Making overwritable")
-        global_data = dict(elem.value.global_data)
-        global_data.update(overwritable=True, readonly=False)
-        temp = JSGlobal(global_data, traverser=traverser)
-        temp.data = deepcopy(elem.value.data) if elem.value.data else {}
-        if "new" in temp.global_data:
-            new_temp = temp.global_data["new"](node, args, traverser)
-            if new_temp is not None:
-                # typeof new Boolean() === "object"
-                traverser._debug("Stripping global typeof")
-                new_temp.value.TYPEOF = "object"
-                return new_temp
-        elif "return" in temp.global_data:
-            new_temp = temp.global_data["return"](
-                wrapper=node, arguments=args, traverser=traverser)
-            if new_temp is not None:
-                return new_temp
-        elem.value = temp
-    return elem
+    if not isinstance(elem, JSGlobal):
+        return elem
+
+    traverser._debug("Making overwritable")
+    global_data = dict(elem.global_data)
+    global_data.update(overwritable=True, readonly=False)
+    temp = JSGlobal(global_data, traverser=traverser)
+    temp.data = deepcopy(elem.data) if elem.data else {}
+    if "new" in temp.global_data:
+        new_temp = temp.global_data["new"](node, args, traverser)
+        if new_temp is not None:
+            # typeof new Boolean() === "object"
+            traverser._debug("Stripping global typeof")
+            new_temp.TYPEOF = "object"
+            return new_temp
+    elif "return" in temp.global_data:
+        new_temp = temp.global_data["return"](
+            wrapper=node, arguments=args, traverser=traverser)
+        if new_temp is not None:
+            return new_temp
+    return temp
 
 
 def CallExpression(traverser, node):
@@ -499,11 +521,12 @@ def CallExpression(traverser, node):
             traverser._debug('Calling instance action...')
             result = instanceactions.INSTANCE_DEFINITIONS[identifier_name](
                         args, traverser, node, wrapper=member)
-            return result
+            if result is not None:
+                return result
 
-    if member.is_global and "return" in member.value.global_data:
+    if isinstance(member, JSGlobal) and "return" in member.global_data:
         traverser._debug("EVALUATING RETURN...")
-        output = member.value.global_data["return"](
+        output = member.global_data["return"](
             wrapper=member, arguments=args, traverser=traverser)
         if output is not None:
             return output
@@ -539,7 +562,7 @@ def MemberExpression(traverser, node, instantiate=False):
         # If we're supposed to instantiate the object and it doesn't already
         # exist, instantitate the object.
         if instantiate and not traverser._is_defined(node["name"]):
-            output = JSWrapper(JSObject(), traverser=traverser)
+            output = JSObject(traverser=traverser)
             traverser.contexts[0].set(node["name"], output)
         else:
             output = traverser._seek_variable(node["name"])

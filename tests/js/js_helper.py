@@ -91,4 +91,4 @@ class TestCase(helper.TestCase):
             val /= 100000
 
         eq_(val, value,
-            explanation or "%s doesn't equal %s" % (val, value))
+            explanation or "%r doesn't equal %r" % (val, value))

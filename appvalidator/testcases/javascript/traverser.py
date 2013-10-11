@@ -78,16 +78,16 @@ class Traverser(object):
         "Finds a node's internal blocks and helps manage state."
 
         if node is None:
-            return JSWrapper(JSObject(), traverser=self)
+            return JSObject(traverser=self)
 
         # Simple caching to prevent retraversal
         if "__traversal" in node and node["__traversal"] is not None:
             return node["__traversal"]
 
         if isinstance(node, types.StringTypes):
-            return JSWrapper(JSLiteral(node), traverser=self)
+            return JSLiteral(node, traverser=self)
         elif "type" not in node or node["type"] not in DEFINITIONS:
-            return JSWrapper(JSObject(), traverser=self)
+            return JSObject(traverser=self)
 
         self._debug("TRAVERSE>>%s" % node["type"])
         self.debug_level += 1
@@ -115,12 +115,7 @@ class Traverser(object):
             action_result = action(self, node)
 
             if DEBUG:
-                action_debug = "continue"
-                if action_result is not None:
-                    action_debug = (action_result.output() if
-                                    isinstance(action_result, JSWrapper) else
-                                    action_result)
-                self._debug("ACTION>>%s (%s)" % (action_debug, node["type"]))
+                self._debug("ACTION>>%s (%s)" % (repr(action_result), node["type"]))
 
         if action_result is None:
             self.debug_level += 1
@@ -132,7 +127,8 @@ class Traverser(object):
                     self.debug_level += 1
                     b = node[branch]
                     if isinstance(b, list):
-                        map(self.traverse_node, b)
+                        for branch in b:
+                            self.traverse_node(branch)
                     else:
                         self.traverse_node(b)
                     self.debug_level -= 1
@@ -151,13 +147,11 @@ class Traverser(object):
         # If there is an action and the action returned a value, it should be
         # returned to the node traversal that initiated this node's traversal.
         if returns:
-            if not isinstance(action_result, JSWrapper):
-                return JSWrapper(action_result, traverser=self)
             node["__traversal"] = action_result
             return action_result
 
         node["__traversal"] = None
-        return JSWrapper(JSObject(), traverser=self)
+        return JSObject(traverser=self)
 
     def _push_block_context(self):
         "Adds a block context to the current interpretation frame"
@@ -211,7 +205,7 @@ class Traverser(object):
 
         self._debug("SEEK_GLOBAL>>FAILED")
         # If we can't find a variable, we always return a dummy object.
-        return JSWrapper(JSObject(), traverser=self)
+        return JSObject(traverser=self)
 
     def _is_defined(self, variable):
         return variable in GLOBAL_ENTITIES or self._is_local_variable(variable)
@@ -239,7 +233,7 @@ class Traverser(object):
             entity.setdefault("name", name)
 
         # Build out the wrapper object from the global definition.
-        result = JSWrapper(JSGlobal(entity, traverser=self), traverser=self)
+        result = JSGlobal(entity, traverser=self)
         return result
 
     def _declare_variable(self, name, value, type_="var"):
@@ -248,8 +242,8 @@ class Traverser(object):
             context = self.contexts[-1]
         elif type_ in ("var", "const", ):
             contexts = (
-                [self.contexts[0]] + filter(lambda c: c.type_ == "default",
-                                            self.contexts[1:]))
+                [self.contexts[0]] +
+                filter(lambda c: c.type_ == "default", self.contexts[1:]))
             context = contexts[-1]
         elif type_ == "glob":
             # Look down through the lexical scope. If the variable being
@@ -260,7 +254,7 @@ class Traverser(object):
                     context = ctx
                     break
 
-        context.set(name, value)
+        context.set(name, value, traverser=self)
         return value
 
     def log_feature(self, feature):

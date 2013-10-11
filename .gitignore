@@ -9,3 +9,4 @@
 /src
 /extras/jslibs
 .noseids
+node_modules

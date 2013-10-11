@@ -10,10 +10,10 @@ node
     the current node being evaluated
 """
 
+import jstypes
 import utils
 from appvalidator.constants import BUGZILLA_BUG
 from appvalidator.csp import warn
-from .jstypes import *
 from .instanceproperties import _set_HTML_property
 
 
@@ -26,7 +26,7 @@ def createElement(args, traverser, node, wrapper):
     first_as_str = utils.get_as_str(args[0].get_literal_value())
     if first_as_str.lower() == u"script":
         _create_script_tag(traverser)
-    elif not args[0].is_literal():
+    elif not isinstance(args[0], jstypes.JSLiteral):
         _create_variable_element(traverser)
 
 
@@ -39,7 +39,7 @@ def createElementNS(args, traverser, node, wrapper):
     second_as_str = utils.get_as_str(args[1].get_literal_value())
     if "script" in second_as_str.lower():
         _create_script_tag(traverser)
-    elif not args[1].is_literal():
+    elif not isinstance(args[1], jstypes.JSLiteral):
         _create_variable_element(traverser)
 
 

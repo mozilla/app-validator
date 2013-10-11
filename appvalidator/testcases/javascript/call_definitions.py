@@ -8,7 +8,7 @@ from jstypes import *
 from appvalidator.constants import BUGZILLA_BUG
 
 # Function prototypes should implement the following:
-#  wrapper : The JSWrapper instace that is being called
+#  wrapper : The base object instace that is being called
 #  arguments : A list of argument nodes; untraversed
 #  traverser : The current traverser object
 
@@ -17,28 +17,28 @@ from appvalidator.constants import BUGZILLA_BUG
 def string_global(wrapper, arguments, traverser):
     if (not arguments or
         not arguments[0].get_literal_value()):
-        return JSWrapper(JSObject(), traverser=traverser)
-    value = utils.get_as_str(arguments[0].get_literal_value())
-    return JSWrapper(value, traverser=traverser)
+        return JSObject(traverser=traverser)
+    return JSLiteral(utils.get_as_str(arguments[0].get_literal_value()),
+                     traverser=traverser)
 
 
 def array_global(wrapper, arguments, traverser):
-    return JSWrapper(JSArray(arguments), traverser=traverser)
+    return JSArray(arguments, traverser=traverser)
 
 
 def number_global(wrapper, arguments, traverser):
     if not arguments:
-        return JSWrapper(0, traverser=traverser)
+        return JSLiteral(0, traverser=traverser)
     try:
-        return JSWrapper(float(arguments[0].get_literal_value()), traverser=traverser)
+        return JSLiteral(float(arguments[0].get_literal_value()), traverser=traverser)
     except (ValueError, TypeError):
         return utils.get_NaN(traverser)
 
 
 def boolean_global(wrapper, arguments, traverser):
     if not arguments:
-        return JSWrapper(False, traverser=traverser)
-    return JSWrapper(bool(arguments[0].get_literal_value()),
+        return JSLiteral(False, traverser=traverser)
+    return JSLiteral(bool(arguments[0].get_literal_value()),
                      traverser=traverser)
 
 
@@ -82,15 +82,13 @@ def python_wrap(func, args, nargs=False):
                 literal = arg.get_literal_value()
                 params.append(_process_literal(args[0], literal))
 
-        traverser._debug("Calling wrapped Python function with: (%s)" %
-                             ", ".join(map(str, params)))
+        # traverser._debug("Calling wrapped Python function with: (%s)" %
+        #                      ", ".join(map(str, params)))
         try:
-            output = func(*params)
+            return JSLiteral(func(*params), traverser=traverser)
         except:
             # If we cannot compute output, just return nothing.
-            output = None
-
-        return JSWrapper(output, traverser=traverser)
+            return JSLiteral(None, traverser=traverser)
 
     return wrap
 
@@ -98,23 +96,22 @@ def python_wrap(func, args, nargs=False):
 def math_log(wrapper, arguments, traverser):
     """Return a better value than the standard python log function."""
     if not arguments:
-        return JSWrapper(0, traverser=traverser)
+        return JSLiteral(0, traverser=traverser)
 
     arg = utils.get_as_num(arguments[0].get_literal_value())
     if arg == 0:
-        return JSWrapper(float('-inf'), traverser=traverser)
+        return JSLiteral(float('-inf'), traverser=traverser)
 
     if arg < 0:
-        return JSWrapper(traverser=traverser)
+        return JSLiteral(None, traverser=traverser)
 
-    arg = math.log(arg)
-    return JSWrapper(arg, traverser=traverser)
+    return JSLiteral(math.log(arg), traverser=traverser)
 
 
 def math_round(wrapper, arguments, traverser):
     """Return a better value than the standard python round function."""
     if not arguments:
-        return JSWrapper(0, traverser=traverser)
+        return JSLiteral(0, traverser=traverser)
 
     arg = utils.get_as_num(arguments[0].get_literal_value())
     # Prevent nasty infinity tracebacks.
@@ -124,5 +121,4 @@ def math_round(wrapper, arguments, traverser):
     # Python rounds away from zero, JS rounds "up".
     if arg < 0 and int(arg) != arg:
         arg += 0.0000000000000001
-    arg = round(arg)
-    return JSWrapper(arg, traverser=traverser)
+    return JSLiteral(round(arg), traverser=traverser)
