@@ -182,7 +182,7 @@ def ThisExpression(traverser, node):
     if not traverser.this_stack:
         from predefinedentities import global_identity
         return traverser._build_global("window", global_identity)
-    return traverser.this_stack[-1]
+    return traverser.this_stack[-1] or JSGlobal(traverser=traverser)
 
 
 def ArrayExpression(traverser, node):
@@ -424,7 +424,7 @@ def AssignmentExpression(traverser, node):
             line=traverser.line,
             column=traverser.position,
             context=traverser.context)
-        return
+        return JSObject(traverser=traverser)
 
     traverser._debug("ASSIGNMENT>>DONE PARSING LEFT")
     traverser.debug_level -= 1

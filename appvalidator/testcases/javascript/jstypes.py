@@ -262,7 +262,7 @@ class JSArray(JSObject):
 
     def get(self, traverser, index, instantiate=False):
         if index == "length":
-            return len(self.elements)
+            return JSLiteral(len(self.elements), traverser=traverser)
 
         # Courtesy of Ian Bicking: http://bit.ly/hxv6qt
         try:

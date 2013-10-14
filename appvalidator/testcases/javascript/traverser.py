@@ -147,6 +147,8 @@ class Traverser(object):
         # If there is an action and the action returned a value, it should be
         # returned to the node traversal that initiated this node's traversal.
         if returns:
+            if not action_result:
+                action_result = JSObject(traverser=self)
             node["__traversal"] = action_result
             return action_result
 

@@ -72,7 +72,6 @@ def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
     if not code:
         return None
 
-    # code = JS_ESCAPE.sub("u", unicodehelper.decode(code)).encode("utf_8")
     code = json.dumps(JS_ESCAPE.sub("u", unicodehelper.decode(code)))
 
     data = """
