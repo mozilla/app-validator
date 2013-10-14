@@ -3,31 +3,25 @@ import math
 import call_definitions
 from call_definitions import python_wrap
 from entity_values import entity
-from jstypes import JSWrapper
+from jstypes import JSGlobal, JSLiteral
 
 
-# See https://github.com/mattbasta/amo-validator/wiki/JS-Predefined-Entities
+# See https://github.com/mozilla/app-validator/wiki/JS-Predefined-Entities
 # for details on entity properties.
 
+def resolve_entity(traverser, *args):
+    element = GLOBAL_ENTITIES[args[0]]
+    for layer in args[1:]:
+        value = element["value"]
+        while callable(value):
+            value = value(t=t)
+        element = value[layer]
+    return element
 
 def get_global(*args):
-    def wrap(t):
-        element = GLOBAL_ENTITIES[args[0]]
-        for layer in args[1:]:
-            value = element["value"]
-            while callable(value):
-                value = value(t=t)
-            element = value[layer]
-        return element
-    return wrap
+    return lambda trav: resolve_entity(trav, *args)
 
-
-get_constant = lambda val: lambda t: JSWrapper(val, traverser=t)
-get_constant_method = lambda val: lambda **kw: JSWrapper(
-        val, traverser=kw['traverser'])
-global_identity = lambda t: {"value": GLOBAL_ENTITIES}
-
-MUTABLE = {"overwriteable": True, "readonly": False}
+global_identity = {"value": lambda *args: GLOBAL_ENTITIES}
 READONLY = {"readonly": True}
 
 
@@ -37,11 +31,10 @@ def feature(constant, fallback=None):
         t._debug("Found feature: %s" % constant)
         if fallback:
             t._debug("Feature has fallback: %s" % repr(fallback))
-        return {"value": fallback} if fallback else {}
+        return lambda *a: fallback if fallback else {}
 
     return {'value': wrap,
-            'return': lambda traverser, *a, **kw:
-                traverser.log_feature(constant)}
+            'return': lambda **kw: kw['traverser'].log_feature(constant)}
 
 
 MOZAPPS = {
@@ -95,13 +88,12 @@ NAVIGATOR = {
 
 # GLOBAL_ENTITIES is also representative of the `window` object.
 GLOBAL_ENTITIES = {
-    u"window": {"value": global_identity},
-    u"null": {"literal": get_constant(None)},
+    u"window": global_identity,
+    u"null": {"literal": None},
 
     u"document":
         {"value":
-            {u"title": MUTABLE,
-             u"defaultView": {"value": global_identity},
+            {u"defaultView": {"value": global_identity},
 
              u"cancelFullScreen": feature("FULLSCREEN"),
              u"mozCancelFullScreen": feature("FULLSCREEN"),
@@ -131,54 +123,53 @@ GLOBAL_ENTITIES = {
     u"eval": entity("eval"),
     u"Function": entity("Function"),
     u"Object":
-        {"value":
-             {u"prototype": READONLY,
-              u"constructor": {"value": get_global("Function")}}},
+        {"value": {u"constructor": {"value": get_global("Function")}}},
     u"String":
         {"value":
-             {u"prototype": READONLY,
-              u"constructor": {"value": get_global("Function")}},
-         "return": call_definitions.string_global},
+             {u"constructor": {"value": get_global("Function")}},
+         "return": call_definitions.string_global,
+         "new": call_definitions.string_global,
+         "typeof": "string"},
     u"Array":
         {"value":
-             {u"prototype": READONLY,
-              u"constructor": {"value": get_global("Function")}},
-         "return": call_definitions.array_global},
+             {u"constructor": {"value": get_global("Function")}},
+         "return": call_definitions.array_global,
+         "new": call_definitions.array_global},
     u"Number":
         {"value":
-             {u"prototype": READONLY,
-              u"constructor": {"value": get_global("Function")},
-              u"POSITIVE_INFINITY": {"value": get_constant(float('inf'))},
-              u"NEGATIVE_INFINITY": {"value": get_constant(float('-inf'))}},
-         "return": call_definitions.number_global},
+             {u"constructor": {"value": get_global("Function")},
+              u"POSITIVE_INFINITY": {"literal": float('inf')},
+              u"NEGATIVE_INFINITY": {"literal": float('-inf')},
+              u"isNaN": get_global("isNaN")},
+         "return": call_definitions.number_global,
+         "new": call_definitions.number_global,
+         "typeof": "number"},
     u"Boolean":
         {"value":
-             {u"prototype": READONLY,
-              u"constructor": {"value": get_global("Function")}},
-         "return": call_definitions.boolean_global},
+             {u"constructor": {"value": get_global("Function")}},
+         "return": call_definitions.boolean_global,
+         "new": call_definitions.boolean_global,
+         "typeof": "boolean"},
     u"RegExp":
         {"value":
-            {u"prototype": READONLY,
-             u"constructor": {"value": get_global("Function")}}},
+            {u"constructor": {"value": get_global("Function")}}},
     u"Date":
         {"value":
-            {u"prototype": READONLY,
-             u"constructor": {"value": get_global("Function")}}},
+            {u"constructor": {"value": get_global("Function")}}},
     u"File":
         {"value":
-            {u"prototype": READONLY,
-             u"constructor": {"value": get_global("Function")}}},
+            {u"constructor": {"value": get_global("Function")}}},
 
     u"Math":
         {"value":
-             {u"PI": {"value": get_constant(math.pi)},
-              u"E": {"value": get_constant(math.e)},
-              u"LN2": {"value": get_constant(math.log(2))},
-              u"LN10": {"value": get_constant(math.log(10))},
-              u"LOG2E": {"value": get_constant(math.log(math.e, 2))},
-              u"LOG10E": {"value": get_constant(math.log10(math.e))},
-              u"SQRT2": {"value": get_constant(math.sqrt(2))},
-              u"SQRT1_2": {"value": get_constant(math.sqrt(1/2))},
+             {u"PI": {"literal": math.pi},
+              u"E": {"literal": math.e},
+              u"LN2": {"literal": math.log(2)},
+              u"LN10": {"literal": math.log(10)},
+              u"LOG2E": {"literal": math.log(math.e, 2)},
+              u"LOG10E": {"literal": math.log10(math.e)},
+              u"SQRT2": {"literal": math.sqrt(2)},
+              u"SQRT1_2": {"literal": math.sqrt(1/2)},
               u"abs": {"return": python_wrap(abs, [("num", 0)])},
               u"acos": {"return": python_wrap(math.acos, [("num", 0)])},
               u"asin": {"return": python_wrap(math.asin, [("num", 0)])},
@@ -195,7 +186,7 @@ GLOBAL_ENTITIES = {
               u"pow": {"return": python_wrap(math.pow, [("num", 0),
                                                         ("num", 0)])},
               # Random always returns 0.5 in our fantasy land.
-              u"random": {"return": get_constant_method(0.5)},
+              u"random": {"return": lambda **kw: JSLiteral(0.5)},
               u"round": {"return": call_definitions.math_round},
               u"sin": {"return": python_wrap(math.sin, [("num", 0)])},
               u"sqrt": {"return": python_wrap(math.sqrt, [("num", 1)])},
@@ -206,14 +197,10 @@ GLOBAL_ENTITIES = {
     u"XMLHttpRequest": entity('XMLHttpRequest'),
 
     # Global properties are inherently read-only, though this formalizes it.
-    u"Infinity": {"value": get_global("Number", "POSITIVE_INFINITY")},
+    u"Infinity": get_global("Number", "POSITIVE_INFINITY"),
     u"NaN": READONLY,
-    u"undefined": READONLY,
+    u"undefined": {"readonly": True, "undefined": True, "literal": None},
 
-    u"innerHeight": MUTABLE,
-    u"innerWidth": MUTABLE,
-    u"width": MUTABLE,
-    u"height": MUTABLE,
     u"opener": {"value": global_identity},
 
     u"navigator": {"value": NAVIGATOR},

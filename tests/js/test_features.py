@@ -42,7 +42,7 @@ class TestWindowFeatures(FeatureTester):
         ("WEBAUDIO", "var x = new mozAudioContext();"),
         ("QUOTA", "var x = new mozPersistentStorage();"),
         ("QUOTA", "var x = new StorageInfo();"),
-        ("WEBRTC_MEDIA", "var x = MediaStream;"),
+        ("WEBRTC_MEDIA", "var x = new MediaStream();"),
         ("WEBRTC_DATA", "var x = new DataChannel();"),
         ("WEBRTC_PEER", "var x = new RTCPeerConnection();"),
         ("SPEECH_SYN", "var x = speechSynthesis.foo();"),

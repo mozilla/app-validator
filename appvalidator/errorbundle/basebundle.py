@@ -38,6 +38,7 @@ class BaseErrorBundle(object):
 
     def _message(type_, message_type):
         def wrap(self, *args, **kwargs):
+            arg_len = len(args)
             message = {
                 "uid": uuid.uuid4().hex,
                 "id": kwargs.get("err_id") or args[0],
@@ -45,17 +46,25 @@ class BaseErrorBundle(object):
                     kwargs.get(message_type) or args[1]),
                 "description": unicodehelper.decode(
                     kwargs.get("description", args[2] if
-                               len(args) > 2 else None)),
+                               arg_len > 2 else None)),
                 # Filename is never None.
                 "file": kwargs.get("filename",
-                                   args[3] if len(args) > 3 else ""),
+                                   args[3] if arg_len > 3 else ""),
                 "line": kwargs.get("line",
-                                   args[4] if len(args) > 4 else None),
+                                   args[4] if arg_len > 4 else None),
                 "column": kwargs.get("column",
-                                     args[5] if len(args) > 5 else None),
+                                     args[5] if arg_len > 5 else None),
                 "tier": kwargs.get("tier", self.tier),
                 "context": None,
             }
+
+            destination = getattr(self, type_)
+            # Don't show duplicate messages.
+            if any(x["id"] == message["id"] and
+                   x["file"] == message["file"] and
+                   x["line"] == message["line"] and
+                   x["column"] == message["column"] for x in destination):
+                return self
 
             context = kwargs.get("context")
             if context is not None:
@@ -66,7 +75,7 @@ class BaseErrorBundle(object):
                         line=message["line"], column=message["column"])
 
             # Append the message to the right stack.
-            getattr(self, type_).append(message)
+            destination.append(message)
 
             # If instant mode is turned on, output the message immediately.
             if self.instant:

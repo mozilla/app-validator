@@ -82,6 +82,11 @@ class TestCSP(JSTestCase):
         self.run_script("var x = setInterval(function() {}, 0);")
         self.assert_silent()
 
+    def test_timeouts_less_noisy(self):
+        self.run_script("var f = function() {};x = setInterval(f, 0);")
+        self.run_script("var f = function() {};x = setTimeout(f, 0);")
+        self.assert_silent()
+
 
 class TestCreateElement(JSTestCase):
 
@@ -96,6 +101,10 @@ class TestCreateElement(JSTestCase):
 
     def test_createElement_pass(self):
         self.run_script("var x = document.createElement('b');")
+        self.assert_silent()
+
+    def test_createElement_var_pass(self):
+        self.run_script("var a = 'asdf', x = document.createElement(a);")
         self.assert_silent()
 
     def test_createElement(self):

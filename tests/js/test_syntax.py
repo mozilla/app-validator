@@ -2,8 +2,8 @@ from nose.tools import eq_
 
 from js_helper import TestCase
 
-from appvalidator.testcases.javascript.actions import _get_as_num, _get_as_str
-from appvalidator.testcases.javascript.jstypes import JSWrapper
+from appvalidator.testcases.javascript.utils import get_as_num, get_as_str
+from appvalidator.testcases.javascript.jstypes import JSLiteral
 
 
 class TestSyntax(TestCase):
@@ -23,10 +23,10 @@ class TestSyntax(TestCase):
         yield test, self, 'function foo(x, y, [a, b, c], z) { bar(); }'
 
     def test_get_as_num(self):
-        """Test that `_get_as_num` parses literals properly."""
+        """Test that `get_as_num` parses literals properly."""
 
         def test(input, output):
-            eq_(_get_as_num(input), output)
+            eq_(get_as_num(input), output)
 
         yield test, 1, 1
         yield test, 1.0, 1.0
@@ -38,17 +38,17 @@ class TestSyntax(TestCase):
         yield test, False, 0
         yield test, dict(), 0
 
-        yield test, JSWrapper(1), 1
-        yield test, JSWrapper(1.0), 1.0
-        yield test, JSWrapper("1"), 1
-        yield test, JSWrapper("1.0"), 1.0
-        yield test, JSWrapper(None), 0
+        yield test, JSLiteral(1), 1
+        yield test, JSLiteral(1.0), 1.0
+        yield test, JSLiteral("1"), 1
+        yield test, JSLiteral("1.0"), 1.0
+        yield test, JSLiteral(None), 0
 
     def test_get_as_str(self):
-        """Yest that `_get_as_str` parses literals properly."""
+        """Yest that `get_as_str` parses literals properly."""
 
         def test(input, output):
-            eq_(_get_as_str(input), output)
+            eq_(get_as_str(input), output)
 
         yield test, 1, "1"
         yield test, "1", "1"

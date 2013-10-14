@@ -8,3 +8,5 @@
 /appvalidator/constants_local.py
 /src
 /extras/jslibs
+.noseids
+node_modules
