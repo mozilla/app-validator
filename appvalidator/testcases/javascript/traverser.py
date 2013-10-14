@@ -1,12 +1,10 @@
 import re
 import types
 
+from appvalidator.constants import JS_DEBUG
 from .jstypes import *
 from .nodedefinitions import DEFINITIONS
 from .predefinedentities import GLOBAL_ENTITIES
-
-
-DEBUG = False
 
 
 class Traverser(object):
@@ -34,12 +32,12 @@ class Traverser(object):
         self.debug_level = 0
 
         # If we're not debugging, don't waste more cycles than we need to.
-        if not DEBUG:
+        if not JS_DEBUG:
             self._debug = lambda *args, **kwargs: None
 
     def _debug(self, data, indent=0):
         """Write a message to the console if debugging is enabled."""
-        if DEBUG:
+        if JS_DEBUG:
             output = data
             if isinstance(data, JSObject) or isinstance(data, JSContext):
                 output = data.output()
@@ -49,7 +47,7 @@ class Traverser(object):
                    output.encode("ascii", "replace"))
 
     def run(self, data):
-        if DEBUG:
+        if JS_DEBUG:
             x = open("/tmp/output.js", "w")
             x.write(unicode(data))
             x.close()
@@ -71,7 +69,7 @@ class Traverser(object):
         if self.contexts:
             # If we're in debug mode, save a copy of the global context for
             # analysis during unit tests.
-            if DEBUG:
+            if JS_DEBUG:
                 self.err.final_context = self.contexts[0]
 
     def traverse_node(self, node):
@@ -114,7 +112,7 @@ class Traverser(object):
         if action is not None:
             action_result = action(self, node)
 
-            if DEBUG:
+            if JS_DEBUG:
                 self._debug("ACTION>>%s (%s)" % (repr(action_result), node["type"]))
 
         if action_result is None:

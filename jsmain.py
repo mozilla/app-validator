@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 
 import sys
-import os
 
+import appvalidator.testcases.scripting as scripting
+import appvalidator.testcases.javascript.traverser
 from appvalidator.constants import SPIDERMONKEY_INSTALLATION
 from appvalidator.errorbundle import ErrorBundle
 from appvalidator.errorbundle.outputhandlers.shellcolors import OutputHandler
-import appvalidator.testcases.scripting as scripting
-import appvalidator.testcases.javascript.traverser
 from appvalidator.testcases.javascript.predefinedentities import GLOBAL_ENTITIES
-import appvalidator.testcases.javascript.spidermonkey as spidermonkey
-appvalidator.testcases.javascript.traverser.DEBUG = True
+from appvalidator.testcases.scripting import get_tree
+appvalidator.testcases.javascript.traverser.JS_DEBUG = True
 
 if __name__ == '__main__':
     err = ErrorBundle(instant=True)
@@ -69,7 +68,7 @@ if __name__ == '__main__':
                     print actions[vars[0]](wrap)
                 continue
 
-            tree = spidermonkey.get_tree(line, err, shell=SPIDERMONKEY_INSTALLATION)
+            tree = get_tree(line, err, shell=SPIDERMONKEY_INSTALLATION)
             if tree is None:
                 continue
             tree = tree["body"]

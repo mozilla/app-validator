@@ -65,6 +65,19 @@ class JSReflectException(Exception):
         self.line = int(line_num)
         return self
 
+BOOTSTRAP_SCRIPT = """
+var stdin = JSON.parse(readline());
+try{
+    print(JSON.stringify(Reflect.parse(stdin)));
+} catch(e) {
+    print(JSON.stringify({
+        "error":true,
+        "error_message":e.toString(),
+        "line_number":e.lineNumber
+    }));
+}"""
+BOOTSTRAP_SCRIPT = re.sub("\n +", "", BOOTSTRAP_SCRIPT)
+
 
 def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
     """Return an AST tree of the JS passed in `code`."""
@@ -72,25 +85,12 @@ def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
     if not code:
         return None
 
-    code = json.dumps(JS_ESCAPE.sub("u", unicodehelper.decode(code)))
-
-    data = """
-    var stdin = JSON.parse(readline());
-    try{
-        print(JSON.stringify(Reflect.parse(stdin)));
-    } catch(e) {
-        print(JSON.stringify({
-            "error":true,
-            "error_message":e.toString(),
-            "line_number":e.lineNumber
-        }));
-    }"""
-
-    cmd = [shell, "-e", data]
+    cmd = [shell, "-e", BOOTSTRAP_SCRIPT]
     shell_obj = subprocess.Popen(
         cmd, shell=False, stdin=subprocess.PIPE, stderr=subprocess.PIPE,
         stdout=subprocess.PIPE)
 
+    code = json.dumps(JS_ESCAPE.sub("u", unicodehelper.decode(code)))
     data, stderr = shell_obj.communicate(code)
 
     if stderr:

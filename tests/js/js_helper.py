@@ -9,10 +9,10 @@ from ..helper import MockXPI
 from appvalidator.constants import SPIDERMONKEY_INSTALLATION
 from appvalidator.errorbundle import ErrorBundle
 from appvalidator.errorbundle.outputhandlers.shellcolors import OutputHandler
+import appvalidator
 import appvalidator.testcases.content
-import appvalidator.testcases.scripting as scripting
 
-scripting.traverser.DEBUG = True
+appvalidator.testcases.javascript.traverser.JS_DEBUG = True
 
 
 def uses_js(func):
