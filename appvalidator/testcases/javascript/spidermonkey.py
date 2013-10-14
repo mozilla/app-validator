@@ -1,8 +1,5 @@
-import codecs
-import os
 import re
 import subprocess
-import tempfile
 
 import simplejson as json
 
@@ -69,63 +66,36 @@ class JSReflectException(Exception):
         return self
 
 
-def prepare_code(code):
-    """Prepare code for tree generation."""
-
-    code = unicodehelper.decode(code)
-    # Acceptable unicode characters still need to be stripped. Just remove the
-    # slash: a character is necessary to prevent bad identifier errors.
-    return JS_ESCAPE.sub("u", code)
-
-
 def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
     """Return an AST tree of the JS passed in `code`."""
 
     if not code:
         return None
 
-    code = prepare_code(code)
-
-    with tempfile.NamedTemporaryFile(mode="w+b", delete=False) as temp:
-        temp_name = temp.name
-        temp.write(code.encode("utf_8"))
+    # code = JS_ESCAPE.sub("u", unicodehelper.decode(code)).encode("utf_8")
+    code = json.dumps(JS_ESCAPE.sub("u", unicodehelper.decode(code)))
 
     data = """
-    try{options("allow_xml");}catch(e){}
+    var stdin = JSON.parse(readline());
     try{
-        print(JSON.stringify(Reflect.parse(read(%s))));
+        print(JSON.stringify(Reflect.parse(stdin)));
     } catch(e) {
         print(JSON.stringify({
             "error":true,
             "error_message":e.toString(),
             "line_number":e.lineNumber
         }));
-    }""" % json.dumps(temp_name)
+    }"""
 
-    try:
-        cmd = [shell, "-e", data, "-U"]
-        shell_obj = subprocess.Popen(
-            cmd, shell=False, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    cmd = [shell, "-e", data]
+    shell_obj = subprocess.Popen(
+        cmd, shell=False, stdin=subprocess.PIPE, stderr=subprocess.PIPE,
+        stdout=subprocess.PIPE)
 
-        data, stderr = shell_obj.communicate()
-        # Spidermonkey dropped the -U flag on 29 Oct 2012
-        if stderr and ("Invalid short option: -U" in stderr or
-                       "usage: js [options] [scriptfile]" in stderr):
-            cmd.remove("-U")
-            shell_obj = subprocess.Popen(
-                cmd, shell=False,
-                stderr=subprocess.PIPE, stdout=subprocess.PIPE)
+    data, stderr = shell_obj.communicate(code)
 
-            data, stderr = shell_obj.communicate()
-
-        if stderr:
-            raise RuntimeError('Error calling %r: %s' % (cmd, stderr))
-
-    finally:
-        try:
-            os.unlink(temp_name)
-        except IOError:
-            pass
+    if stderr:
+        raise RuntimeError('Error calling %r: %s' % (cmd, stderr))
 
     if not data:
         raise JSReflectException("Reflection failed")
