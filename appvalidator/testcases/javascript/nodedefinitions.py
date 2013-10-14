@@ -81,7 +81,10 @@ def _function(traverser, node):
             func()
 
     # Put the function off for traversal at the end of the current block scope.
-    traverser.function_collection[-1].append(lambda: wrap(traverser, node))
+    if traverser.function_collection:
+        traverser.function_collection[-1].append(lambda: wrap(traverser, node))
+    else:
+        wrap(traverser, node)
 
     return JSObject(traverser=traverser, callable_=True)
 

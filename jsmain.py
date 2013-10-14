@@ -25,24 +25,21 @@ if __name__ == '__main__':
         trav = appvalidator.testcases.javascript.traverser.Traverser(err, "stdin")
         trav._push_context()
 
+        def do_callable(wrapper, arguments, traverser):
+            for arg in arguments:
+                print arg, arg.callable
+
         def do_inspect(wrapper, arguments, traverser):
             print "~" * 50
             for arg in arguments:
-                if arg["type"] == "Identifier":
-                    print 'Identifier: "%s"' % arg["name"]
-                else:
-                    print arg["type"]
-
-                a = traverser.traverse_node(arg)
-                print a.output()
-                print "Context: %s" % a.context
-                print "<"
+                print arg.output()
             print "~" * 50
 
         def do_exit(wrapper, arguments, traverser):
             print "Goodbye!"
             sys.exit()
 
+        GLOBAL_ENTITIES[u"callable"] = {"return": do_callable}
         GLOBAL_ENTITIES[u"inspect"] = {"return": do_inspect}
         GLOBAL_ENTITIES[u"exit"] = {"return": do_exit}
 
