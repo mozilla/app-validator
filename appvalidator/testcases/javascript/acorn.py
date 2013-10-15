@@ -3,21 +3,20 @@ import subprocess
 
 import simplejson as json
 
-from appvalidator.constants import SPIDERMONKEY_INSTALLATION
 from appvalidator.contextgenerator import ContextGenerator
 import appvalidator.unicodehelper as unicodehelper
 
 JS_ESCAPE = re.compile("\\\\+[ux]", re.I)
 
 
-def get_tree(code, err=None, filename=None, shell=None):
+def get_tree(code, err=None, filename=None):
     """Retrieve the parse tree for a JS snippet."""
 
     if not code:
         return None
 
     try:
-        return _get_tree(code, shell or SPIDERMONKEY_INSTALLATION)
+        return _get_tree(code)
     except JSReflectException as exc:
         str_exc = str(exc).strip("'\"")
         if "SyntaxError" in str_exc or "ReferenceError" in str_exc:
@@ -65,51 +64,33 @@ class JSReflectException(Exception):
         self.line = int(line_num)
         return self
 
-BOOTSTRAP_SCRIPT = """
-var stdin = JSON.parse(readline());
-try{
-    print(JSON.stringify(Reflect.parse(stdin)));
-} catch(e) {
-    print(JSON.stringify({
-        "error":true,
-        "error_message":e.toString(),
-        "line_number":e.lineNumber
-    }));
-}"""
-BOOTSTRAP_SCRIPT = re.sub("\n +", "", BOOTSTRAP_SCRIPT)
 
-
-def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
+def _get_tree(code):
     """Return an AST tree of the JS passed in `code`."""
 
     if not code:
-        return None
+        return
 
-    cmd = [shell, "-e", BOOTSTRAP_SCRIPT]
+    # Acceptable unicode characters still need to be stripped. Just remove the
+    # slash: a character is necessary to prevent bad identifier errors.
+    code = JS_ESCAPE.sub("u", unicodehelper.decode(code))
+
     shell_obj = subprocess.Popen(
-        cmd, shell=False, stdin=subprocess.PIPE, stderr=subprocess.PIPE,
-        stdout=subprocess.PIPE)
+        ["node", "./acorn.js"], shell=False, stdin=subprocess.PIPE,
+        stderr=subprocess.PIPE, stdout=subprocess.PIPE)
 
-    code = json.dumps(JS_ESCAPE.sub("u", unicodehelper.decode(code)))
-    data, stderr = shell_obj.communicate(code)
+    data, stderr = shell_obj.communicate(code.encode('utf-8'))
 
     if stderr:
-        raise RuntimeError('Error calling %r: %s' % (cmd, stderr))
+        raise RuntimeError('Error calling acorn: %s' % stderr)
 
     if not data:
         raise JSReflectException("Reflection failed")
 
-    data = unicodehelper.decode(data)
-    parsed = json.loads(data, strict=False)
+    parsed = json.loads(unicodehelper.decode(data), strict=False)
 
     if parsed.get("error"):
-        if parsed["error_message"].startswith("ReferenceError: Reflect"):
-            raise RuntimeError("Spidermonkey version too old; "
-                               "1.8pre+ required; error='%s'; "
-                               "spidermonkey='%s'" % (parsed["error_message"],
-                                                      shell))
-        else:
-            raise JSReflectException(parsed["error_message"]).line_num(
-                    parsed["line_number"])
+        raise JSReflectException(
+            parsed["error_message"]).line_num(parsed["line_number"])
 
     return parsed

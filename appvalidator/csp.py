@@ -1,5 +1,5 @@
 
-CSP_INFO = "https://developer.mozilla.org/en-US/docs/Security/CSP"
+CSP_INFO = "https://developer.mozilla.org/Apps/CSP"
 
 MESSAGE_TITLE = "CSP Violation Detected"
 MESSAGE_GENERAL_DESC = ("You can find more information about what is and is "

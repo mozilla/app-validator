@@ -9,10 +9,10 @@ from ..helper import MockXPI
 from appvalidator.constants import SPIDERMONKEY_INSTALLATION
 from appvalidator.errorbundle import ErrorBundle
 from appvalidator.errorbundle.outputhandlers.shellcolors import OutputHandler
+import appvalidator
 import appvalidator.testcases.content
-import appvalidator.testcases.scripting as scripting
 
-scripting.traverser.DEBUG = True
+appvalidator.testcases.javascript.traverser.JS_DEBUG = True
 
 
 def uses_js(func):
@@ -79,7 +79,7 @@ class TestCase(helper.TestCase):
             raise ("Test seeking variable (%s) not found in final context." %
                        name)
 
-    def assert_var_eq(self, name, value):
+    def assert_var_eq(self, name, value, explanation=None):
         """
         Assert that the value of a variable from the final script context
         contains the value specified.
@@ -90,9 +90,5 @@ class TestCase(helper.TestCase):
             val = round(val)
             val /= 100000
 
-        eq_(val, value)
-
-    def assert_has_feature(self, name):
-        assert name in self.err.feature_profile, (
-            '"%s" not found in feature profile (%s)' % (
-                name, ', '.join(self.err.feature_profile)))
+        eq_(val, value,
+            explanation or "%r doesn't equal %r" % (val, value))

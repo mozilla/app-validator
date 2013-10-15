@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 
 import sys
-import os
 
+import appvalidator.testcases.scripting as scripting
+import appvalidator.testcases.javascript.traverser
 from appvalidator.constants import SPIDERMONKEY_INSTALLATION
 from appvalidator.errorbundle import ErrorBundle
 from appvalidator.errorbundle.outputhandlers.shellcolors import OutputHandler
-import appvalidator.testcases.scripting as scripting
-import appvalidator.testcases.javascript.traverser
 from appvalidator.testcases.javascript.predefinedentities import GLOBAL_ENTITIES
-import appvalidator.testcases.javascript.spidermonkey as spidermonkey
-appvalidator.testcases.javascript.traverser.DEBUG = True
+from appvalidator.testcases.scripting import get_tree
+appvalidator.testcases.javascript.traverser.JS_DEBUG = True
 
 if __name__ == '__main__':
     err = ErrorBundle(instant=True)
@@ -26,27 +25,21 @@ if __name__ == '__main__':
         trav = appvalidator.testcases.javascript.traverser.Traverser(err, "stdin")
         trav._push_context()
 
+        def do_callable(wrapper, arguments, traverser):
+            for arg in arguments:
+                print arg, arg.callable
+
         def do_inspect(wrapper, arguments, traverser):
             print "~" * 50
             for arg in arguments:
-                if arg["type"] == "Identifier":
-                    print 'Identifier: "%s"' % arg["name"]
-                else:
-                    print arg["type"]
-
-                a = traverser.traverse_node(arg)
-                print a.output()
-
-                if a.is_global:
-                    print a.value
-                print "Context: %s" % a.context
-                print "<"
+                print arg.output()
             print "~" * 50
 
         def do_exit(wrapper, arguments, traverser):
             print "Goodbye!"
             sys.exit()
 
+        GLOBAL_ENTITIES[u"callable"] = {"return": do_callable}
         GLOBAL_ENTITIES[u"inspect"] = {"return": do_inspect}
         GLOBAL_ENTITIES[u"exit"] = {"return": do_exit}
 
@@ -59,11 +52,9 @@ if __name__ == '__main__':
             elif line == "disable bootstrap\n":
                 err.save_resource("em:bootstrap", False)
                 continue
-            elif line.startswith(("inspect ", "isglobal ")):
-                actions = {"inspect": lambda wrap: wrap.value if
-                                                    wrap.is_global else
-                                                    wrap.output(),
-                           "isglobal": lambda wrap: wrap.is_global}
+            elif line.startswith(("inspect ", "type ")):
+                actions = {"inspect": lambda wrap: wrap.output(),
+                           "type": lambda wrap: type(wrap.value)}
                 vars = line.split()
                 final_context = trav.contexts[-1]
                 for var in vars[1:]:
@@ -74,7 +65,7 @@ if __name__ == '__main__':
                     print actions[vars[0]](wrap)
                 continue
 
-            tree = spidermonkey.get_tree(line, err, shell=SPIDERMONKEY_INSTALLATION)
+            tree = get_tree(line, err, shell=SPIDERMONKEY_INSTALLATION)
             if tree is None:
                 continue
             tree = tree["body"]
@@ -82,4 +73,3 @@ if __name__ == '__main__':
                 output = trav.traverse_node(branch)
                 if output is not None:
                     print output.output()
-

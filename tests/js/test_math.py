@@ -11,7 +11,9 @@ class TestMathFuncs(TestCase):
 
     def do_func(self, func):
         def wrap(params, output):
-            self.do_expr("Math.%s(%s)" % (func, params), output)
+            expr = "Math.%s(%s)" % (func, params)
+            print 'Testing `%s`' % expr
+            self.do_expr(expr, output)
         return wrap
 
     def do_expr(self, expr, output):

@@ -25,8 +25,8 @@ def test_jsobject_recursion():
     jso = jstypes.JSObject()
     jso2 = jstypes.JSObject()
 
-    jso.data = {"first": jstypes.JSWrapper(jso2)}
-    jso2.data = {"second": jstypes.JSWrapper(jso)}
+    jso.data = {"first": jso2}
+    jso2.data = {"second": jso}
 
     print jso.output()
     assert "(recursion)" in jso.output()
@@ -38,8 +38,8 @@ def test_jsarray_recursion():
     ja = jstypes.JSArray()
     ja2 = jstypes.JSArray()
 
-    ja.elements = [jstypes.JSWrapper(ja2)]
-    ja2.elements = [jstypes.JSWrapper(ja)]
+    ja.elements = [ja2]
+    ja2.elements = [ja]
 
     print ja.output()
     assert "(recursion)" in ja.output()
@@ -79,11 +79,9 @@ class TestTracebacks(TestCase):
 
     def test_jsobject_set_get(self):
         """
-        Test that values fetched from a JSObject are always wrapped in
-        JSWrappers.
+        Test that values fetched from a JSObject are the correct types.
         """
         jso = jstypes.JSObject()
-        jso.set('foo', 123)
-        assert isinstance(jso.get('foo'), jstypes.JSWrapper)
-        assert isinstance(jso.get('prototype'), jstypes.JSWrapper)
-        assert isinstance(jso.get('prototype').value, jstypes.JSPrototype)
+        jso.set('foo', jstypes.JSLiteral(123))
+        assert isinstance(jso.get(None, 'foo'), jstypes.JSLiteral)
+        assert isinstance(jso.get(None, 'prototype'), jstypes.JSObject)

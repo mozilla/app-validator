@@ -16,9 +16,22 @@ def test_js_file(err, filename, data, line=0, context=None):
         before_tier = err.tier
         err.set_tier(3)
 
-    tree = get_tree(data, err, filename,
-                    err and err.get_resource("SPIDERMONKEY") or
-                    SPIDERMONKEY_INSTALLATION)
+    tree = None
+    try:
+        tree = get_tree(data, err, filename,
+                        err and err.get_resource("SPIDERMONKEY") or
+                        SPIDERMONKEY_INSTALLATION)
+    except RuntimeError as exc:
+        warning ="JS: Unknown runtime error"
+        if "out of memory" in str(exc):
+            warning = "JS: Out of memory exception"
+        err.warning(
+            err_id=("js", "parse", "runtimeerror"),
+            warning=warning,
+            description="An error was encountered while trying to validate a "
+                        "JS file.",
+            filename=filename)
+
     if not tree:
         err.metadata["ran_js_tests"] = "no;missing ast"
         if err is not None:
