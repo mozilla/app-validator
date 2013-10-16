@@ -31,7 +31,6 @@ def csp_warning_function():
     return {
         "new": call_wrap,
         "return": call_wrap,
-        "value": call_wrap,
     }
 
 

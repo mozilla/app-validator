@@ -1,15 +1,3 @@
-"""
-Prototype
----------
-
-args
-    the raw list of arguments
-traverser
-    the traverser
-node
-    the current node being evaluated
-"""
-
 import jstypes
 import utils
 from appvalidator.constants import BUGZILLA_BUG
@@ -17,7 +5,7 @@ from appvalidator.csp import warn
 from .instanceproperties import _set_HTML_property
 
 
-def createElement(args, traverser, node, wrapper):
+def createElement(args, traverser, wrapper):
     """Handles createElement calls"""
 
     if not args:
@@ -30,7 +18,7 @@ def createElement(args, traverser, node, wrapper):
         _create_variable_element(traverser)
 
 
-def createElementNS(args, traverser, node, wrapper):
+def createElementNS(args, traverser, wrapper):
     """Handles createElementNS calls"""
 
     if not args or len(args) < 2:
@@ -65,7 +53,7 @@ def _create_variable_element(traverser):
          violation_type="createElement-variable")
 
 
-def insertAdjacentHTML(args, traverser, node, wrapper):
+def insertAdjacentHTML(args, traverser, wrapper):
     """
     Perfrom the same tests on content inserted into the DOM via
     insertAdjacentHTML as we otherwise would for content inserted via the
@@ -77,7 +65,7 @@ def insertAdjacentHTML(args, traverser, node, wrapper):
     _set_HTML_property("insertAdjacentHTML", args[1], traverser)
 
 
-def setAttribute(args, traverser, node, wrapper):
+def setAttribute(args, traverser, wrapper):
     """This ensures that setAttribute calls don't set on* attributes"""
 
     if not args:
@@ -93,13 +81,22 @@ def setAttribute(args, traverser, node, wrapper):
              violation_type="setAttribute-on")
 
 
+def bind(args, traverser, wrapper):
+    """This mimics the `Function.prototype.bind` method."""
+    if wrapper.callable and wrapper.TYPEOF == "function":
+        return wrapper  # Just pass it through.
+    return jstypes.JSObject(traverser=traverser)
+
+
 def feature(constant):
-    def wrap(args, traverser, node, wrapper):
+    def wrap(args, traverser, wrapper):
         traverser.log_feature(constant)
     return wrap
 
 
 INSTANCE_DEFINITIONS = {
+    u"bind": bind,
+
     u"createElement": createElement,
     u"createElementNS": createElementNS,
     u"insertAdjacentHTML": insertAdjacentHTML,

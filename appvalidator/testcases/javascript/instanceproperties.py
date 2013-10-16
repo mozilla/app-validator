@@ -88,12 +88,13 @@ def get_operation(mode, property):
     or mode. mode should either be 'set' or 'get'.
     """
 
-    if (property in OBJECT_DEFINITIONS and
-        mode in OBJECT_DEFINITIONS[property]):
+    prop = unicode(property)
+    if (prop in OBJECT_DEFINITIONS and
+        mode in OBJECT_DEFINITIONS[prop]):
 
-        return OBJECT_DEFINITIONS[property][mode]
+        return OBJECT_DEFINITIONS[prop][mode]
 
-    elif mode == "set" and unicode(property).startswith("on"):
+    elif mode == "set" and prop.startswith("on") and len(prop) > 2:
         # We can't match all of them manually, so grab all the "on*" properties
         # and funnel them through the set_on_event function.
 

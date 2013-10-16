@@ -54,15 +54,16 @@ class JSObject(object):
     def get_literal_value(self, traverser=None):
         return u"[object Object]"
 
-    def set(self, name, value, traverser=None):
+    def set(self, name, value, traverser=None, ignore_setters=False):
         traverser = self.traverser or traverser
-        if traverser:
+        if traverser and not ignore_setters:
             modifier = instanceproperties.get_operation("set", name)
             if modifier:
                 modified_value = modifier(value, traverser)
                 if modified_value is not None:
                     value = modified_value
 
+        if traverser:
             if (self.has_var(name, traverser) and
                 self.get(traverser, name).const):
 

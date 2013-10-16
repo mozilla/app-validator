@@ -79,7 +79,9 @@ def _function(traverser, node):
     else:
         wrap(traverser, node)
 
-    return JSObject(traverser=traverser, callable_=True)
+    output = JSObject(traverser=traverser, callable_=True)
+    output.TYPEOF = "function"
+    return output
 
 
 def FunctionDeclaration(traverser, node):
@@ -175,7 +177,6 @@ def VariableDeclaration(traverser, node):
 
 
 def ThisExpression(traverser, node):
-    "Returns the `this` object"
     if not traverser.this_stack:
         from predefinedentities import global_identity
         return traverser._build_global("window", global_identity)
@@ -183,7 +184,7 @@ def ThisExpression(traverser, node):
 
 
 def ArrayExpression(traverser, node):
-    return JSArray([traverser.traverse_node(x) for x in node["elements"]])
+    return JSArray([traverser.traverse_node(x) for x in node["elements"] or []])
 
 
 def ObjectExpression(traverser, node):
@@ -191,7 +192,8 @@ def ObjectExpression(traverser, node):
     for prop in node["properties"]:
         key = prop["key"]
         var.set(key["value" if key["type"] == "Literal" else "name"],
-                traverser.traverse_node(prop["value"]), traverser)
+                traverser.traverse_node(prop["value"]),
+                traverser=traverser, ignore_setters=True)
         # TODO: Observe "kind"
 
     return var
@@ -517,7 +519,8 @@ def CallExpression(traverser, node):
         if identifier_name in instanceactions.INSTANCE_DEFINITIONS:
             traverser._debug('Calling instance action...')
             result = instanceactions.INSTANCE_DEFINITIONS[identifier_name](
-                        args, traverser, node, wrapper=member)
+                        args, traverser,
+                        traverser.traverse_node(node["callee"]["object"]))
             if result is not None:
                 return result
 

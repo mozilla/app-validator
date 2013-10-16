@@ -143,14 +143,14 @@ class BaseErrorBundle(object):
     def print_summary(self, verbose=False, no_color=False):
         "Prints a summary of the validation process so far."
 
-        types = {0: "Unknown", 8: "App"}
-
         buffer = StringIO()
         self.handler = OutputHandler(buffer, no_color)
 
         # Make a neat little printout.
-        self.handler.write("\n<<GREEN>>Summary:") \
-            .write("-" * 30)
+        self.handler.write("\n<<GREEN>>Summary:").write("-" * 30)
+        self.handler.write("%s Errors, %s Warnings, %s Notices" %
+            (len(self.errors), len(self.warnings), len(self.notices)))
+
 
         if self.failed():
             self.handler.write("<<BLUE>>Test failed! Errors:")

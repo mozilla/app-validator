@@ -3,7 +3,7 @@ from nose.tools import eq_
 import appvalidator.testcases.markup.markuptester as markuptester
 
 from ..helper import TestCase
-from js_helper import TestCase as JSTestCase
+from js_helper import silent, TestCase as JSTestCase
 
 
 class TestCSPTags(TestCase):
@@ -78,15 +78,21 @@ class TestCSP(JSTestCase):
         self.run_script("var x = setInterval('foo', 0);")
         self.assert_failed(with_warnings=True)
 
+    @silent
     def test_setInterval_pass(self):
         self.run_script("var x = setInterval(function() {}, 0);")
-        self.assert_silent()
 
+    @silent
     def test_timeouts_less_noisy(self):
         self.run_script("var f = function() {};x = setInterval(f, 0);")
         self.run_script("var f = function() {};x = setTimeout(f, 0);")
-        self.assert_silent()
 
+    @silent
+    def test_timeouts_less_noisy_with_bind(self):
+        self.run_script("var f = function() {};x = setInterval(f.bind(foo), 0);")
+        self.run_script("var f = function() {};x = setTimeout(f.bind(foo), 0);")
+
+    @silent
     def test_scope_works(self):
         # This code partially borrowed from Ace.
         self.run_script("""
@@ -125,11 +131,22 @@ class TestCSP(JSTestCase):
             return _self;
         };
         """)
-        self.assert_silent()
+
+    @silent
+    def test_literal_objects(self):
+        """Test for a weird bug in the way we detected properties."""
+        self.run_script('var x = {on: "true"}')
+
+    @silent
+    def test_function_prototype(self):
+        """Test for a weird bug in the way we detected properties."""
+        self.run_script('Function.prototype.bind = foo;')
+        self.run_script('Function.prototype.call(this);')
 
 
 class TestCreateElement(JSTestCase):
 
+    @silent
     def test_pass(self):
         "Tests that createElement and createElementNS throw errors."
 
@@ -137,23 +154,22 @@ class TestCreateElement(JSTestCase):
         var x = foo;
         foo.bar.whateverElement("script");
         """)
-        self.assert_silent()
 
+    @silent
     def test_createElement_pass(self):
         self.run_script("var x = document.createElement('b');")
-        self.assert_silent()
 
+    @silent
     def test_createElement_var_pass(self):
         self.run_script("var a = 'asdf', x = document.createElement(a);")
-        self.assert_silent()
 
     def test_createElement(self):
         self.run_script("var x = document.createElement('script');")
         self.assert_failed(with_warnings=True)
 
+    @silent
     def test_createElementNS_pass(self):
         self.run_script("var x = document.createElementNS('ns', 'b');")
-        self.assert_silent()
 
     def test_createElementNS(self):
         self.run_script("var x = document.createElementNS('ns', 'script');")
@@ -189,14 +205,15 @@ class TestCreateElement(JSTestCase):
         """)
         self.assert_failed(with_warnings=True)
 
+    @silent
     def test_create_other(self):
         self.run_script("""
         document.createElement("style");
         function x(doc) {
             doc.createElement("style");
         }""")
-        self.assert_silent()
 
+    @silent
     def test_create_split_other(self):
         self.run_script("""
         document.createElement("sty"+"le");
@@ -204,7 +221,6 @@ class TestCreateElement(JSTestCase):
         x += "le";
         document.createElement(x);
         """)
-        self.assert_silent()
 
     def test_create_noop(self):
         # Also test an empty call (tests for tracebacks)
