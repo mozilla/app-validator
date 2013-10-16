@@ -11,6 +11,16 @@ def test_js_file(err, filename, data, line=0, context=None):
         err.get_resource("SPIDERMONKEY") is None):  # Default value is False
         return
 
+    # Don't even try to run files bigger than 1MB.
+    if len(data) > 1024 * 1024:
+        err.warning(
+            err_id=("js", "skip", "didnt_even_try"),
+            warning="Didn't even try to validate large JS file.",
+            description="A very large JS file was skipped in the validation "
+                        "process. It's over a megabyte.",
+            filename=filename)
+        return
+
     # Set the tier to 4 (Security Tests)
     if err is not None:
         before_tier = err.tier
