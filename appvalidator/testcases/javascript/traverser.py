@@ -13,23 +13,21 @@ class Traverser(object):
     def __init__(self, err, filename, start_line=0, context=None):
         self.err = err
 
-        self.contexts = []
-        self.block_contexts = []
+        self.contexts = [JSContext(traverser=self)]
         self.filename = filename
         self.start_line = start_line
         self.line = 1  # Line number
         self.position = 0  # Column number
         self.context = context
 
-        # Can use the `this` object
-        self.can_use_this = False
         self.this_stack = []
 
         # For ordering of function traversal.
-        self.function_collection = []
+        self.function_collection = [[]]
 
         # For debugging
         self.debug_level = 0
+        self.asserts = False
 
         # If we're not debugging, don't waste more cycles than we need to.
         if not JS_DEBUG:
@@ -47,14 +45,13 @@ class Traverser(object):
                    output.encode("ascii", "replace"))
 
     def run(self, data):
-        if JS_DEBUG:
-            x = open("/tmp/output.js", "w")
-            x.write(unicode(data))
-            x.close()
+        # if JS_DEBUG:
+        #     x = open("/tmp/output.js", "w")
+        #     x.write(unicode(data))
+        #     x.close()
 
         self._debug("START>>")
         try:
-            self.function_collection.append([])
             self.traverse_node(data)
 
             func_coll = self.function_collection.pop()
@@ -66,11 +63,11 @@ class Traverser(object):
             raise
         self._debug("END>>")
 
-        if self.contexts:
+        if JS_DEBUG and self.contexts:
             # If we're in debug mode, save a copy of the global context for
             # analysis during unit tests.
-            if JS_DEBUG:
-                self.err.final_context = self.contexts[0]
+            self.err.final_context = self.contexts[0]
+            self.err.asserts = self.asserts
 
     def traverse_node(self, node):
         "Finds a node's internal blocks and helps manage state."
@@ -96,14 +93,7 @@ class Traverser(object):
             self.position = int(node["loc"]["start"]["column"])
 
         # Extract properties about the node that we're traversing
-        (branches, establish_context, action, returns,
-             block_level) = DEFINITIONS[node["type"]]
-
-        # If we're supposed to establish a context, do it now
-        if establish_context:
-            self._push_context()
-        elif block_level:
-            self._push_block_context()
+        branches, action, returns = DEFINITIONS[node["type"]]
 
         # An action allows the traverser to make intelligent decisions based
         # on the function of the code, rather than just the content. If an
@@ -132,14 +122,6 @@ class Traverser(object):
                     self.debug_level -= 1
             self.debug_level -= 1
 
-        # If we defined a context, pop it.
-        if establish_context or block_level:
-            self._pop_context()
-            # WithStatements declare two blocks: one for the block and one for
-            # the object that's being withed. We need both because of `let`s.
-            if node["type"] == "WithStatement":
-                self._pop_context()
-
         self.debug_level -= 1
 
         # If there is an action and the action returned a value, it should be
@@ -152,40 +134,6 @@ class Traverser(object):
 
         node["__traversal"] = None
         return JSObject(traverser=self)
-
-    def _push_block_context(self):
-        "Adds a block context to the current interpretation frame"
-        self.contexts.append(JSContext("block"))
-
-    def _push_context(self, default=None):
-        "Adds a variable context to the current interpretation frame"
-
-        if default is None:
-            default = JSContext("default")
-        self.contexts.append(default)
-
-        self.debug_level += 1
-        self._debug("CONTEXT>>%d" % len(self.contexts))
-
-    def _pop_context(self):
-        "Adds a variable context to the current interpretation frame"
-
-        # Keep the global scope on the stack.
-        if len(self.contexts) == 1:
-            self._debug("CONTEXT>>ROOT POP ABORTED")
-            return
-        popped_context = self.contexts.pop()
-
-        self.debug_level -= 1
-        self._debug("POP_CONTEXT>>%d" % len(self.contexts))
-        self._debug(popped_context)
-
-    def _peek_context(self, depth=1):
-        """
-        Returns the most recent context. Note that this should NOT be used
-        for variable lookups.
-        """
-        return self.contexts[len(self.contexts) - depth]
 
     def _seek_variable(self, variable):
         "Returns the value of a variable that has been declared in a context"
@@ -237,15 +185,17 @@ class Traverser(object):
         return result
 
     def _declare_variable(self, name, value, type_="var"):
-        context = self.contexts[0]
+        self._debug("Declaring var `%s` of type %s" % (name, type_))
+        contexts = self.contexts
+        get_context = lambda ctype: (
+            [contexts[0]] + [c for c in contexts[1:] if c.type_ == ctype])[-1]
+
         if type_ == "let":
-            context = self.contexts[-1]
+            context = get_context("block")
         elif type_ in ("var", "const", ):
-            contexts = (
-                [self.contexts[0]] +
-                filter(lambda c: c.type_ == "default", self.contexts[1:]))
-            context = contexts[-1]
+            context = get_context("default")
         elif type_ == "glob":
+            context = self.contexts[0]
             # Look down through the lexical scope. If the variable being
             # assigned is present in one of those objects, use that as the
             # target context.

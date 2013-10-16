@@ -87,6 +87,46 @@ class TestCSP(JSTestCase):
         self.run_script("var f = function() {};x = setTimeout(f, 0);")
         self.assert_silent()
 
+    def test_scope_works(self):
+        # This code partially borrowed from Ace.
+        self.run_script("""
+        exports.delayedCall = function(fcn, defaultTimeout) {
+            var timer = null;
+            var callback = function() {
+                timer = null;
+                fcn();
+            };
+
+            var _self = function(timeout) {
+                timer && clearTimeout(timer);
+                timer = setTimeout(callback, timeout || defaultTimeout);
+            };
+
+            _self.delay = _self;
+            _self.schedule = function(timeout) {
+                if (timer == null)
+                    timer = setTimeout(callback, timeout || 0);
+            };
+
+            _self.call = function() {
+                this.cancel();
+                fcn();
+            };
+
+            _self.cancel = function() {
+                timer && clearTimeout(timer);
+                timer = null;
+            };
+
+            _self.isPending = function() {
+                return timer;
+            };
+
+            return _self;
+        };
+        """)
+        self.assert_silent()
+
 
 class TestCreateElement(JSTestCase):
 

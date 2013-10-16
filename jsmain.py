@@ -23,7 +23,6 @@ if __name__ == '__main__':
                                data=script)
     else:
         trav = appvalidator.testcases.javascript.traverser.Traverser(err, "stdin")
-        trav._push_context()
 
         def do_callable(wrapper, arguments, traverser):
             for arg in arguments:
@@ -73,3 +72,6 @@ if __name__ == '__main__':
                 output = trav.traverse_node(branch)
                 if output is not None:
                     print output.output()
+
+            while trav.function_collection[0]:
+                trav.function_collection[0].pop()()

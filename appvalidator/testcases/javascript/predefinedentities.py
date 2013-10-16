@@ -1,6 +1,7 @@
 import math
 
 import call_definitions
+from appvalidator.constants import JS_DEBUG
 from call_definitions import python_wrap
 from entity_values import entity
 from jstypes import JSGlobal, JSLiteral
@@ -93,7 +94,7 @@ GLOBAL_ENTITIES = {
 
     u"document":
         {"value":
-            {u"defaultView": {"value": global_identity},
+            {u"defaultView": global_identity,
 
              u"cancelFullScreen": feature("FULLSCREEN"),
              u"mozCancelFullScreen": feature("FULLSCREEN"),
@@ -201,7 +202,7 @@ GLOBAL_ENTITIES = {
     u"NaN": READONLY,
     u"undefined": {"readonly": True, "undefined": True, "literal": None},
 
-    u"opener": {"value": global_identity},
+    u"opener": global_identity,
 
     u"navigator": {"value": NAVIGATOR},
 
@@ -235,3 +236,26 @@ GLOBAL_ENTITIES = {
     u"SpeechSynthesisUtterance": feature("SPEECH_SYN"),
     u"SpeechRecognition": feature("SPEECH_REC"),
 }
+
+def enable_debug():
+    def assert_(wrapper, arguments, traverser):
+        traverser.asserts = True
+        for arg in arguments:
+            if not arg.get_literal_value():
+                traverser.err.error(
+                    err_id=("js", "debug", "assert"),
+                    error="`%s` expected to be truthy" % arg,
+                    description="Assertion error")
+
+    GLOBAL_ENTITIES[u"__assert"] = {"return": assert_}
+
+    def callable_(wrapper, arguments, traverser):
+        traverser.asserts = True
+        for arg in arguments:
+            if not arg.callable:
+                traverser.err.error(
+                    err_id=("js", "debug", "callable"),
+                    error="`%s` expected to be callable" % arg,
+                    description="Assertion error")
+
+    GLOBAL_ENTITIES[u"__callable"] = {"return": assert_}

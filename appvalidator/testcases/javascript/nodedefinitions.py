@@ -17,14 +17,24 @@ NUMERIC_OPERATORS = ("-", "*", "/", "%", "<<", ">>", ">>>", "|", "^", "&")
 NUMERIC_OPERATORS += tuple("%s=" % op for op in NUMERIC_OPERATORS)
 
 
+def BlockStatement(traverser, node):
+    traverser.contexts.append(JSContext("block", traverser=traverser))
+    for child in node["body"]:
+        traverser.traverse_node(child)
+    traverser.contexts.pop()
+    return False
+
+
 def ExpressionStatement(traverser, node):
     return traverser.traverse_node(node["expression"])
 
 
 def WithStatement(traverser, node):
     obj = traverser.traverse_node(node["object"])
-    traverser.contexts[-1] = obj
-    traverser.contexts.append(JSContext("block"))
+    traverser.contexts.append(obj)
+    traverser.traverse_node(node["body"])
+    traverser.contexts.pop()
+    return False
 
 
 def _function(traverser, node):
@@ -33,46 +43,23 @@ def _function(traverser, node):
     function expressions.
     """
 
-    def wrap(traverser, node):
-        me = JSObject()
-
+    def wrap():
         traverser.function_collection.append([])
-
-        # Replace the current context with a prototypeable JS object.
-        traverser._pop_context()
-        me.type_ = "default"  # Treat the function as a normal object.
-        traverser._push_context(me)
         traverser._debug("THIS_PUSH")
-        traverser.this_stack.append(me)  # Allow references to "this"
+        # Allow references to "this"
+        traverser.this_stack.append(JSObject(traverser=traverser))
 
-        # Declare parameters in the local scope
-        params = []
+        params = {}
         for param in node["params"]:
             if param["type"] == "Identifier":
-                params.append(param["name"])
-            elif param["type"] == "ArrayPattern":
-                for element in param["elements"]:
-                    # Array destructuring in function prototypes? LOL!
-                    if element is None or element["type"] != "Identifier":
-                        continue
-                    params.append(element["name"])
-
-        local_context = traverser._peek_context(1)
-        for param in params:
-            var = JSObject(traverser=traverser)
-
-            # We can assume that the params are static because we don't care
-            # about what calls the function. We want to know whether the
-            # function solely returns static values. If so, it is a static
-            # function.
-            local_context.set(param, var)
+                params[param["name"]] = lambda: JSObject(traverser=traverser)
+            else:
+                # TODO: Support array and object destructuring.
+                pass
+        context = JSContext(data=params, traverser=traverser)
+        traverser.contexts.append(context)
 
         traverser.traverse_node(node["body"])
-
-        # Since we need to manually manage the "this" stack, pop off that
-        # context.
-        traverser._debug("THIS_POP")
-        traverser.this_stack.pop()
 
         # Call all of the function collection's members to traverse all of the
         # child functions.
@@ -80,9 +67,15 @@ def _function(traverser, node):
         for func in func_coll:
             func()
 
+        traverser.contexts.pop()
+        # Since we need to manually manage the "this" stack, pop off that
+        # context.
+        traverser._debug("THIS_POP")
+        traverser.this_stack.pop()
+
     # Put the function off for traversal at the end of the current block scope.
     if traverser.function_collection:
-        traverser.function_collection[-1].append(lambda: wrap(traverser, node))
+        traverser.function_collection[-1].append(wrap)
     else:
         wrap(traverser, node)
 
@@ -91,7 +84,7 @@ def _function(traverser, node):
 
 def FunctionDeclaration(traverser, node):
     me = _function(traverser, node)
-    traverser._peek_context(2).set(node["id"]["name"], me)
+    traverser._declare_variable(node["id"]["name"], me)
     return me
 
 # It's just an alias.
@@ -169,6 +162,7 @@ def VariableDeclaration(traverser, node):
         else:
             var_name = declaration["id"]["name"]
             traverser._debug("NAME>>%s" % var_name)
+            traverser._debug("TYPE>>%s" % node["kind"])
 
             var = traverser.traverse_node(declaration["init"])
             var.const = node["kind"] == "const"
@@ -590,60 +584,45 @@ def Literal(traverser, node):
 
 def Identifier(traverser, node):
     "Initiates an object lookup on the traverser based on an identifier token"
-
-    name = node["name"]
-    if traverser._is_defined(name):
-        return traverser._seek_variable(name)
-
-    return JSObject(traverser=traverser)
+    return traverser._seek_variable(node["name"])
 
 
 #(branches,
-# explicitly_dynamic,
-# estab_context,
 # action,
 # returns, # as in yielding a value, not breaking execution
-# block_statement,
 #)
 
-def node(branches=None, dynamic=False, action=None, returns=False,
-         is_block=False):
-    if branches is None:
-        branches = ()
-    return branches, dynamic, action, returns, is_block
+def node(branches=None, action=None, returns=False):
+    return branches or (), action, returns
 
 
 DEFINITIONS = {
     "EmptyStatement": node(),
     "DebuggerStatement": node(),
 
-    "Program": node(branches=("body", ), is_block=True),
-    "BlockStatement": node(branches=("body", ), is_block=True),
+    "Program": node(branches=("body", )),
+    "BlockStatement": node(branches=("body", ), action=BlockStatement),
     "ExpressionStatement": node(branches=("expression", ),
                                 action=ExpressionStatement,
                                 returns=True),
-    "IfStatement": node(branches=("test", "alternate", "consequent"),
-                        is_block=True),
+    "IfStatement": node(branches=("test", "alternate", "consequent")),
     "LabeledStatement": node(branches=("body", )),
     "BreakStatement": node(),
     "ContinueStatement": node(),
-    "WithStatement": node(branches=("body", "object"), action=WithStatement,
-                          is_block=True),
-    "SwitchStatement": node(branches=("test", "cases"), is_block=True),
+    "WithStatement": node(branches=("body", "object"), action=WithStatement),
+    "SwitchStatement": node(branches=("discriminant", "cases")),
     "ReturnStatement": node(branches=("argument", )),
     "ThrowStatement": node(branches=("argument", )),
     "TryStatement": node(branches=("block", "handler", "finalizer",
-                                   "guardedHandlers"),
-                         is_block=True),
-    "WhileStatement": node(branches=("test", "body"), is_block=True),
-    "DoWhileStatement": node(branches=("test", "body"), is_block=True),
-    "ForStatement": node(branches=("init", "test", "update", "body"),
-                         is_block=True),
-    "ForInStatement": node(branches=("left", "right", "body"), is_block=True),
-    "ForOfStatement": node(branches=("left", "right", "body"), is_block=True),
+                                   "guardedHandlers")),
+    "WhileStatement": node(branches=("test", "body")),
+    "DoWhileStatement": node(branches=("test", "body")),
+    "ForStatement": node(branches=("init", "test", "update", "body")),
+    "ForInStatement": node(branches=("left", "right", "body")),
+    "ForOfStatement": node(branches=("left", "right", "body")),
 
-    "FunctionDeclaration": node(branches=("body", ), dynamic=True,
-                                action=FunctionDeclaration, is_block=True),
+    "FunctionDeclaration": node(branches=("body", ),
+                                action=FunctionDeclaration),
     "VariableDeclaration": node(branches=("declarations", ),
                                 action=VariableDeclaration),
 
@@ -652,9 +631,8 @@ DEFINITIONS = {
                             returns=True),
     "ObjectExpression": node(branches=("properties", ),
                              action=ObjectExpression, returns=True),
-    "FunctionExpression": node(branches=("body", ), dynamic=True,
-                               action=FunctionExpression, returns=True,
-                               is_block=True),
+    "FunctionExpression": node(branches=("body", ),
+                               action=FunctionExpression, returns=True),
     "SequenceExpression": node(branches=("expressions", ), returns=True),
     "UnaryExpression": node(branches=("argument", ), action=UnaryExpression,
                             returns=True),

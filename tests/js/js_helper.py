@@ -1,3 +1,4 @@
+import functools
 import sys
 import types
 
@@ -13,6 +14,7 @@ import appvalidator
 import appvalidator.testcases.content
 
 appvalidator.testcases.javascript.traverser.JS_DEBUG = True
+appvalidator.testcases.javascript.predefinedentities.enable_debug()
 
 
 def uses_js(func):
@@ -92,3 +94,49 @@ class TestCase(helper.TestCase):
 
         eq_(val, value,
             explanation or "%r doesn't equal %r" % (val, value))
+
+
+def must_assert(func):
+    "Decorator for asserting that a JS assert method is used."
+    @functools.wraps(func)
+    def wrap(self):
+        func(self)
+        assert getattr(self.err, "asserts", False), "Does not assert!"
+    return wrap
+
+
+def silent(func):
+    "Decorator for asserting that the output of a test is silent."
+    @functools.wraps(func)
+    def wrap(self):
+        func(self)
+        self.assert_silent()
+    return wrap
+
+
+def warnings(count=None):
+    "Decorator for asserting that the output of a test has warnings."
+    def decorator(func):
+        @functools.wraps(func)
+        def wrap(self):
+            func(self)
+            self.assert_failed(with_warnings=True)
+            if count is not None:
+                eq_(len(self.err.warnings), count,
+                    "Warning count does not match")
+        return wrap
+    return decorator
+
+
+def errors(count=None):
+    "Decorator for asserting that the output of a test has errors."
+    def decorator(func):
+        @functools.wraps(func)
+        def wrap(self):
+            func(self)
+            self.assert_failed(with_errors=True)
+            if count is not None:
+                eq_(len(self.err.errors), count,
+                    "Warning count does not match")
+        return wrap
+    return decorator

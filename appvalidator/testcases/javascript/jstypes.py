@@ -205,10 +205,25 @@ class JSGlobal(JSObject):
 class JSContext(JSObject):
     """A variable context"""
 
-    def __init__(self, context_type, traverser=None, **kw):
+    def __init__(self, context_type="default", traverser=None, **kw):
         super(JSContext, self).__init__(traverser=traverser, **kw)
         self.type_ = context_type
-        self.data = {}
+        self.data = kw.get("data", {})
+
+    def get(self, traverser, name, instantiate=False):
+        "Returns the value associated with a property name"
+        name = unicode(name)
+        output = None
+
+        if name in self.data:
+            output = self.data[name]
+            if callable(output):
+                output = output()
+
+        if output is None:
+            return fake(traverser)
+
+        return output
 
 
 LITERAL_TYPEOF = {
