@@ -241,7 +241,7 @@ def enable_debug():
     def assert_(wrapper, arguments, traverser):
         traverser.asserts = True
         for arg in arguments:
-            if not arg.get_literal_value():
+            if not arg.get_literal_value(traverser):
                 traverser.err.error(
                     err_id=("js", "debug", "assert"),
                     error="`%s` expected to be truthy" % arg,

@@ -16,10 +16,11 @@ from appvalidator.constants import BUGZILLA_BUG
 # Global object function definitions:
 def string_global(wrapper, arguments, traverser):
     if (not arguments or
-        not arguments[0].get_literal_value()):
+        not arguments[0].get_literal_value(traverser)):
         return JSObject(traverser=traverser)
-    return JSLiteral(utils.get_as_str(arguments[0].get_literal_value()),
-                     traverser=traverser)
+    return JSLiteral(
+        utils.get_as_str(arguments[0].get_literal_value(traverser)),
+        traverser=traverser)
 
 
 def array_global(wrapper, arguments, traverser):
@@ -30,7 +31,8 @@ def number_global(wrapper, arguments, traverser):
     if not arguments:
         return JSLiteral(0, traverser=traverser)
     try:
-        return JSLiteral(float(arguments[0].get_literal_value()), traverser=traverser)
+        return JSLiteral(float(arguments[0].get_literal_value(traverser)),
+                         traverser=traverser)
     except (ValueError, TypeError):
         return utils.get_NaN(traverser)
 
@@ -38,7 +40,7 @@ def number_global(wrapper, arguments, traverser):
 def boolean_global(wrapper, arguments, traverser):
     if not arguments:
         return JSLiteral(False, traverser=traverser)
-    return JSLiteral(bool(arguments[0].get_literal_value()),
+    return JSLiteral(bool(arguments[0].get_literal_value(traverser)),
                      traverser=traverser)
 
 
@@ -71,7 +73,7 @@ def python_wrap(func, args, nargs=False):
                     parg = arguments[0]
                     arguments = arguments[1:]
 
-                    passed_literal = parg.get_literal_value()
+                    passed_literal = parg.get_literal_value(traverser)
                     passed_literal = _process_literal(type_, passed_literal)
                     params.append(passed_literal)
                 else:
@@ -79,7 +81,7 @@ def python_wrap(func, args, nargs=False):
         else:
             # Handle dynamic argument lists.
             for arg in arguments:
-                literal = arg.get_literal_value()
+                literal = arg.get_literal_value(traverser)
                 params.append(_process_literal(args[0], literal))
 
         # traverser._debug("Calling wrapped Python function with: (%s)" %
@@ -98,7 +100,7 @@ def math_log(wrapper, arguments, traverser):
     if not arguments:
         return JSLiteral(0, traverser=traverser)
 
-    arg = utils.get_as_num(arguments[0].get_literal_value())
+    arg = utils.get_as_num(arguments[0].get_literal_value(traverser))
     if arg == 0:
         return JSLiteral(float('-inf'), traverser=traverser)
 
@@ -113,7 +115,7 @@ def math_round(wrapper, arguments, traverser):
     if not arguments:
         return JSLiteral(0, traverser=traverser)
 
-    arg = utils.get_as_num(arguments[0].get_literal_value())
+    arg = utils.get_as_num(arguments[0].get_literal_value(traverser))
     # Prevent nasty infinity tracebacks.
     if abs(arg) == float("inf"):
         return arguments[0]

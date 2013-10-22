@@ -11,7 +11,7 @@ def createElement(args, traverser, wrapper):
     if not args:
         return
 
-    first_as_str = utils.get_as_str(args[0].get_literal_value())
+    first_as_str = utils.get_as_str(args[0].get_literal_value(traverser))
     if first_as_str.lower() == u"script":
         _create_script_tag(traverser)
     elif not isinstance(args[0], jstypes.JSLiteral):
@@ -24,7 +24,7 @@ def createElementNS(args, traverser, wrapper):
     if not args or len(args) < 2:
         return
 
-    second_as_str = utils.get_as_str(args[1].get_literal_value())
+    second_as_str = utils.get_as_str(args[1].get_literal_value(traverser))
     if "script" in second_as_str.lower():
         _create_script_tag(traverser)
     elif not isinstance(args[1], jstypes.JSLiteral):
@@ -71,7 +71,7 @@ def setAttribute(args, traverser, wrapper):
     if not args:
         return
 
-    first_as_str = utils.get_as_str(args[0].get_literal_value())
+    first_as_str = utils.get_as_str(args[0].get_literal_value(traverser))
     if first_as_str.lower().startswith("on"):
         warn(traverser.err,
              filename=traverser.filename,

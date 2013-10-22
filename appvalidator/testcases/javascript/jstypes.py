@@ -185,6 +185,7 @@ class JSGlobal(JSObject):
         return super(JSGlobal, self).has_var(name, traverser=traverser)
 
     def get_literal_value(self, traverser=None):
+        traverser = traverser or self.traverser
         if "literal" in self.global_data:
             lit = utils.evaluate_lambdas(traverser, self.global_data["literal"])
             return JSLiteral(lit, traverser=traverser)
@@ -314,7 +315,8 @@ class JSArray(JSObject):
         # y = x * 3 // y = 12 since x equals "4"
 
         output = u",".join(
-            unicode(w.get_literal_value(traverser=self.traverser) if
+            unicode(w.get_literal_value(traverser=traverser or
+                                                  self.traverser) if
                     w is not None and w is not self else u"") for
                     w in self.elements)
 

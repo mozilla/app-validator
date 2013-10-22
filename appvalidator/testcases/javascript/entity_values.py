@@ -64,7 +64,7 @@ def getUserMedia():
         options = arguments[0]
         for feature in GUM_FEATURES:
             if (options.has_var(feature) and
-                options.get(traverser, feature).get_literal_value() == True):
+                options.get(traverser, feature).get_literal_value(traverser)):
                 traverser.log_feature(GUM_FEATURES[feature])
 
         if (options.has_var("video") and
@@ -72,7 +72,7 @@ def getUserMedia():
             options.get(traverser, "video").get(traverser, "mandatory") and
             options.get(traverser, "video").get(traverser, "mandatory"
                 ).get(traverser, "chromeMediaSource"
-                ).get_literal_value() == "screen"):
+                ).get_literal_value(traverser) == "screen"):
             traverser.log_feature("SCREEN_CAPTURE")
 
     return {"return": method}
@@ -82,7 +82,7 @@ def getUserMedia():
 def XMLHttpRequest():
     def return_(wrapper, arguments, traverser):
         if (arguments and len(arguments) >= 3 and
-            not arguments[2].get_literal_value()):
+            not arguments[2].get_literal_value(traverser)):
             traverser.err.warning(
                 err_id=("javascript", "xhr", "sync"),
                 warning="Synchronous XHR should not be used",
@@ -100,7 +100,7 @@ def XMLHttpRequest():
             return
         arg = traverser.traverse_node(node["arguments"][0])
         if (arg.has_var("mozSystem") and
-            arg.get(traverser, "mozSystem").get_literal_value()):
+            arg.get(traverser, "mozSystem").get_literal_value(traverser)):
             traverser.log_feature("SYSTEMXHR")
 
     return {

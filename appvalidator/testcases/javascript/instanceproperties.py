@@ -23,7 +23,7 @@ def set_outerHTML(new_value, traverser):
 def _set_HTML_property(function, new_value, traverser):
     if isinstance(new_value, jstypes.JSLiteral):
         # TODO: This might be optimizable as get_as_str
-        literal_value = new_value.get_literal_value()
+        literal_value = new_value.get_literal_value(traverser)
         if isinstance(literal_value, types.StringTypes):
             # Static string assignments
 
@@ -55,7 +55,7 @@ def set_on_event(new_value, traverser):
     """Ensure that on* properties are not assigned string values."""
 
     if (isinstance(new_value, jstypes.JSLiteral) and
-        isinstance(new_value.get_literal_value(), types.StringTypes)):
+        isinstance(new_value.get_literal_value(traverser), types.StringTypes)):
         warn(traverser.err,
              filename=traverser.filename,
              line=traverser.line,
