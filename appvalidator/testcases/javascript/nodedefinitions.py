@@ -216,10 +216,10 @@ def _expr_unary_typeof(wrapper):
 
 
 UNARY_OPERATORS = {
-    "-": lambda e: -1 * utils.get_as_num(e.get_literal_value()),
-    "+": lambda e: utils.get_as_num(e.get_literal_value()),
-    "!": lambda e: not e.get_literal_value(),
-    "~": lambda e: -1 * (utils.get_as_num(e.get_literal_value()) + 1),
+    "-": lambda e, t: -1 * utils.get_as_num(e.get_literal_value(t)),
+    "+": lambda e, t: utils.get_as_num(e.get_literal_value(t)),
+    "!": lambda e, t: not e.get_literal_value(t),
+    "~": lambda e, t: -1 * (utils.get_as_num(e.get_literal_value(t)) + 1),
 }
 
 def UnaryExpression(traverser, node):
@@ -233,7 +233,7 @@ def UnaryExpression(traverser, node):
             traverser=traverser)
     if operator in UNARY_OPERATORS:
         traverser._debug("Defined unary operator (%s)" % operator)
-        return JSLiteral(UNARY_OPERATORS[node["operator"]](arg),
+        return JSLiteral(UNARY_OPERATORS[node["operator"]](arg, traverser),
                          traverser=traverser)
     elif operator == "void":
         traverser._debug("Void unary operator")
@@ -304,9 +304,9 @@ def BinaryExpression(traverser, node):
     traverser.debug_level -= 1
 
     # Binary expressions are only executed on literals.
-    left = left.get_literal_value()
+    left = left.get_literal_value(traverser)
     right_wrap = right
-    right = right.get_literal_value()
+    right = right.get_literal_value(traverser)
 
     # Coerce the literals to numbers for numeric operations.
     gleft = utils.get_as_num(left)
@@ -431,7 +431,7 @@ def AssignmentExpression(traverser, node):
     # If we're modifying a non-numeric type with a numeric operator, return
     # NaN.
     if (operator in NUMERIC_OPERATORS and
-        not isinstance(left.get_literal_value() or 0, NUMERIC_TYPES)):
+        not isinstance(left.get_literal_value(traverser) or 0, NUMERIC_TYPES)):
         set_lvalue(utils.get_NaN(traverser))
         return left
 
@@ -450,8 +450,8 @@ def AssignmentExpression(traverser, node):
         return left
 
     if operator == '+=':
-        lit_left = left.get_literal_value()
-        lit_right = right.get_literal_value()
+        lit_left = left.get_literal_value(traverser)
+        lit_right = right.get_literal_value(traverser)
         # Don't perform an operation on None. Python freaks out.
         if lit_left is None:
             lit_left = 0
@@ -540,7 +540,7 @@ def _get_member_exp_property(traverser, node):
         return unicode(node["property"]["name"])
     else:
         eval_exp = traverser.traverse_node(node["property"])
-        return utils.get_as_str(eval_exp.get_literal_value())
+        return utils.get_as_str(eval_exp.get_literal_value(traverser))
 
 
 def MemberExpression(traverser, node, instantiate=False):
