@@ -227,3 +227,12 @@ class TestMath(TestCase):
         """ +
         """y += y + x;""" * 100)  # This bit makes the validator's head explode.
 
+    def test_wrapped_python_exceptions(self):
+        """
+        Test that OverflowErrors in traversal don't crash the validation
+        process.
+        """
+
+        self.run_script("""
+        var x = Math.exp(-4*1000000*-0.0641515994108);
+        """)

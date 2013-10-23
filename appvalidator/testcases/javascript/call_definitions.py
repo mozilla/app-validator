@@ -88,7 +88,7 @@ def python_wrap(func, args, nargs=False):
         #                      ", ".join(map(str, params)))
         try:
             return JSLiteral(func(*params), traverser=traverser)
-        except:
+        except (ValueError, TypeError, OverflowError):
             # If we cannot compute output, just return nothing.
             return JSLiteral(None, traverser=traverser)
 
