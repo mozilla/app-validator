@@ -48,6 +48,7 @@ class TestWindowFeatures(FeatureTester):
         ("SPEECH_SYN", "var x = speechSynthesis.foo();"),
         ("SPEECH_REC", "var x = new SpeechRecognition();"),
         ("POINTER_LOCK", "document.documentElement.requestPointerLock()"),
+        ("THIRDPARTY_KEYBOARD_SUPPORT", "var x = navigator.mozInputMethod.foo()"),
     ]
 
 
