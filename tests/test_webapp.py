@@ -902,11 +902,18 @@ class TestWebapps(TestCase):
         self.analyze()
         self.assert_failed(with_errors=True)
 
-    def test_origin_banned(self):
+    def test_origin_allowed(self):
         self.make_privileged()
         self.data["origin"] = "app://marketplace.firefox.com"
         self.analyze()
-        self.assert_failed(with_errors=True)
+        self.assert_silent()
+
+    def test_origin_banned(self):
+        for origin in ("app://system.gaiamobile.org", "app://mozilla.org"):
+            self.make_privileged()
+            self.data["origin"] = origin
+            self.analyze()
+            self.assert_failed(with_errors=True)
 
     def test_chrome(self):
         self.data["chrome"] = {"navigation": True}
