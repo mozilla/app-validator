@@ -10,7 +10,6 @@ from ..specprocessor import Spec, LITERAL_TYPE
 
 BANNED_ORIGINS = [
     "gaiamobile.org",
-    "firefox.com",
     "mozilla.com",
     "mozilla.org",
 ]
