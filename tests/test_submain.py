@@ -1,6 +1,5 @@
 import time
 
-import fudge
 from mock import patch
 from nose.tools import eq_
 
@@ -47,13 +46,14 @@ def test_prepare_package_bad_file():
     assert err.failed()
 
 
-@fudge.patch("appvalidator.submain.detect_webapp")
+@patch("appvalidator.submain.detect_webapp")
 def test_prepare_package_webapp(fake_webapp_validator):
-    fake_webapp_validator.expects_call().with_arg_count(2)
-
     err = ErrorBundle()
-    submain.prepare_package(err, "tests/resources/main/mozball.webapp")
+    package = "tests/resources/main/mozball.webapp"
+    submain.prepare_package(err, package)
     assert not err.failed()
+
+    fake_webapp_validator.assert_called_with(err, package)
 
 
 class MockTestcases:
