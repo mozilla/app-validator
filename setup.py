@@ -5,7 +5,7 @@ setup(
     name='app-validator',
     version='1.0',
     description='Validates open web apps.',
-    long_description=open('README.rst').read(),
+    long_description=open('README.md').read(),
     author='Matt Basta',
     author_email='me@mattbasta.com',
     url='http://github.com/mattbasta/app-validator',
