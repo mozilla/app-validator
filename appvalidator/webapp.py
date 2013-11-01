@@ -22,12 +22,13 @@ def detect_webapp_string(err, data):
         u_data = unicodehelper.decode(data)
         webapp = json.loads(u_data)
 
-    except ValueError:
+    except ValueError as exc:
         err.error(
             err_id=("webapp", "detect_webapp", "parse_error"),
             error="JSON Parse Error",
-            description="The webapp extension could not be parsed due to a "
-                        "syntax error in the JSON.")
+            description=["The webapp extension could not be parsed due to a "
+                         "syntax error in the JSON.",
+                         unicode(exc)])
 
     else:
         ws = WebappSpec(webapp, err)
