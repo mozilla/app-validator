@@ -161,3 +161,23 @@ class TestContent(TestCase):
 
         content.test_packed_packages(self.err, mock_package)
         self.assert_failed(with_warnings=True, with_errors=True)
+
+
+class TestContent(TestCase):
+
+    def _run_test(self, mock_package):
+        return content.test_packed_packages(self.err, mock_package)
+
+    def test_cordova_fail(self):
+        "Test that cordova is detected in the content tests."
+        self.setup_err()
+        mock_package = MockXPI({"foo.bar": "tests/resources/content/junk.xpi"})
+
+        content.test_cordova(self.err, mock_package)
+        assert not self.err.metadata["cordova"]
+
+        # We can recycle the error bundle since it's clean.
+        mock_package = MockXPI({"www/cordova.js": "tests/resources/content/junk.xpi"})
+
+        content.test_cordova(self.err, mock_package)
+        assert self.err.metadata["cordova"]

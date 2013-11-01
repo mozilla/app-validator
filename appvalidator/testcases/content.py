@@ -119,3 +119,12 @@ def _process_file(err, package, name, file_data):
         p.process(name, file_data, package.info(name)["extension"])
 
     return True
+
+
+@register_test(tier=2)
+def test_cordova(err, package=None):
+
+    if not package:
+        return
+
+    err.metadata["cordova"] = "www/cordova.js" in package
