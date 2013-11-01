@@ -163,10 +163,7 @@ class TestContent(TestCase):
         self.assert_failed(with_warnings=True, with_errors=True)
 
 
-class TestContent(TestCase):
-
-    def _run_test(self, mock_package):
-        return content.test_packed_packages(self.err, mock_package)
+class TestCordova(TestCase):
 
     def test_cordova_fail(self):
         "Test that cordova is detected in the content tests."
