@@ -293,7 +293,7 @@ class JSArray(JSObject):
     def has_var(self, name, traverser=None):
         index = None
         if isinstance(name, types.StringTypes) and name.isdigit():
-            index = utils.get_as_num(name, traverser)
+            index = utils.get_as_num(name)
         elif isinstance(name, int):
             index = name
 
