@@ -41,6 +41,10 @@ def main():
                         help="The amount of time before validation is "
                              "terminated with a timeout exception.",
                         default="60")
+    parser.add_argument("--acorn",
+                        const=True
+                        help="Uses Acorn instead of Spidermonkey for JS "
+                             "parsing. Requirees Node and Acorn.")
 
     args = parser.parse_args()
 
@@ -53,17 +57,18 @@ def main():
     if "://" in args.package:
         error_bundle = validate_app(
             requests.get(args.package).content, listed=not args.unlisted,
-            format=None, url=args.package)
+            format=None, url=args.package, acorn=args.acorn)
 
     elif args.package.endswith(".webapp"):
         with open(args.package) as f:
             error_bundle = validate_app(
-                f.read(), listed=not args.unlisted, format=None)
+                f.read(), listed=not args.unlisted, format=None,
+                acorn=args.acorn)
 
     else:
         error_bundle = validate_packaged_app(
             args.package, listed=not args.unlisted, format=None,
-            timeout=timeout)
+            timeout=timeout, acorn=args.acorn)
 
     # Print the output of the tests based on the requested format.
     if args.output == "text":

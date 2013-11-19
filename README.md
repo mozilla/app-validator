@@ -53,6 +53,19 @@ in a custom path, you can define it as `$SPIDERMONKEY_INSTALLATION` in
 your environment.
 
 
+#### Acorn
+
+If you pass the `--acorn` command line flag, the validator will use Acorn
+instead of Spidermonkey to parse JavaScript. This requires Node and Acorn to
+be installed. You can install Acorn with the following:
+
+```bash
+npm install acorn
+```
+
+Acorn will also be used if no Spidermonkey installation is found.
+
+
 ## Running
 
 Run the validator as follows:
@@ -170,7 +183,7 @@ The same rule applies for the end of a file and for files with only one line.
 
 ## Testing
 
-Unit tests can be run with 
+Unit tests can be run with
 
 ```bash
 nosetests

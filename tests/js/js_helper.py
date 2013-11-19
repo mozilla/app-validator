@@ -18,9 +18,6 @@ appvalidator.testcases.javascript.predefinedentities.enable_debug()
 
 
 def uses_js(func):
-    if SPIDERMONKEY_INSTALLATION is None:
-        raise SkipTest("Not running JS tests.")
-
     if func:
         try:
             setattr(func, "js", True)
@@ -29,6 +26,13 @@ def uses_js(func):
             # the nonsense.
             setattr(func.__func__, "js", True)
 
+    return func
+
+
+def skip_on_acorn(func):
+    """Skips a test when the test is run under Acorn."""
+    if not SPIDERMONKEY_INSTALLATION:
+        raise SkipTest()
     return func
 
 

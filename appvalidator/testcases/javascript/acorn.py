@@ -9,7 +9,7 @@ import appvalidator.unicodehelper as unicodehelper
 JS_ESCAPE = re.compile("\\\\+[ux]", re.I)
 
 
-def get_tree(code, err=None, filename=None):
+def get_tree(code, err=None, filename=None, shell_noop=None):
     """Retrieve the parse tree for a JS snippet."""
 
     if not code:

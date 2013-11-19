@@ -1,15 +1,12 @@
 import javascript.traverser as traverser
-from javascript.spidermonkey import get_tree
+import javascript.acorn as acorn
+import javascript.spidermonkey as spidermonkey
 from appvalidator.constants import SPIDERMONKEY_INSTALLATION
 from ..contextgenerator import ContextGenerator
 
 
 def test_js_file(err, filename, data, line=0, context=None):
     "Tests a JS file by parsing and analyzing its tokens"
-
-    if (SPIDERMONKEY_INSTALLATION is None or
-        err.get_resource("SPIDERMONKEY") is None):  # Default value is False
-        return
 
     # Don't even try to run files bigger than 1MB.
     if len(data) > 1024 * 1024:
@@ -27,10 +24,15 @@ def test_js_file(err, filename, data, line=0, context=None):
         err.set_tier(3)
 
     tree = None
+
+    get_tree = spidermonkey.get_tree
+    spidermonkey_path = (err and err.get_resource("SPIDERMONKEY") or
+                         SPIDERMONKEY_INSTALLATION)
+    if err.get_resource("acorn") or not spidermonkey_path:
+        get_tree = acorn.get_tree
+
     try:
-        tree = get_tree(data, err, filename,
-                        err and err.get_resource("SPIDERMONKEY") or
-                        SPIDERMONKEY_INSTALLATION)
+        tree = get_tree(data, err, filename, spidermonkey_path)
     except RuntimeError as exc:
         warning ="JS: Unknown runtime error"
         if "out of memory" in str(exc):

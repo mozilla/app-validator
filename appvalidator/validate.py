@@ -8,7 +8,7 @@ from errorbundle import ErrorBundle
 
 
 def validate_app(data, listed=True, market_urls=None, url=None,
-                 format="json"):
+                 format="json", acorn=False):
     """
     A handy function for validating apps.
 
@@ -32,6 +32,7 @@ def validate_app(data, listed=True, market_urls=None, url=None,
     bundle = ErrorBundle(listed=listed)
     bundle.save_resource("market_urls", market_urls)
     bundle.save_resource("manifest_url", url)
+    bundle.save_resource("acorn", acorn)
 
     webapp.detect_webapp_string(bundle, data)
     submain.test_inner_package(bundle, None)
@@ -40,7 +41,7 @@ def validate_app(data, listed=True, market_urls=None, url=None,
 
 
 def validate_packaged_app(path, listed=True, format="json", market_urls=None,
-                          timeout=None, spidermonkey=False):
+                          timeout=None, spidermonkey=False, acorn=False):
     """
     A handy function for validating apps.
 
@@ -64,6 +65,7 @@ def validate_packaged_app(path, listed=True, format="json", market_urls=None,
     """
     bundle = ErrorBundle(listed=listed, spidermonkey=spidermonkey)
     bundle.save_resource("packaged", True)
+    bundle.save_resource("acorn", acorn)
 
     # Set the market URLs.
     bundle.save_resource("market_urls", market_urls)

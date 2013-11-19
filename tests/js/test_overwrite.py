@@ -1,4 +1,4 @@
-from js_helper import TestCase
+from js_helper import skip_on_acorn, TestCase
 
 
 class TestOverwrite(TestCase):
@@ -53,6 +53,7 @@ class TestOverwrite(TestCase):
         yield test, self, 'Number.prototype["test"] = "foo"'
         yield test, self, 'x = Number.prototype; x.test = "foo"'
 
+    @skip_on_acorn
     def test_reduced_overwrite_messages(self):
         """
         Test that there are no messages for overwrites that occur in local
@@ -70,6 +71,7 @@ class TestOverwrite(TestCase):
         """)
         self.assert_silent()
 
+    @skip_on_acorn
     def test_reduced_overwrite_messages_block(self):
         """
         Test that there are no messages for overwrites that occur in block

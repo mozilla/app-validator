@@ -1,6 +1,6 @@
 from nose.tools import eq_
 
-from js_helper import TestCase
+from js_helper import skip_on_acorn, TestCase
 
 
 class TestAssignments(TestCase):
@@ -16,6 +16,7 @@ class TestAssignments(TestCase):
         self.assert_var_eq("y", 2)
         self.assert_var_eq("z", 3)
 
+    @skip_on_acorn
     def test_arraypattern_assignment(self):
         """Tests that array patterns can be used to assign variables."""
 
@@ -27,6 +28,7 @@ class TestAssignments(TestCase):
         self.assert_var_eq("y", 2)
         self.assert_var_eq("z", 3)
 
+    @skip_on_acorn
     def test_objectpattern_assignment(self):
         """Tests that ObjectPatterns are respected."""
 
@@ -39,6 +41,7 @@ class TestAssignments(TestCase):
         self.assert_var_eq("y", 4)
         self.assert_var_eq("z", 5)
 
+    @skip_on_acorn
     def test_objectpattern_nested(self):
         """Test that nested ObjectPattern assignments are respected."""
 

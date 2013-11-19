@@ -1,6 +1,6 @@
 from nose.tools import eq_
 
-from js_helper import TestCase
+from js_helper import skip_on_acorn, TestCase
 
 from appvalidator.testcases.javascript.utils import get_as_num, get_as_str
 from appvalidator.testcases.javascript.jstypes import JSLiteral
@@ -8,6 +8,7 @@ from appvalidator.testcases.javascript.jstypes import JSLiteral
 
 class TestSyntax(TestCase):
 
+    @skip_on_acorn
     def test_array_destructuring(self):
         """
         Make sure that multi-level and prototype array destructuring don't cause

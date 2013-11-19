@@ -1,4 +1,4 @@
-from js_helper import must_assert, errors, silent, TestCase
+from js_helper import must_assert, errors, silent, skip_on_acorn, TestCase
 
 
 class TestScope(TestCase):
@@ -27,6 +27,7 @@ class TestScope(TestCase):
         }
         """)
 
+    @skip_on_acorn
     @silent
     @must_assert
     def test_block_scope(self):
@@ -61,6 +62,7 @@ class TestScope(TestCase):
         }
         """)
 
+    @skip_on_acorn
     @silent
     @must_assert
     def test_function_scope_block(self):
