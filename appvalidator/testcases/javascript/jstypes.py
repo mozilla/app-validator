@@ -8,18 +8,23 @@ def fake(traverser, **kw):
     return JSObject(traverser=traverser, **kw)
 
 
+BASE_MEMBERS = ["const", "traverser", "type_", "callable", "recursing",
+                "data", "TYPEOF"]
+
+
 class JSObject(object):
     """
     Mimics a JS object (function) and is capable of serving as an active
     context to enable static analysis of `with` statements.
     """
 
-    TYPEOF = "object"
+    __slots__ = BASE_MEMBERS
 
     def __init__(self, data=None, traverser=None, callable_=False, const=False):
         self.const = False
         self.traverser = traverser
         self.type_ = "object"  # For use when an object is pushed as a context.
+        self.TYPEOF = "object"
         self.data = {}
         if data:
             self.data.update(data)
@@ -117,6 +122,8 @@ class JSObject(object):
 
 class JSGlobal(JSObject):
 
+    __slots__ = BASE_MEMBERS + ["name", "global_data"]
+
     def __init__(self, global_data, traverser=None, **kw):
         self.global_data = utils.evaluate_lambdas(traverser, global_data)
         super(JSGlobal, self).__init__(traverser=traverser, **kw)
@@ -207,6 +214,8 @@ class JSGlobal(JSObject):
 class JSContext(JSObject):
     """A variable context"""
 
+    __slots__ = BASE_MEMBERS
+
     def __init__(self, context_type="default", traverser=None, **kw):
         super(JSContext, self).__init__(traverser=traverser, **kw)
         self.type_ = context_type
@@ -240,13 +249,15 @@ LITERAL_TYPEOF = {
 class JSLiteral(JSObject):
     """Represents a literal JavaScript value."""
 
+    __slots__ = BASE_MEMBERS + ["value"]
+
     def __init__(self, value=None, traverser=None, **kw):
         super(JSLiteral, self).__init__(traverser=traverser, **kw)
         if isinstance(value, JSLiteral):
             self.value = value.value
         else:
             self.value = value
-        self.TYPEOF = LITERAL_TYPEOF.get(type(value), self.TYPEOF)
+        self.TYPEOF = LITERAL_TYPEOF.get(type(value), "object")
 
     def __str__(self):
         if isinstance(self.value, bool):
@@ -272,6 +283,8 @@ class JSLiteral(JSObject):
 
 class JSArray(JSObject):
     """A class that represents both a JS Array and a JS list."""
+
+    __slots__ = BASE_MEMBERS + ["elements"]
 
     def __init__(self, elements=None, traverser=None, **kw):
         super(JSArray, self).__init__(traverser=traverser, **kw)
