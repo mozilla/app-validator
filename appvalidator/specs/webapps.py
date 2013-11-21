@@ -8,6 +8,9 @@ from ..constants import DESCRIPTION_TYPES
 from ..specprocessor import Spec, LITERAL_TYPE
 
 
+# This notably excludes booleans.
+JSON_LITERALS = types.StringTypes + (int, float)
+
 BANNED_ORIGINS = [
     "gaiamobile.org",
     "mozilla.com",
@@ -19,6 +22,50 @@ STYLEGUIDE_URL = "http://www.mozilla.org/styleguide/products/firefox-os/"
 _FULL_PERMISSIONS = ("readonly", "readwrite", "readcreate", "createonly")
 
 FXOS_ICON_SIZES = (60, 90, 120)
+
+FILTER_DEF_OBJ = {
+    "expected_type": dict,
+    "not_empty": True,
+    "child_nodes": {
+        "required": {"expected_type": bool},
+        "value": {
+            "expected_type": JSON_LITERALS + (list, tuple),
+            "not_empty": True,
+            "child_nodes": {"expected_type": JSON_LITERALS},
+        },
+        "min": {"expected_type": (int, float)},
+        "max": {"expected_type": (int, float)},
+        "pattern": {"expected_type": types.StringTypes},
+        "regexp": {"expected_type": types.StringTypes},  # FXOS 1.0/1.1
+        "patternFlags": {
+            "expected_type": types.StringTypes,
+            "max_length": 4,
+            "value_matches": "[igmy]+",
+        },
+    },
+}
+FILTER_DEF_OBJ["allowed_once_nodes"] = FILTER_DEF_OBJ["child_nodes"].keys()
+
+WEB_ACTIVITY_HANDLER = {
+    "href": {"expected_type": types.StringTypes,
+             "process": lambda s: s.process_act_href,
+             "not_empty": True},
+    "disposition": {"expected_type": types.StringTypes,
+                    "values": ["window", "inline"]},
+    "filters": {
+        "expected_type": dict,
+        "allowed_nodes": ["*"],
+        "not_empty": True,
+        "child_nodes": {
+            "*": {
+                "expected_type": JSON_LITERALS + (list, dict),
+                "not_empty": True,
+                "process": lambda s: s.process_act_filter,
+            }
+        },
+    },
+    "returnValue": {"expected_type": bool},
+}
 
 
 class WebappSpec(Spec):
@@ -129,26 +176,10 @@ class WebappSpec(Spec):
                     "*": {
                         "expected_type": dict,
                         "required_nodes": ["href"],
-                        "allowed_once_nodes": ["disposition", "filters"],
-                        "child_nodes": {
-                            "href": {"expected_type": types.StringTypes,
-                                     "process": lambda s: s.process_act_href,
-                                     "not_empty": True},
-                            "disposition": {"expected_type": types.StringTypes,
-                                            "values": ["window", "inline"]},
-                            "filters": {
-                                "expected_type": dict,
-                                "allowed_nodes": ["*"],
-                                "child_nodes":
-                                    {"*": {"expected_type": DESCRIPTION_TYPES,
-                                           "process":
-                                               lambda s: s.process_act_type,
-                                           "not_empty": True},
-                                     "number": {"expected_type": LITERAL_TYPE}}
-                            },
-                            "returnValue": {
-                                "expected_type": bool}
-                        }
+                        "allowed_once_nodes": [
+                            "disposition", "filters", "returnValue"
+                        ],
+                        "child_nodes": WEB_ACTIVITY_HANDLER,
                     }
                 }
             },
@@ -504,16 +535,38 @@ class WebappSpec(Spec):
                              "Found: %s" % node,
                              self.MORE_INFO])
 
-    def process_act_type(self, node):
-        if (isinstance(node, list) and
-            not all(isinstance(s, types.StringTypes) for s in node)):
+    def process_act_filter(self, node):
+        if isinstance(node, JSON_LITERALS):
+            # Standard JSON literals can be safely ignored.
+            return
+
+        if isinstance(node, list):
+            # Arrays must contain only JSON literals.
+            if not all(isinstance(s, JSON_LITERALS) and
+                       not isinstance(s, bool) for s in node):
+                self.error(
+                    err_id=("spec", "webapp", "act_type"),
+                    error="Activity filter is not valid.",
+                    description=[
+                        "The value for an activity's filter must either "
+                        "be a basic value or array of basic values.",
+                        "Found: [%s]" % ", ".join(map(repr, node)),
+                        self.MORE_INFO])
+
+        elif isinstance(node, dict):
+            # Objects are filter definition objects, which have rules.
+            return self._iterate(self.path[-1], node, FILTER_DEF_OBJ)
+
+        else:
+            # Everything else is invalid.
             self.error(
                 err_id=("spec", "webapp", "act_type"),
-                error="Activity `type` is not valid.",
-                description=["The `type` value for an activity must either be "
-                             "a string or array of strings.",
-                             "Found: [%s]" % ", ".join(map(str, node)),
-                             self.MORE_INFO])
+                error="Activity filter is not valid.",
+                description=[
+                    "The value for an activity's filter must either "
+                    "be a basic value or array of basic values.",
+                    "Found: %s" % repr(node),
+                    self.MORE_INFO])
 
     def process_orientation(self, node):
         values = [u"portrait", u"landscape", u"portrait-secondary",

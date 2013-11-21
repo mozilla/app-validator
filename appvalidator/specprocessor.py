@@ -129,7 +129,13 @@ class Spec(object):
 
         # Check that the node is of the proper type. If it isn't, then we need
         # to stop iterating at this point.
-        if not isinstance(branch, spec_branch["expected_type"]):
+        exp_type = spec_branch.get("expected_type")
+        if (exp_type and
+            not isinstance(branch, exp_type) or
+            # Handle `isinstance(True, int) == True` :(
+            (isinstance(branch, bool) and
+             (exp_type == int if isinstance(exp_type, type) else
+              bool not in exp_type))):
             self.error(
                 err_id=("spec", "iterate", "bad_type"),
                 error="%s's `%s` was of an unexpected type." %
@@ -163,21 +169,21 @@ class Spec(object):
                     error="`%s` contains an invalid value in %s" %
                           (branch_name, self.SPEC_NAME),
                     description=["A `%s` was encountered while validating a "
-                                 "%s containing the value '%s'. This value is "
-                                 "not appropriate for this type of element." %
+                                 "`%s` containing the value '%s'. This value "
+                                 "is not appropriate for this type of "
+                                 "element." %
                                      (branch_name, self.SPEC_NAME, branch),
                                  self.MORE_INFO])
             elif ("value_matches" in spec_branch and
                   isinstance(branch, types.StringTypes)):
-                raw_pattern = spec_branch.get("value_matches")
-                pattern = re.compile(raw_pattern)
-                if not pattern.match(branch):
+                raw_pattern = spec_branch["value_matches"]
+                if not re.match(raw_pattern, branch):
                     self.error(
                         err_id=("spec", "iterate", "value_pattern_fail"),
                         error="`%s` contains an invalid value in %s" %
                               (branch_name, self.SPEC_NAME),
                         description=["A `%s` was encountered while validating "
-                                     "a %s. Its value does not match the "
+                                     "a `%s`. Its value does not match the "
                                      "pattern required for `%s`s." %
                                          (branch_name, self.SPEC_NAME,
                                           branch_name),
@@ -197,7 +203,7 @@ class Spec(object):
                                  self.MORE_INFO])
 
             # The rest of the tests are for child items.
-            if not isinstance(branch, list):
+            if not isinstance(branch, (list, tuple)):
                 return
 
             if "child_nodes" in spec_branch:

@@ -42,10 +42,10 @@ class TestWebappAccessories(TestCase):
         eq_(s._path_valid("data:asdf", can_be_data=True), True)
 
 
-class TestWebapps(TestCase):
+class WebappBaseTestCase(TestCase):
 
     def setUp(self):
-        super(TestWebapps, self).setUp()
+        super(WebappBaseTestCase, self).setUp()
         self.listed = False
 
         descr = "Exciting Open Web development action!"
@@ -126,6 +126,8 @@ class TestWebapps(TestCase):
         appvalidator.webapp.detect_webapp(self.err, name)
         os.unlink(name)
 
+
+class TestWebapps(WebappBaseTestCase):
     def test_pass(self):
         """Test that a bland webapp file throws no errors."""
         self.analyze()
@@ -610,82 +612,9 @@ class TestWebapps(TestCase):
         self.analyze()
         self.assert_silent()
 
-    def test_act_base(self):
-        """Test that the most basic web activity passes."""
-
-        self.data["activities"] = {
-            "foo": {"href": "/foo/bar"}
-        }
-        self.analyze()
-        self.assert_silent()
-
-    def test_act_full(self):
-        """Test that the fullest web activity passes."""
-
-        self.data["activities"] = {
-            "foo": {"href": "/foo/bar",
-                    "disposition": "window",
-                    "filters": {"type": "foo", "number": 1}},
-            "bar": {"href": "foo/bar",
-                    "disposition": "inline",
-                    "filters": {"whatever": ["foo", "bar"]}}
-        }
-        self.analyze()
-        self.assert_silent()
-
-    def test_act_bad_href(self):
-        """Test that bad activity hrefs are disallowed."""
-
-        self.data["activities"] = {
-            "foo": {"href": "http://foo.bar/asdf",
-                    "disposition": "window",
-                    "filters": {"type": "foo"}}
-        }
-        self.analyze()
-        self.assert_failed(with_errors=True)
-
-    def test_act_bad_disp(self):
-        """Test that the disposition of an activity is correct."""
-
-        self.data["activities"] = {
-            "foo": {"href": "/foo/bar",
-                    "disposition": "lol not a disposition",
-                    "filters": {"type": "foo"}}
-        }
-        self.analyze()
-        self.assert_failed(with_errors=True)
-
-    def test_act_bad_filter_type(self):
-        """Test that the filter values are correct."""
-
-        self.data["activities"] = {
-            "foo": {"href": "/foo/bar",
-                    "disposition": "window",
-                    "filters": {"type": 2}}
-        }
-        self.analyze()
-        self.assert_failed(with_errors=True)
-
-    def test_act_bad_filter_base_type(self):
-        """Test that the filter values are correct."""
-
-        self.data["activities"] = {
-            "foo": {"href": "/foo/bar",
-                    "disposition": "window",
-                    "filters": "this is not a dict"}
-        }
-        self.analyze()
-        self.assert_failed(with_errors=True)
-
-    def test_act_missing_href(self):
-        """Test that activities require an href."""
-
-        self.data["activities"] = {
-            "foo": {"disposition": "window",
-                    "filters": {"type": "foo"}}
-        }
-        self.analyze()
-        self.assert_failed(with_errors=True)
+    ###########
+    # Web activities are tested in tests/test_webapp_activity.py
+    ###########
 
     def test_act_root_type(self):
         """Test that the most basic web activity passes."""
