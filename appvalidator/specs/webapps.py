@@ -77,9 +77,9 @@ class WebappSpec(Spec):
     MIN_REQUIRED_ICON_SIZE = 128
 
     PERMISSIONS = (
-        "alarms", "attention", "audio-channel-normal", "audio-channel-content",
-        "audio-channel-notification", "audio-channel-alarm",
-        "audio-channel-ringer", "audio-channel-telephony",
+        "alarms", "attention", "audio-capture", "audio-channel-normal",
+        "audio-channel-content", "audio-channel-notification",
+        "audio-channel-alarm", "audio-channel-ringer", "audio-channel-telephony",
         "audio-channel-publicnotification", "background-sensors",
         "backgroundservice", "bluetooth", "browser", "camera", "contacts",
         "desktop-notification", "device-storage:apps", "device-storage:music",
