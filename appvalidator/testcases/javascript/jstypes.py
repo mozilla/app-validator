@@ -194,8 +194,8 @@ class JSGlobal(JSObject):
     def get_literal_value(self, traverser=None):
         traverser = traverser or self.traverser
         if "literal" in self.global_data:
-            lit = utils.evaluate_lambdas(traverser, self.global_data["literal"])
-            return JSLiteral(lit, traverser=traverser)
+            return utils.evaluate_lambdas(
+                traverser, self.global_data["literal"])
 
         directory = self._get_contents(traverser)
         if directory and not isinstance(directory, dict):
