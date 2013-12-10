@@ -11,16 +11,6 @@ as thorough.
 
 ### Prerequisites
 
-Python Libraries:
-
-- argparse
-- cssutils
-- fastchardet
-
-Dev requirements:
-
-- nose
-
 You can install everything you need for running and testing with
 
 ```bash
@@ -29,30 +19,14 @@ pip install -r requirements.txt
 
 #### Spidermonkey
 
-A working copy of Spidermonkey (debug or non-debug is fine) is required.
-
-The best way to make sure you install the right Spidermonkey is to
-[clone](http://hg.mozilla.org/mozilla-central/) the mozilla-central repo
-or [download the tip](http://hg.mozilla.org/mozilla-central/archive/tip.tar.bz2)
-(which is faster). Then build it from source like this
+To run the full test suite, a copy of Spidermonkey is needed. To install on
+OS X, you should use Homebrew on OS X:
 
 ```bash
-cd mozilla-central
-cd js/src
-autoconf2.13
-./configure
-make
-sudo cp dist/bin/js /usr/local/bin/js
+brew install spidermonkey
 ```
 
-You must use autoconf at *exactly* 2.13 or else it won't work. If you're using
-`brew`_ on Mac OS X you can get autoconf2.13 with this
-
-    brew install autoconf213
-
-If you don't want to put the `js` executable in your `$PATH` or you want it
-in a custom path, you can define it as `$SPIDERMONKEY_INSTALLATION` in
-your environment.
+The default options in Homebrew will work with the validator.
 
 
 #### Acorn
@@ -65,7 +39,11 @@ be installed. You can install Acorn with the following:
 npm install acorn
 ```
 
-Acorn will also be used if no Spidermonkey installation is found.
+Acorn will also be used if no Spidermonkey installation is found, though some
+features of JavaScript will be unavailable (particularly around ES6), and some
+unit tests will be skipped.
+
+Acorn is used to run the test suite on Travis CI.
 
 
 ## Running
