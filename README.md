@@ -5,6 +5,8 @@ problems and invalid code. By using a combination of various techniques and
 detection mechanisms, the validator is capable of being both efficient as well
 as thorough.
 
+[![Build Status](https://travis-ci.org/mozilla/app-validator.png?branch=master)](https://travis-ci.org/mozilla/app-validator)
+
 ## Setup
 
 ### Prerequisites
