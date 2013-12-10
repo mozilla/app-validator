@@ -350,7 +350,9 @@ class WebappSpec(Spec):
             return
 
         # This test only applies to listed apps.
-        if self.err.get_resource("listed"):
+        if (self.err.get_resource("listed") and
+            any(x.isdigit() for x in node.keys())):
+
             max_size = max(int(x) for x in node.keys() if x.isdigit())
             if max_size < self.MIN_REQUIRED_ICON_SIZE:
                 self.error(
