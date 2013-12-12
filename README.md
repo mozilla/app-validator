@@ -203,3 +203,6 @@ mv whitelist_hashes.txt ../validator/testcases/hashes.txt
 To add new libraries to the mix, edit `extras/jslibfetcher.py` and add the
 version number to the appropriate tuple.
 
+## Bugs
+
+If you find any bug, please file them on Bugzilla under [Marketplace::Validation](https://bugzilla.mozilla.org/enter_bug.cgi?product=Marketplace&component=Validation).
