@@ -127,7 +127,7 @@ sample document below.
             "file": "chrome/foo.bar",
             "line": 12,
             "column": 50,
-            "context: [
+            "context": [
                 "   if(foo = bar())",
                 "       an_error_is_somewhere_on_this_line.prototy.eval("whatever");",
                 null
