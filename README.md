@@ -129,7 +129,7 @@ sample document below.
             "column": 50,
             "context": [
                 "   if(foo = bar())",
-                "       an_error_is_somewhere_on_this_line.prototy.eval("whatever");",
+                "       an_error_is_somewhere_on_this_line.prototy.eval('whatever');",
                 null
             ],
             "tier": 2
@@ -205,4 +205,5 @@ version number to the appropriate tuple.
 
 ## Bugs
 
-If you find any bug, please file them on Bugzilla under [Marketplace::Validation](https://bugzilla.mozilla.org/enter_bug.cgi?product=Marketplace&component=Validation).
+If you find any bug, please file them on Bugzilla under
+[Marketplace::Validation](https://bugzilla.mozilla.org/enter_bug.cgi?product=Marketplace&component=Validation).
