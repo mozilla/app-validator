@@ -9,9 +9,18 @@ as thorough.
 
 ## Setup
 
+### Clone the repository
+
+```bash
+git clone git@github.com:mozilla/app-validator.git
+```
+
+(or your own fork if you want to contribute to the project).
+
 ### Prerequisites
 
-You can install everything you need for running and testing with
+You can install everything you need for running and testing by changing to the
+directory where you cloned the code, and running
 
 ```bash
 pip install -r requirements.txt
@@ -32,8 +41,9 @@ The default options in Homebrew will work with the validator.
 #### Acorn
 
 If you pass the `--acorn` command line flag, the validator will use Acorn
-instead of Spidermonkey to parse JavaScript. This requires Node and Acorn to
-be installed. You can install Acorn with the following:
+instead of Spidermonkey to parse JavaScript. This requires [node.js](http://nodejs.org/)
+and Acorn to be installed. Once you've installed node.js in your system, you can install
+Acorn with the following:
 
 ```bash
 npm install acorn
