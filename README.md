@@ -12,7 +12,7 @@ as thorough.
 ### Clone the repository
 
 ```bash
-git clone git@github.com:mozilla/app-validator.git
+git clone git://github.com/mozilla/app-validator.git
 ```
 
 (or your own fork if you want to contribute to the project).
@@ -25,6 +25,9 @@ directory where you cloned the code, and running
 ```bash
 pip install -r requirements.txt
 ```
+
+It's recommended that you install the requirements in a
+[virtualenv](https://pypi.python.org/pypi/virtualenv) rather than globally.
 
 #### Spidermonkey
 
