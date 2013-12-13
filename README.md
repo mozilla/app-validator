@@ -61,7 +61,7 @@ Acorn is used to run the test suite on Travis CI.
 Run the validator as follows:
 
 ```bash
-python app-validator <path to app> [-o <output type>] [-v] [--boring] [--selfhosted]
+python app-validator <path to app> [-o <output type>] [-v] [--boring] [--unlisted]
 ```
 
 The path to the XPI should point to an XPI file.
