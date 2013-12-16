@@ -17,6 +17,22 @@ git clone git://github.com/mozilla/app-validator.git
 
 (or your own fork if you want to contribute to the project).
 
+### System Prerequisites
+
+To run the validator, you'll need some basic software installed beforehand.
+
+- If you're using Ubuntu, you'll first need to install the `python-dev`
+  package using `aptitude` or `apt-get`.
+- You'll need `openssl`. You can install this with `brew` on OS X or your
+  favorite Linux package manager.
+
+If you're on Ubuntu, you'll also need M2Crypto installed, which you can get
+by running
+
+```bash
+pip install git+git://github.com/ametaireau/M2Crypto.git
+```
+
 ### Prerequisites
 
 You can install everything you need for running and testing by changing to the
@@ -210,3 +226,20 @@ version number to the appropriate tuple.
 
 If you find any bug, please file them on Bugzilla under
 [Marketplace::Validation](https://bugzilla.mozilla.org/enter_bug.cgi?product=Marketplace&component=Validation).
+
+## Troubleshooting
+
+### I've installed all the dependencies but Python still can't find some modules.
+
+- It's possible that you're running two versions of Python locally. If you
+  run `which python` and `which pip`, the two files should be in the same
+  location. If they're not, you'll need to remove one of the Python versions.
+- You might not have the appropriate `virtualenv` set up. Make sure to run the
+  `workon` command or `source /path/to/venv/bin/activate` if you don't use
+  `virtualenvwrapper`.
+
+### I'm getting errors about my package missing a manifest.
+
+- You might have used your operating system's Archive functionality. This
+  sometimes adds an extra directory inside your ZIP file. E.g.: instead of your
+  path reading `/manifest.webapp`, it looks like `/my_app/manifest.webapp`.
