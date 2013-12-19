@@ -42,7 +42,8 @@ def main():
                              "terminated with a timeout exception.",
                         default="60")
     parser.add_argument("--acorn",
-                        const=True
+                        action="store_const",
+                        const=True,
                         help="Uses Acorn instead of Spidermonkey for JS "
                              "parsing. Requirees Node and Acorn.")
 
