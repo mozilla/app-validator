@@ -173,6 +173,18 @@ class TestWebapps(WebappBaseTestCase):
         self.analyze()
         self.assert_failed(with_warnings=True)
 
+    def test_role(self):
+        """Test that app may contain role element."""
+        self.data["role"] = "input"
+        self.analyze()
+        self.assert_silent()
+
+    def test_invalid_role(self):
+        """Test that app may not contain invalid role element."""
+        self.data["role"] = "hello"
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
     def test_long_name(self):
         """Test that long names are flagged for truncation in Gaia."""
         self.data["name"] = None
@@ -535,6 +547,144 @@ class TestWebapps(WebappBaseTestCase):
         self.data["orientation"] = ["portrait", 4]
         self.analyze()
         self.assert_failed(with_errors=True)
+
+    def test_inputs_dict_valid(self):
+        """Test with 'inputs' entries throw no errors."""
+        self.data['inputs'] = {
+            'input1': {
+                'name': 'Symbols',
+                'description': 'Symbols Virtual Keyboard',
+                'launch_path': '/input1.html',
+                'types': ['text']
+            },
+            'siri': {
+                'name': 'Voice Control',
+                'description': 'Voice Control Input',
+                'launch_path': '/vc.html',
+                'types': ['text', 'url']
+            }
+        }
+        self.analyze()
+        self.assert_silent()
+
+    def test_inputs_dict_empty(self):
+        """Test that 'inputs' may not be empty dict."""
+        self.data['inputs'] = {}
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_inputs_dict_entry_missing_name(self):
+        """Test that 'inputs' with an entry missing 'name'."""
+        self.data['inputs'] = {
+            'input1': {
+                'description': 'Symbols Virtual Keyboard',
+                'launch_path': '/input1.html',
+                'types': ['text']
+            }
+        }
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_inputs_dict_entry_missing_description(self):
+        """Test that 'inputs' with an entry missing 'description'."""
+        self.data['inputs'] = {
+            'input1': {
+                'name': 'Symbols',
+                'launch_path': '/input1.html',
+                'types': ['text']
+            }
+        }
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_inputs_dict_entry_missing_launch_path(self):
+        """Test that 'inputs' with an entry missing 'launch_path'."""
+        self.data['inputs'] = {
+            'input1': {
+                'name': 'Symbols',
+                'description': 'Symbols Virtual Keyboard',
+                'types': ['text']
+            }
+        }
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_inputs_dict_entry_missing_types(self):
+        """Test that 'inputs' with an entry missing 'types'."""
+        self.data['inputs'] = {
+            'input1': {
+                'name': 'Symbols',
+                'description': 'Symbols Virtual Keyboard',
+                'launch_path': '/input1.html'
+            }
+        }
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_inputs_dict_entry_empty_types(self):
+        """Test that 'inputs' with an entry with empty 'types'."""
+        self.data['inputs'] = {
+            'input1': {
+                'name': 'Symbols',
+                'description': 'Symbols Virtual Keyboard',
+                'launch_path': '/input1.html',
+                'types': []
+            }
+        }
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_inputs_dict_entry_invalid_types(self):
+        """Test that 'inputs' with an entry with invalid 'types'."""
+        self.data['inputs'] = {
+            'input1': {
+                'name': 'Symbols',
+                'description': 'Symbols Virtual Keyboard',
+                'launch_path': '/input1.html',
+                'types': ['foo']
+            }
+        }
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_inputs_dict_entry_locales(self):
+        """Test that 'inputs' with an localized entry."""
+        self.data['inputs'] = {
+            'input1': {
+                'name': 'Symbols',
+                'description': 'Symbols Virtual Keyboard',
+                'launch_path': '/input1.html',
+                'types': ['text'],
+                'locales': {
+                    'es': {
+                        'name': 'foo',
+                        'description': 'bar'
+                    }
+                }
+            }
+        }
+        self.analyze()
+        self.assert_silent()
+
+    def test_inputs_dict_entry_invalid_locales(self):
+        """Test that 'inputs' with an localized entry but contain invalid element."""
+        self.data['inputs'] = {
+            'input1': {
+                'name': 'Symbols',
+                'description': 'Symbols Virtual Keyboard',
+                'launch_path': '/input1.html',
+                'types': ['text'],
+                'locales': {
+                    'es': {
+                        'name': 'foo',
+                        'description': 'bar',
+                        'foo': 'bar2'
+                    }
+                }
+            }
+        }
+        self.analyze()
+        self.assert_failed(with_warnings=True)
 
     def test_fullscreen_missing(self):
         """Test that the 'fullscreen' property can be absent."""
