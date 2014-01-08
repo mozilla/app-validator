@@ -77,8 +77,10 @@ INPUT_DEF_OBJ = {
     "description": {"expected_type": types.StringTypes,
                     "not_empty": True},
     "types": {"expected_type": list,
-              "process": lambda s: s.process_input_types,
-              "not_empty": True},
+              "not_empty": True,
+              "child_nodes": {"expected_type": types.StringTypes,
+                              "values": ["text", "url", "email", "password",
+                                         "number", "option"]}},
     "locales": {
         "expected_type": dict,
         "allowed_nodes": ["*"],
@@ -148,7 +150,7 @@ class WebappSpec(Spec):
                      "max_length": 128,
                      "not_empty": True},
             "role": {"expected_type": types.StringTypes,
-                     "process": lambda s: s.process_role},
+                     "values": [u"system", u"input", u"homescreen"]},
             "description": {"expected_type": types.StringTypes,
                             "max_length": 1024,
                             "not_empty": True},
@@ -571,50 +573,6 @@ class WebappSpec(Spec):
                              "or `certified`.",
                              "Detected type: %s" % node,
                              self.MORE_INFO])
-
-    def process_role(self, node):
-        if unicode(node) not in (u"system", u"input", u"homescreen", ):
-            self.error(
-                err_id=("spec", "webapp", "role_not_known"),
-                error="`role` is not a recognized value",
-                description=["The `role` key does not contain a recognized "
-                             "value. `role` may only contain 'system', 'input', "
-                             "or 'homescreen'.",
-                             "Found value: '%s'" % node,
-                             self.MORE_INFO])
-
-    def process_input_types(self, node):
-        values = [u"text", u"url", u"email", u"password", u"number", u"option"]
-        if not node:
-            self.error(
-                err_id=("spec", "webapp", "input_types", "listempty"),
-                error="`types` of an input entry must contain at least one "
-                      "valid input type.",
-                description=["An input entry must contain at least one "
-                             "valid value.",
-                             "Recognized values: %s" % ", ".join(values),
-                             self.MORE_INFO])
-        for value in node:
-            if not isinstance(value, types.StringTypes):
-                self.error(
-                    err_id=("spec", "webapp", "input_types", "listtype"),
-                    error="Webapp `types` array in an input entry does not contain "
-                          "string values.",
-                    description=["In `types` array of an input entry"
-                                 ", all of its values must be "
-                                 "strings.",
-                                 "Found value: %s" % value,
-                                 self.MORE_INFO])
-            elif unicode(value) not in values:
-                self.error(
-                    err_id=("spec", "webapp", "input_types", "listval"),
-                    error="Webapp `types` array in an input entry contains invalid "
-                          "values.",
-                    description=["The value provided was not a recognized "
-                                 "value.",
-                                 "Recognized values: %s" %
-                                     ", ".join(values),
-                                 self.MORE_INFO])
 
     def process_act_href(self, node):
         if not self._path_valid(node, can_be_absolute=True,
