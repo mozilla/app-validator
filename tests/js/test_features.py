@@ -48,7 +48,6 @@ class TestWindowFeatures(FeatureTester):
         ("SPEECH_SYN", "var x = speechSynthesis.foo();"),
         ("SPEECH_REC", "var x = new SpeechRecognition();"),
         ("POINTER_LOCK", "document.documentElement.requestPointerLock()"),
-        ("THIRDPARTY_KEYBOARD_SUPPORT", "var x = navigator.mozInputMethod.foo()"),
     ]
 
 
@@ -79,6 +78,8 @@ class TestNavigatorFeatures(FeatureTester):
         ("ALARM", "navigator.mozAlarms.foo();"),
         ("TCPSOCKET", "var x = new navigator.mozTCPSocket();"),
         ("TCPSOCKET", "var x = new navigator.mozTCPServerSocket();"),
+        ("THIRDPARTY_KEYBOARD_SUPPORT",
+         "var x = navigator.mozInputMethod.foo()"),
         ("MULTI_SIM_SUPPORT", "var x = navigator.mozMobileConnections.foo();"),
     ]
 
