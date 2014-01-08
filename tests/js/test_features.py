@@ -80,7 +80,8 @@ class TestNavigatorFeatures(FeatureTester):
         ("TCPSOCKET", "var x = new navigator.mozTCPServerSocket();"),
         ("THIRDPARTY_KEYBOARD_SUPPORT",
          "var x = navigator.mozInputMethod.foo()"),
-        ("MULTI_SIM_SUPPORT", "var x = navigator.mozMobileConnections.foo();"),
+        ("NETWORK_INFO_MULTIPLE",
+         "var x = navigator.mozMobileConnections.foo();"),
     ]
 
 
