@@ -79,6 +79,7 @@ class TestNavigatorFeatures(FeatureTester):
         ("ALARM", "navigator.mozAlarms.foo();"),
         ("TCPSOCKET", "var x = new navigator.mozTCPSocket();"),
         ("TCPSOCKET", "var x = new navigator.mozTCPServerSocket();"),
+        ("MULTI_SIM_SUPPORT", "var x = navigator.mozMobileConnections.foo();"),
     ]
 
 
