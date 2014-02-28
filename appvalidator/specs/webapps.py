@@ -415,7 +415,7 @@ class WebappSpec(Spec):
             if str(size) not in node:
                 size_str = "%sx%s" % (size, size)
                 self.warning(
-                    err_id=("spec", "webapp", "fxos_icon"),
+                    err_id=("spec", "webapp", "fxos_icon_%s" % size),
                     warning="%spx icon should be provided for Firefox OS." %
                         size_str,
                     description=["An icon of size %s should be provided "
@@ -426,7 +426,8 @@ class WebappSpec(Spec):
         if "32" not in node or "256" not in node:
             self.notice(
                 err_id=("spec", "webapp", "other_sizes"),
-                notice="Suggested icon sizes not included.",
+                notice="Suggested icon sizes of both 32x32px and 256x256px "
+                       "not included.",
                 description="It is recommended that you include icons of "
                             "size 32x32 and 256x256 for your app. This will "
                             "allow it to display without scaling on most "
