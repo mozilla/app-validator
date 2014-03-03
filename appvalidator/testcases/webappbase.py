@@ -302,7 +302,7 @@ def test_icon(err, data, url, size):
         elif width != size:
             err.error(
                 err_id=("resources", "icon", "size"),
-                error="Icon size %px does not match." % size,
+                error="Icon size %spx does not match." % size,
                 description=["A downloaded icon was found to have a different "
                              "width and height than the size that it said it "
                              "was.",
