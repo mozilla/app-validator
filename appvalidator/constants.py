@@ -31,15 +31,26 @@ MAX_GARBAGE = 100 * 1024
 
 PERMISSIONS = {
     'web': set([
-        'geolocation', 'alarms', 'fmradio', 'desktop-notification', 'storage',
-        'audio-channel-normal', 'audio-channel-content'
+        'alarms', 'audio-capture', 'audio-channel-content',
+        'audio-channel-normal', 'desktop-notification', 'fmradio',
+        'geolocation', 'push', 'storage', 'video-capture'
     ]),
     'privileged': set([
-        'device-storage:pictures', 'device-storage:videos',
-        'device-storage:music', 'device-storage:sdcard', 'tcp-socket',
-        'browser', 'systemXHR', 'audio-channel-notification',
-        'audio-channel-alarm', 'contacts', 'mobilenetwork'
+        'audio-channel-alarm', 'audio-channel-notification', 'browser',
+        'contacts', 'device-storage:pictures', 'device-storage:videos',
+        'device-storage:music', 'device-storage:sdcard', 'feature-detection',
+        'input', 'mobilenetwork', 'speaker-control', 'systemXHR', 'tcp-socket'
     ]),
+    'certified': set([
+        'attention', 'audio-channel-ringer', 'audio-channel-telephony',
+        'audio-channel-publicnotification', 'background-sensors',
+        'backgroundservice', 'bluetooth', 'camera', 'cellbroadcast',
+        'downloads', 'device-storage:apps', 'embed-apps', 'idle',
+        'mobileconnection', 'network-events', 'networkstats-manage',
+        'open-remote-window', 'permissions', 'phonenumberservice', 'power',
+        'settings', 'sms', 'telephony', 'time', 'voicemail', 'webapps-manage',
+        'wifi-manage', 'wappush'
+    ])
 }
 
 SHORT_LOCALES = {

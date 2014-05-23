@@ -4,7 +4,7 @@ import urlparse
 
 import appvalidator.python.copy as copy
 
-from ..constants import DESCRIPTION_TYPES
+from ..constants import DESCRIPTION_TYPES, PERMISSIONS
 from ..specprocessor import Spec, LITERAL_TYPE
 
 
@@ -108,20 +108,6 @@ class WebappSpec(Spec):
                  "https://developer.mozilla.org/docs/Web/Apps/Manifest")
     MIN_REQUIRED_ICON_SIZE = 128
 
-    PERMISSIONS = (
-        "alarms", "attention", "audio-capture", "audio-channel-normal",
-        "audio-channel-content", "audio-channel-notification",
-        "audio-channel-alarm", "audio-channel-ringer", "audio-channel-telephony",
-        "audio-channel-publicnotification", "background-sensors",
-        "backgroundservice", "bluetooth", "browser", "camera", "contacts",
-        "desktop-notification", "device-storage:apps", "device-storage:music",
-        "device-storage:pictures", "device-storage:sdcard",
-        "device-storage:videos", "embed-apps", "fmradio", "geolocation",
-        "idle", "input", "mobileconnection", "mobilenetwork",
-        "network-events", "networkstats-manage", "open-remote-window",
-        "permissions", "power", "push", "settings", "sms", "storage",
-        "systemXHR", "tcp-socket", "telephony", "time", "voicemail",
-        "webapps-manage", "wifi-manage")
     PERMISSIONS_ACCESS = {
         "contacts": _FULL_PERMISSIONS,
         "device-storage:apps": _FULL_PERMISSIONS,
@@ -232,7 +218,9 @@ class WebappSpec(Spec):
                 }
             },
             "permissions": {
-                "allowed_nodes": PERMISSIONS,
+                "allowed_nodes": PERMISSIONS['web'] |
+                                 PERMISSIONS['privileged'] |
+                                 PERMISSIONS['certified'],
                 "expected_type": dict,
                 "unknown_node_level": "error",
                 "child_nodes": {
