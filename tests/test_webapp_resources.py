@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 from functools import wraps
 import os
 
@@ -178,6 +179,7 @@ class TestDataOutput(TestCase):
     def test_just_right(self, r_g):
         normal_response_object = Mock()
         normal_response_object.raw.read.side_effect = ["x" * 100, ""]
+        normal_response_object.encoding = ""
         normal_response_object.status_code = 200
         r_g.return_value = normal_response_object
 
@@ -187,9 +189,24 @@ class TestDataOutput(TestCase):
 
     @patch("appvalidator.testcases.webappbase.requests.get")
     @patch("appvalidator.constants.MAX_RESOURCE_SIZE", 100)
+    def test_unicodeness(self, r_g):
+        normal_response_object = Mock()
+        normal_response_object.raw.read.side_effect = [u"é".encode('utf-8')
+                                                       * 100, ""]
+        normal_response_object.encoding = "UTF-8"
+        normal_response_object.status_code = 200
+        r_g.return_value = normal_response_object
+
+        eq_(appbase.try_get_resource(self.err, None, "http://foo.bar/", ""),
+            u"é" * 100)
+        self.assert_silent()
+
+    @patch("appvalidator.testcases.webappbase.requests.get")
+    @patch("appvalidator.constants.MAX_RESOURCE_SIZE", 100)
     def test_empty(self, r_g):
         empty_response = Mock()
         empty_response.raw.read.return_value = ""
+        empty_response.encoding = ""
         empty_response.status_code = 200
         r_g.return_value = empty_response
 
@@ -202,6 +219,7 @@ class TestDataOutput(TestCase):
     def test_eventual_404(self, r_g):
         error_response = Mock()
         error_response.raw.read.side_effect = ["x" * 100, ""]
+        error_response.encoding = ""
         error_response.status_code = 404
         r_g.return_value = error_response
 

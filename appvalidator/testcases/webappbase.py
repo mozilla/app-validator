@@ -184,7 +184,7 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
                 error="Resource too large",
                 description=["A requested resource returned too much data. "
                              "File sizes are limited to %dMB." %
-                                 (constants.MAX_RESOURCE_SIZE / 1204 / 1024),
+                                 (constants.MAX_RESOURCE_SIZE / 1024 / 1024),
                              "Requested resource: %s" % url],
                 filename=filename)
             return
@@ -194,6 +194,12 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
         except AttributeError:
             # Some versions of requests don't support close().
             pass
+
+        if request.encoding:
+            # If a encoding was specified, decode raw data with it. Needed to
+            # properly feed unicode data to HTMLParser when content is in UTF-8
+            # for instance.
+            data = data.decode(request.encoding)
 
         http_cache[url] = data
 

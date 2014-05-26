@@ -54,6 +54,7 @@ def safe(func):
                 request = Mock()
                 request.text = "foo bar"
                 request.status_code = 200
+                request.encoding = 'UTF-8'
                 # The first bit is the return value. The second bit tells whatever
                 # is requesting the data that there's no more data.
                 request.raw.read.side_effect = [request.text, ""]
