@@ -66,6 +66,8 @@ class TestCase(helper.TestCase):
         Run the standard set of JS engine tests on the script passed via
         `script`.
         """
+        print "Running", script
+
         if self.err is None:
             self.setup_err()
 
@@ -90,6 +92,7 @@ class TestCase(helper.TestCase):
         Assert that the value of a variable from the final script context
         contains the value specified.
         """
+        print "Testing {var} == {val}".format(var=name, val=value)
         val = self.get_var(name)
         if isinstance(val, float):
             val *= 100000
