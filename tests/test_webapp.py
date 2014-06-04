@@ -56,14 +56,8 @@ class WebappBaseTestCase(TestCase):
             "name": "MozBall",
             "description": descr,
             "icons": {
-                "16": "/img/icon-16.png",
                 "32": "/img/icon-32.png",
-                "48": "/img/icon-48.png",
-                "60": "/img/icon-60.png",
-                "90": "/img/icon-90.png",
-                "120": "/img/icon-120.png",
                 "128": "/img/icon-128.png",
-                "256": "/img/icon-256.png",
             },
             "developer": {
                 "name": "Mozilla Labs",
@@ -249,11 +243,6 @@ class TestWebapps(WebappBaseTestCase):
         for icon in ['/foo/bar', 'http://foo.com/bar', 'https://foo.com/bar']:
             yield test_icon, self, icon
 
-    def test_icons_has_60(self):
-        del self.data["icons"]["60"]
-        self.analyze()
-        self.assert_failed(with_warnings=True)
-
     def test_icons_has_min_selfhosted(self):
         del self.data["icons"]["128"]
         self.analyze()
@@ -264,14 +253,8 @@ class TestWebapps(WebappBaseTestCase):
         self.data["installs_allowed_from"] = \
                 appvalidator.constants.DEFAULT_WEBAPP_MRKT_URLS
         del self.data["icons"]["128"]
-        del self.data["icons"]["256"]
         self.analyze()
         self.assert_failed(with_errors=True)
-
-    def test_icons_has_os_sizes(self):
-        del self.data["icons"]["256"]
-        self.analyze()
-        self.assert_notices()
 
     def test_no_locales(self):
         """Test that locales are not required."""
