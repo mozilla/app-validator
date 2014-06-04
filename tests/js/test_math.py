@@ -170,3 +170,31 @@ class TestMathFuncs(TestCase):
         """)
 
         # We really don't care about the output here.
+
+    def test_bit_shifting(self):
+        """Test for bit shifting operators."""
+        def run_script(script):
+            print "Running", script
+            self.run_script(script)
+
+        def assert_var_eq(var, val):
+            print "Testing {var} == {val}".format(var=var, val=val)
+            self.assert_var_eq(var, val)
+
+        self.setUp()
+        run_script("""
+            var x = 1;
+            x >>= 0;""")
+        assert_var_eq("x", 1)
+        run_script("""
+            var x = 1;
+            x >>= 1""")
+        assert_var_eq("x", 0)
+        run_script("""
+            var x = -1;
+            x >>= 0;""")
+        assert_var_eq("x", -1)
+        run_script("""
+            var x = -1;
+            x >>>= 0.2""")
+        assert_var_eq("x", 0xFFFFFFFF)
