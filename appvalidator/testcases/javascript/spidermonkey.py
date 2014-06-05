@@ -66,11 +66,7 @@ class JSReflectException(Exception):
         return self
 
 BOOTSTRAP_SCRIPT = """
-var input = [], line;
-while (line = readline() && line !== null) {
-    input.push(line)
-}
-var stdin = JSON.parse(input.join('\n'));
+var stdin = JSON.parse(readline());
 try{
     print(JSON.stringify(Reflect.parse(stdin)));
 } catch(e) {
