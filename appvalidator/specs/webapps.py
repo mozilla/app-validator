@@ -17,11 +17,7 @@ BANNED_ORIGINS = [
     "mozilla.org",
 ]
 
-STYLEGUIDE_URL = "http://www.mozilla.org/styleguide/products/firefox-os/"
-
 _FULL_PERMISSIONS = ("readonly", "readwrite", "readcreate", "createonly")
-
-FXOS_ICON_SIZES = (60, 90, 120)
 
 FILTER_DEF_OBJ = {
     "expected_type": dict,
@@ -398,28 +394,6 @@ class WebappSpec(Spec):
                              self.MIN_REQUIRED_ICON_SIZE),
                     description="An icon with a minimum size of 128x128 must "
                                 "be provided by each app.")
-
-        for size in FXOS_ICON_SIZES:
-            if str(size) not in node:
-                size_str = "%sx%s" % (size, size)
-                self.warning(
-                    err_id=("spec", "webapp", "fxos_icon_%s" % size),
-                    warning="%spx icon should be provided for Firefox OS." %
-                        size_str,
-                    description=["An icon of size %s should be provided "
-                                 "for the app. Firefox OS will look for this "
-                                 "icon size before any other." % size_str,
-                                 STYLEGUIDE_URL + "icons/"])
-
-        if "32" not in node or "256" not in node:
-            self.notice(
-                err_id=("spec", "webapp", "other_sizes"),
-                notice="Suggested icon sizes of both 32x32px and 256x256px "
-                       "not included.",
-                description="It is recommended that you include icons of "
-                            "size 32x32 and 256x256 for your app. This will "
-                            "allow it to display without scaling on most "
-                            "operating systems.")
 
     def process_dev_url(self, node):
         if not self._path_valid(node, can_have_protocol=True):
