@@ -67,7 +67,6 @@ class JSReflectException(Exception):
 
 BOOTSTRAP_SCRIPT = """
 var stdin = JSON.parse(readline());
-stdin = stdin.replace("\u2028", "\n").replace("\u2029", "\n");
 try{
     print(JSON.stringify(Reflect.parse(stdin)));
 } catch(e) {
@@ -91,7 +90,9 @@ def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
         cmd, shell=False, stdin=subprocess.PIPE, stderr=subprocess.PIPE,
         stdout=subprocess.PIPE)
 
-    code = json.dumps(JS_ESCAPE.sub("u", unicodehelper.decode(code)))
+
+    code = json.dumps(
+        JS_ESCAPE.sub("u", unicodehelper.decode(code, ignore_errors=True)))
     data, stderr = shell_obj.communicate(code)
 
     if stderr:

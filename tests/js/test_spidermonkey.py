@@ -47,3 +47,4 @@ def test_multiline_command_input():
     with open('tests/resources/content/unicode.js', 'r') as f:
         # Just make sure it doesn't raise.
         scripting.test_js_file(err, "foo.js", f.read())
+    assert not err.failed()
