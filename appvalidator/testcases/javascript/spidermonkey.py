@@ -67,6 +67,7 @@ class JSReflectException(Exception):
 
 BOOTSTRAP_SCRIPT = """
 var stdin = JSON.parse(readline());
+stdin = stdin.replace("\u2028", "\n").replace("\u2029", "\n");
 try{
     print(JSON.stringify(Reflect.parse(stdin)));
 } catch(e) {
