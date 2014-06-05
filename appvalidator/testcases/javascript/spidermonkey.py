@@ -1,6 +1,5 @@
 import re
 import subprocess
-from tempfile import NamedTemporaryFile
 
 import simplejson as json
 
@@ -67,15 +66,16 @@ class JSReflectException(Exception):
         return self
 
 BOOTSTRAP_SCRIPT = """
-try {{
-    print(JSON.stringify(Reflect.parse(read("{filename}"))));
-}} catch (e) {{
-    print(JSON.stringify({{
+var stdin = JSON.parse(readline());
+try{
+    print(JSON.stringify(Reflect.parse(stdin)));
+} catch(e) {
+    print(JSON.stringify({
         "error":true,
         "error_message":e.toString(),
         "line_number":e.lineNumber
-    }}));
-}}"""
+    }));
+}"""
 BOOTSTRAP_SCRIPT = re.sub("\n +", "", BOOTSTRAP_SCRIPT)
 
 
@@ -85,15 +85,13 @@ def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
     if not code:
         return None
 
-    with NamedTemporaryFile() as f:
-        f.write(code)
-        f.flush()
-        script = BOOTSTRAP_SCRIPT.format(filename=f.name)
-        cmd = [shell, "-e", script]
-        shell_obj = subprocess.Popen(
-            cmd, shell=False, stdin=subprocess.PIPE, stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE)
-        data, stderr = shell_obj.communicate()
+    cmd = [shell, "-e", BOOTSTRAP_SCRIPT]
+    shell_obj = subprocess.Popen(
+        cmd, shell=False, stdin=subprocess.PIPE, stderr=subprocess.PIPE,
+        stdout=subprocess.PIPE)
+
+    code = json.dumps(JS_ESCAPE.sub("u", unicodehelper.decode(code)))
+    data, stderr = shell_obj.communicate(code)
 
     if stderr:
         raise RuntimeError('Error calling %r: %s' % (cmd, stderr))
