@@ -13,6 +13,7 @@ UNICODES = [
 
 COMMON_ENCODINGS = ("utf-16", "latin_1", "ascii")
 
+
 def decode(data):
     """
     Decode data employing some charset detection and including unicode BOM
@@ -52,4 +53,3 @@ def decode(data):
 
     # Anything else gets filtered.
     return unicode(textfilter.filter_ascii(data), errors="replace")
-

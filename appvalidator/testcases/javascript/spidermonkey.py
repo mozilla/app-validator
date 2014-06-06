@@ -1,5 +1,6 @@
 import re
 import subprocess
+from tempfile import NamedTemporaryFile
 
 import simplejson as json
 
@@ -26,7 +27,8 @@ def get_tree(code, err=None, filename=None, shell=None):
                 warning="JavaScript Compile-Time Error",
                 description=["A compile-time error in the JavaScript halted "
                              "validation of that file.",
-                             "Message: %s" % str_exc.split(":", 1)[-1].strip()],
+                             "Message: %s" % str_exc.split(":", 1)[-1].strip()
+                             ],
                 filename=filename,
                 line=exc.line,
                 context=ContextGenerator(code))
@@ -65,6 +67,18 @@ class JSReflectException(Exception):
         self.line = int(line_num)
         return self
 
+BOOTSTRAP_FILE_SCRIPT = """
+var stdin = read("%s");
+try{
+    print(JSON.stringify(Reflect.parse(stdin)));
+} catch(e) {
+    print(JSON.stringify({
+        "error":true,
+        "error_message":e.toString(),
+        "line_number":e.lineNumber
+    }));
+}"""
+
 BOOTSTRAP_SCRIPT = """
 var stdin = JSON.parse(readline());
 try{
@@ -85,22 +99,7 @@ def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
     if not code:
         return None
 
-    cmd = [shell, "-e", BOOTSTRAP_SCRIPT]
-    shell_obj = subprocess.Popen(
-        cmd, shell=False, stdin=subprocess.PIPE, stderr=subprocess.PIPE,
-        stdout=subprocess.PIPE)
-
-    code = json.dumps(JS_ESCAPE.sub("u", unicodehelper.decode(code)))
-    data, stderr = shell_obj.communicate(code)
-
-    if stderr:
-        raise RuntimeError('Error calling %r: %s' % (cmd, stderr))
-
-    if not data:
-        raise JSReflectException("Reflection failed")
-
-    data = unicodehelper.decode(data)
-    parsed = json.loads(data, strict=False)
+    parsed = get_tree_from_spidermonkey(shell, code)
 
     if parsed.get("error"):
         if parsed["error_message"].startswith("ReferenceError: Reflect"):
@@ -110,6 +109,52 @@ def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
                                                       shell))
         else:
             raise JSReflectException(parsed["error_message"]).line_num(
-                    parsed["line_number"])
+                parsed["line_number"])
 
     return parsed
+
+
+def run_js(shell, script, code=None):
+    cmd = [shell, "-e", script]
+    shell_obj = subprocess.Popen(
+        cmd, shell=False, stdin=subprocess.PIPE, stderr=subprocess.PIPE,
+        stdout=subprocess.PIPE)
+
+    data, stderr = shell_obj.communicate(code)
+
+    if stderr:
+        raise RuntimeError('Error calling %r: %s' % (cmd, stderr))
+
+    if not data:
+        raise JSReflectException("Reflection failed")
+
+    return data, stderr
+
+
+def serialize_code(code):
+    return json.dumps(JS_ESCAPE.sub("u", unicodehelper.decode(code)))
+
+
+def get_tree_from_spidermonkey(shell, code):
+    data = run_with_serialize(shell, code)
+    data = unicodehelper.decode(data)
+    try:
+        return json.loads(data, strict=False)
+    except:
+        # Okay, maybe it was an encoding issue.
+        data = run_with_tempfile(shell, code)
+        data = unicodehelper.decode(data)
+        return json.loads(data, strict=False)
+
+
+def run_with_serialize(shell, code):
+    data, stderr = run_js(shell, BOOTSTRAP_SCRIPT, serialize_code(code))
+    return data
+
+
+def run_with_tempfile(shell, code):
+    with NamedTemporaryFile() as f:
+        f.write(code)
+        f.flush()
+        data, stderr = run_js(shell, BOOTSTRAP_FILE_SCRIPT % f.name)
+    return data
