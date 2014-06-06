@@ -12,7 +12,6 @@ class TestMathFuncs(TestCase):
     def do_func(self, func):
         def wrap(params, output):
             expr = "Math.%s(%s)" % (func, params)
-            print 'Testing `%s`' % expr
             self.do_expr(expr, output)
         return wrap
 
@@ -173,24 +172,20 @@ class TestMathFuncs(TestCase):
 
     def test_bit_shifting(self):
         """Test for bit shifting operators."""
-        def assert_var_eq(var, val):
-            print "Testing {var} == {val}".format(var=var, val=val)
-            self.assert_var_eq(var, val)
-
         self.setUp()
         self.run_script("""
             var x = 1;
             x >>= 0;""")
-        assert_var_eq("x", 1)
+        self.assert_var_eq("x", 1)
         self.run_script("""
             var x = 1;
             x >>= 1""")
-        assert_var_eq("x", 0)
+        self.assert_var_eq("x", 0)
         self.run_script("""
             var x = -1;
             x >>= 0;""")
-        assert_var_eq("x", -1)
+        self.assert_var_eq("x", -1)
         self.run_script("""
             var x = -1;
             x >>>= 0.2""")
-        assert_var_eq("x", 0xFFFFFFFF)
+        self.assert_var_eq("x", 0xFFFFFFFF)

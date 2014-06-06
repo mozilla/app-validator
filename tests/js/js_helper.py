@@ -92,6 +92,7 @@ class TestCase(helper.TestCase):
         Assert that the value of a variable from the final script context
         contains the value specified.
         """
+        print "Testing {var} == {val}".format(var=name, val=value)
         val = self.get_var(name)
         if isinstance(val, float):
             val *= 100000
