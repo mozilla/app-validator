@@ -5,14 +5,14 @@ import appvalidator.unicodehelper as unicodehelper
 
 COMPARISON = u"täst"
 
-def _do_test(path, result=COMPARISON, **kwargs):
+def _do_test(path):
     "Performs a test on a JS file"
 
     text = open(path).read()
-    utext = unicodehelper.decode(text, **kwargs)
+    utext = unicodehelper.decode(text)
 
     print utext.encode("ascii", "backslashreplace")
-    nose.tools.eq_(utext, result)
+    nose.tools.eq_(utext, COMPARISON)
 
 
 def test_latin1():
@@ -48,13 +48,3 @@ def test_utf32le():
 def test_utf32be():
     "Tests utf-32 Big Endian encoding is properly decoded"
     _do_test("tests/resources/unicodehelper/utf-32be.txt")
-
-
-def test_js_safe():
-    _do_test("tests/resources/unicodehelper/unsafe_js.txt",
-             result=u'?',
-             js_safe=True)
-
-def test_js_safe_already_unicode():
-    udata = unicodehelper.decode(u'\u0115', js_safe=True)
-    nose.tools.eq_(udata, u'?')

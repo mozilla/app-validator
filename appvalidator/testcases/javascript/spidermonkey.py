@@ -88,7 +88,7 @@ def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
         cmd, shell=False, stdin=subprocess.PIPE, stderr=subprocess.PIPE,
         stdout=subprocess.PIPE)
 
-    code = json.dumps(unicodehelper.decode(code, js_safe=True))
+    code = json.dumps(unicodehelper.decode(code).encode('ascii', 'replace'))
     data, stderr = shell_obj.communicate(code)
 
     if stderr:

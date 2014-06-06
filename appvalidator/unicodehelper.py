@@ -1,7 +1,6 @@
 import codecs
 
 import textfilter
-from unicodehelperhelper import BAD_JS
 
 # Many thanks to nmaier for inspiration and code in this module
 
@@ -22,43 +21,36 @@ def decode(data, js_safe=False):
     stripping.
     """
 
-    def inner(data):
-        # Don't make more work than we have to.
-        if not isinstance(data, str):
-            return data
+    # Don't make more work than we have to.
+    if not isinstance(data, str):
+        return data
 
-        # Detect standard unicodes.
-        for bom, encoding in UNICODES:
-            if data.startswith(bom):
-                return unicode(data[len(bom):], encoding, "ignore")
+    # Detect standard unicodes.
+    for bom, encoding in UNICODES:
+        if data.startswith(bom):
+            return unicode(data[len(bom):], encoding, "ignore")
 
-        # Try straight UTF-8
+    # Try straight UTF-8
+    try:
+        return unicode(data, "utf-8")
+    except:
+        pass
+
+    # Test for latin_1, because it can be matched as UTF-16
+    # Somewhat of a hack, but it works and is about a thousand times faster
+    # than using chardet.
+    if all(ord(c) < 256 for c in data):
         try:
-            return unicode(data, "utf-8")
+            return unicode(data, "latin_1")
         except:
             pass
 
-        # Test for latin_1, because it can be matched as UTF-16
-        # Somewhat of a hack, but it works and is about a thousand times faster
-        # than using chardet.
-        if all(ord(c) < 256 for c in data):
-            try:
-                return unicode(data, "latin_1")
-            except:
-                pass
+    # Test for various common encodings.
+    for encoding in COMMON_ENCODINGS:
+        try:
+            return unicode(data, encoding)
+        except UnicodeDecodeError:
+            pass
 
-        # Test for various common encodings.
-        for encoding in COMMON_ENCODINGS:
-            try:
-                return unicode(data, encoding)
-            except UnicodeDecodeError:
-                pass
-
-        # Anything else gets filtered.
-        return unicode(textfilter.filter_ascii(data), errors="replace")
-
-    decoded = inner(data)
-    if js_safe:
-        return BAD_JS.sub("?", decoded)
-    else:
-        return decoded
+    # Anything else gets filtered.
+    return unicode(textfilter.filter_ascii(data), errors="replace")
