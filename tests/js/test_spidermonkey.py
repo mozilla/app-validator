@@ -2,10 +2,9 @@ import json
 
 from mock import Mock, patch
 
-from js_helper import TestCase
 from appvalidator.errorbundle import ErrorBundle
-import appvalidator.testcases.scripting as scripting
 import appvalidator.testcases.javascript.spidermonkey as spidermonkey
+import appvalidator.testcases.scripting as scripting
 
 
 def test_scripting_enabled():
@@ -38,6 +37,21 @@ def test_reflectparse_presence(Popen):
         spidermonkey._get_tree("foo bar", "[path]")
     except RuntimeError as err:
         assert (str(err) ==
-            "Spidermonkey version too old; 1.8pre+ required; "
-            "error='ReferenceError: Reflect is not defined'; "
-            "spidermonkey='[path]'")
+                "Spidermonkey version too old; 1.8pre+ required; "
+                "error='ReferenceError: Reflect is not defined'; "
+                "spidermonkey='[path]'")
+
+
+def test_crazy_unicode():
+    err = ErrorBundle()
+    with open('tests/resources/spidermonkey_unicode.js', 'r') as f:
+        scripting.test_js_file(err, "foo.js", f.read())
+    assert not err.failed(), err.errors + err.warnings
+
+
+@patch("appvalidator.testcases.javascript.spidermonkey.run_with_tempfile")
+def test_tempfiles_are_not_used_when_not_needed(run_with_tempfile):
+    run_with_tempfile.return_value = "{}"
+    err = ErrorBundle()
+    scripting.test_js_file(err, "foo.js", "var x = [123, 456];")
+    assert not run_with_tempfile.called
