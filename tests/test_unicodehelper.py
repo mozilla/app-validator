@@ -50,8 +50,7 @@ def test_utf32be():
     _do_test("tests/resources/unicodehelper/utf-32be.txt")
 
 
-def test_ignore_errors():
-    """Tests that ascii is output ignoring un-decodable characters"""
-    _do_test("tests/resources/unicodehelper/utf-8.txt",
-             result="tst",
-             ignore_errors=True)
+def test_js_safe():
+    data = open("tests/resources/unicodehelper/unsafe_js.txt").read()
+    udata = unicodehelper.decode(data, js_safe=True)
+    nose.tools.eq_(udata, u'?')

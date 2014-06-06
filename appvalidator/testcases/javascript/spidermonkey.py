@@ -7,8 +7,6 @@ from appvalidator.constants import SPIDERMONKEY_INSTALLATION
 from appvalidator.contextgenerator import ContextGenerator
 import appvalidator.unicodehelper as unicodehelper
 
-JS_ESCAPE = re.compile("\\\\+[ux]", re.I)
-
 
 def get_tree(code, err=None, filename=None, shell=None):
     """Retrieve the parse tree for a JS snippet."""
@@ -90,9 +88,7 @@ def _get_tree(code, shell=SPIDERMONKEY_INSTALLATION):
         cmd, shell=False, stdin=subprocess.PIPE, stderr=subprocess.PIPE,
         stdout=subprocess.PIPE)
 
-
-    code = json.dumps(
-        JS_ESCAPE.sub("u", unicodehelper.decode(code, ignore_errors=True)))
+    code = json.dumps(unicodehelper.decode(code, js_safe=True))
     data, stderr = shell_obj.communicate(code)
 
     if stderr:

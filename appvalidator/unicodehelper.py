@@ -1,5 +1,7 @@
 import codecs
+
 import textfilter
+from unicodehelperhelper import BAD_JS
 
 # Many thanks to nmaier for inspiration and code in this module
 
@@ -13,7 +15,8 @@ UNICODES = [
 
 COMMON_ENCODINGS = ("utf-16", "latin_1", "ascii")
 
-def decode(data, ignore_errors=False):
+
+def decode(data, js_safe=False):
     """
     Decode data employing some charset detection and including unicode BOM
     stripping.
@@ -55,7 +58,7 @@ def decode(data, ignore_errors=False):
         return unicode(textfilter.filter_ascii(data), errors="replace")
 
     decoded = inner(data)
-    if ignore_errors:
-        return decoded.encode('ascii', 'ignore')
+    if js_safe:
+        return BAD_JS.sub("?", decoded)
     else:
         return decoded
