@@ -66,6 +66,8 @@ class TestCase(helper.TestCase):
         Run the standard set of JS engine tests on the script passed via
         `script`.
         """
+        print "Running", script
+
         if self.err is None:
             self.setup_err()
 
