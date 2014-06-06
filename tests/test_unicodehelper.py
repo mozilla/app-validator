@@ -54,3 +54,7 @@ def test_js_safe():
     _do_test("tests/resources/unicodehelper/unsafe_js.txt",
              result=u'?',
              js_safe=True)
+
+def test_js_safe_already_unicode():
+    udata = unicodehelper.decode(u'\u0115', js_safe=True)
+    nose.tools.eq_(udata, u'?')

@@ -22,11 +22,11 @@ def decode(data, js_safe=False):
     stripping.
     """
 
-    # Don't make more work than we have to.
-    if not isinstance(data, str):
-        return data
-
     def inner(data):
+        # Don't make more work than we have to.
+        if not isinstance(data, str):
+            return data
+
         # Detect standard unicodes.
         for bom, encoding in UNICODES:
             if data.startswith(bom):
