@@ -48,4 +48,3 @@ def test_utf32le():
 def test_utf32be():
     "Tests utf-32 Big Endian encoding is properly decoded"
     _do_test("tests/resources/unicodehelper/utf-32be.txt")
-

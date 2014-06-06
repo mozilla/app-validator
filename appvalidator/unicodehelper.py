@@ -1,4 +1,5 @@
 import codecs
+
 import textfilter
 
 # Many thanks to nmaier for inspiration and code in this module
@@ -13,7 +14,8 @@ UNICODES = [
 
 COMMON_ENCODINGS = ("utf-16", "latin_1", "ascii")
 
-def decode(data):
+
+def decode(data, js_safe=False):
     """
     Decode data employing some charset detection and including unicode BOM
     stripping.
@@ -52,4 +54,3 @@ def decode(data):
 
     # Anything else gets filtered.
     return unicode(textfilter.filter_ascii(data), errors="replace")
-

@@ -72,6 +72,9 @@ class TestCase(object):
         self.detected_type = None
         self.listed = True
 
+    def tearDown(self):
+        pass
+
     def reset(self):
         """
         Reset the test case so that it can be run a second time (ideally with

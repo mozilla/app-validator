@@ -1,3 +1,4 @@
+import ctypes
 import types
 
 from appvalidator.constants import MAX_STR_SIZE
@@ -354,7 +355,8 @@ ASSIGNMENT_OPERATORS = {
     "%=": lambda l, r, gl, gr: 0 if gr == 0 else (gl % gr),
     "<<=": lambda l, r, gl, gr: int(gl) << int(gr),
     ">>=": lambda l, r, gl, gr: int(gl) >> int(gr),
-    ">>>=": lambda l, r, gl, gr: float(abs(int(gl)) >> gr),
+    ">>>=": lambda l, r, gl, gr: float(
+        ctypes.c_uint(int(gl)).value >> int(gr)),
     "|=": lambda l, r, gl, gr: int(gl) | int(gr),
     "^=": lambda l, r, gl, gr: int(gl) ^ int(gr),
     "&=": lambda l, r, gl, gr: int(gl) & int(gr),
