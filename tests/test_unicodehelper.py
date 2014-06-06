@@ -51,6 +51,6 @@ def test_utf32be():
 
 
 def test_js_safe():
-    data = open("tests/resources/unicodehelper/unsafe_js.txt").read()
-    udata = unicodehelper.decode(data, js_safe=True)
-    nose.tools.eq_(udata, u'?')
+    _do_test("tests/resources/unicodehelper/unsafe_js.txt",
+             result=u'?',
+             js_safe=True)
