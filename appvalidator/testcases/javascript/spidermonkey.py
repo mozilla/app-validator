@@ -80,12 +80,7 @@ try{
 }"""
 
 BOOTSTRAP_SCRIPT = """
-var input = [], line = readline();
-while (line !== null) {
-    input.push(line);
-    line = readline();
-}
-var stdin = input.join('\\n');
+var stdin = JSON.parse(readline());
 try{
     print(JSON.stringify(Reflect.parse(stdin)));
 } catch(e) {
@@ -125,7 +120,7 @@ def run_js(shell, script, code=None):
         cmd, shell=False, stdin=subprocess.PIPE, stderr=subprocess.PIPE,
         stdout=subprocess.PIPE)
 
-    data, stderr = shell_obj.communicate(code.encode('utf-8'))
+    data, stderr = shell_obj.communicate(code)
 
     if stderr:
         raise RuntimeError('Error calling %r: %s' % (cmd, stderr))
@@ -137,15 +132,29 @@ def run_js(shell, script, code=None):
 
 
 def serialize_code(code):
-    return JS_ESCAPE.sub("u", unicodehelper.decode(code))
+    return json.dumps(JS_ESCAPE.sub("u", unicodehelper.decode(code)))
 
 
 def get_tree_from_spidermonkey(shell, code):
     data = run_with_serialize(shell, code)
     data = unicodehelper.decode(data)
-    return json.loads(data, strict=False)
+    try:
+        return json.loads(data, strict=False)
+    except:
+        # Okay, maybe it was an encoding issue.
+        data = run_with_tempfile(shell, code)
+        data = unicodehelper.decode(data)
+        return json.loads(data, strict=False)
 
 
 def run_with_serialize(shell, code):
     data, stderr = run_js(shell, BOOTSTRAP_SCRIPT, serialize_code(code))
+    return data
+
+
+def run_with_tempfile(shell, code):
+    with NamedTemporaryFile() as f:
+        f.write(code)
+        f.flush()
+        data, stderr = run_js(shell, BOOTSTRAP_FILE_SCRIPT % f.name)
     return data
