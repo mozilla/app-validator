@@ -153,8 +153,9 @@ def run_with_serialize(shell, code):
 
 
 def run_with_tempfile(shell, code):
+    data = unicodehelper.decode(code).encode('utf-8', 'replace')
     with NamedTemporaryFile() as f:
-        f.write(code)
+        f.write(data)
         f.flush()
         data, stderr = run_js(shell, BOOTSTRAP_FILE_SCRIPT % f.name)
     return data
