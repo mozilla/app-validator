@@ -83,7 +83,7 @@ Run the validator as follows:
 python app-validator <path to app> [-o <output type>] [-v] [--boring] [--unlisted]
 ```
 
-The path to the XPI should point to an XPI file.
+The path to the app should point to a packaged app (.zip file) or a hosted app manifest URL.
 
 <dl>
     <dt>-o
