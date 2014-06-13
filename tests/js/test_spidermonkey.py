@@ -47,3 +47,11 @@ def test_crazy_unicode():
     with open('tests/resources/spidermonkey_unicode.js', 'r') as f:
         scripting.test_js_file(err, "foo.js", f.read())
     assert not err.failed(), err.errors + err.warnings
+
+
+@patch("appvalidator.testcases.javascript.spidermonkey.run_with_tempfile")
+def test_tempfiles_are_not_used_when_not_needed(run_with_tempfile):
+    run_with_tempfile.return_value = "{}"
+    err = ErrorBundle()
+    scripting.test_js_file(err, "foo.js", "var x = [123, 456];")
+    assert not run_with_tempfile.called
