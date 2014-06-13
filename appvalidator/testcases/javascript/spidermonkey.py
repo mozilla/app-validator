@@ -140,7 +140,7 @@ def get_tree_from_spidermonkey(shell, code):
     data = unicodehelper.decode(data)
     try:
         return json.loads(data, strict=False)
-    except:
+    except json.decoder.JSONDecodeError:
         # Okay, maybe it was an encoding issue.
         data = run_with_tempfile(shell, code)
         data = unicodehelper.decode(data)
