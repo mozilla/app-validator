@@ -176,7 +176,8 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
     try:
         request = requests.get(url, stream=True, allow_redirects=True,
                                timeout=3, headers=HEADERS)
-        data = request.raw.read(constants.MAX_RESOURCE_SIZE)
+        data = request.raw.read(constants.MAX_RESOURCE_SIZE,
+                                decode_content=True)
         # Check that there's not more data than the max size.
         if max_size and request.raw.read(1):
             err.error(

@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
-from functools import wraps
+import cStringIO
+import gzip
 import os
+from functools import wraps
 
+import requests.exceptions as reqexc
 from mock import Mock, patch
 from nose.tools import eq_, raises
-import requests.exceptions as reqexc
+from requests.packages.urllib3.response import HTTPResponse
 
 import appvalidator.testcases.webappbase as appbase
 from helper import TestCase
@@ -194,6 +197,36 @@ class TestDataOutput(TestCase):
         normal_response_object.raw.read.side_effect = [u"é".encode('utf-8')
                                                        * 100, ""]
         normal_response_object.encoding = "UTF-8"
+        normal_response_object.status_code = 200
+        r_g.return_value = normal_response_object
+
+        eq_(appbase.try_get_resource(self.err, None, "http://foo.bar/", ""),
+            u"é" * 100)
+        self.assert_silent()
+
+    @patch("appvalidator.testcases.webappbase.requests.get")
+    @patch("appvalidator.constants.MAX_RESOURCE_SIZE", 100)
+    def test_decode_gzip(self, r_g):
+        def compressed_gzip_body():
+            stream = cStringIO.StringIO()
+            compressor = gzip.GzipFile(fileobj=stream, mode='w')
+            compressor.write(u"é".encode('utf-8') * 100)
+            compressor.close()
+            stream.seek(0)
+            return stream
+
+        normal_response_object = Mock()
+        # Build an HTTPResponse object like the one requests uses, with
+        # a gzip compressed body. `decode_content` needs to be False to
+        # properly emulate requests behaviour : it's the caller's
+        # responsability to decode, since it's supposed to be a raw stream.
+        body = compressed_gzip_body()
+        normal_response_object.raw = HTTPResponse(
+            status=200, preload_content=False, headers={
+            'content-encoding': 'gzip',
+            'content-type': 'application/blah; charset=utf-8'
+        }, body=body, decode_content=False)
+        normal_response_object.encoding = 'UTF-8'
         normal_response_object.status_code = 200
         r_g.return_value = normal_response_object
 
