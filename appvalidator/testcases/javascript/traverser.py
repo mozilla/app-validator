@@ -214,3 +214,25 @@ class Traverser(object):
             'line': self.line,
             'col': self.position,
         })
+
+    def _err_kwargs(self, kwargs):
+        err_kwargs = {
+            'filename': self.filename,
+            'line': self.line,
+            'column': self.position,
+            'context': self.context,
+        }
+        err_kwargs.update(kwargs)
+        return err_kwargs
+
+    def error(self, **kwargs):
+        err_kwargs = self._err_kwargs(kwargs)
+        self.err.error(**err_kwargs)
+
+    def warning(self, **kwargs):
+        err_kwargs = self._err_kwargs(kwargs)
+        self.err.warning(**err_kwargs)
+
+    def notice(self, **kwargs):
+        err_kwargs = self._err_kwargs(kwargs)
+        self.err.notice(**err_kwargs)
