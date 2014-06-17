@@ -64,8 +64,8 @@ class TestAssignments(TestCase):
 
         self.run_script("window.undefined = function () {}();")
         self.assert_failed()
-        description = self.err.warnings[0]['description']
-        assert "window.undefined" in ' '.join(description)
+        description = self.err.warnings[0]["description"]
+        assert "window.undefined" in " ".join(description)
 
 
 class TestNestedAssignments(TestCase):
