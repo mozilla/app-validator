@@ -172,7 +172,7 @@ class JSGlobal(JSObject):
                     err_id=("js", "global", "literal_assignment"),
                     warning="Assignment to JS literal",
                     description=[
-                        "A JS literal was assigned to. This may cause issues "
+                        "A JS literal was overwritten. This may cause issues "
                         "and usually indicates other problems with the code.",
                         "Modified global: %s.%s" % (modified_global, name)])
         return super(JSGlobal, self).set(name, value, traverser=traverser)
