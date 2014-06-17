@@ -163,7 +163,18 @@ class JSGlobal(JSObject):
         directory = self._get_contents(traverser)
         if directory and isinstance(directory, dict) and name in directory:
             traverser._debug("Setting global member %s" % name)
-            self.get(traverser, name)._set_to(value, traverser=traverser)
+            obj = self.get(traverser, name)
+            if not isinstance(obj, JSLiteral):
+                obj._set_to(value, traverser=traverser)
+            else:
+                modified_global = self.global_data.get("name", "(unknown)")
+                traverser.warning(
+                    err_id=("js", "global", "literal_assignment"),
+                    warning="Assignment to JS literal",
+                    description=[
+                        "A JS literal was assigned to. This may cause issues "
+                        "and usually indicates other problems with the code.",
+                        "Modified global: %s.%s" % (modified_global, name)])
         return super(JSGlobal, self).set(name, value, traverser=traverser)
 
     def _set_to(self, value, traverser=None):

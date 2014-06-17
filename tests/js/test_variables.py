@@ -59,6 +59,14 @@ class TestAssignments(TestCase):
         self.assert_var_eq("x", 1)
         self.assert_var_eq("y", 4)
 
+    def test_assignment_to_undefined(self):
+        """Test that assigning to undefined raises a warning."""
+
+        self.run_script("window.undefined = function () {}();")
+        self.assert_failed()
+        description = self.err.warnings[0]['description']
+        assert "window.undefined" in ' '.join(description)
+
 
 class TestNestedAssignments(TestCase):
 
