@@ -181,6 +181,14 @@ def test_script_attrs():
     """, "foo.xul", should_fail_csp=True)
 
 
+def test_script_like_attrs():
+    """Test that attributes like on-click are okay."""
+
+    _test_xul_raw("""<foo><bar on-zap="asdf" /></foo>""",
+                  "foo.xul",
+                  should_fail_csp=False)
+
+
 def test_dom_mutation():
     """Test that DOM mutation events are warned against. This should fail both
     the standard tests as well as the CSP tests."""
