@@ -167,8 +167,9 @@ class MarkupParser(HTMLParser):
             csstester.test_css_snippet(
                 self.err, self.filename, attr_dict["style"], self.line)
 
+        event_attribute = lambda k: k.startswith("on") and "-" not in k
         script_attributes = dict(
-            (k, v) for k, v in attr_dict.iteritems() if k.startswith("on"))
+            (k, v) for k, v in attr_dict.iteritems() if event_attribute(k))
         if script_attributes:
             if any(k in DOM_MUTATION_HANDLERS for k in script_attributes):
                 self.err.error(
