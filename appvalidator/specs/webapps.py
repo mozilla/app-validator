@@ -4,7 +4,7 @@ import urlparse
 
 import appvalidator.python.copy as copy
 
-from ..constants import DESCRIPTION_TYPES, PERMISSIONS
+from ..constants import DESCRIPTION_TYPES, ALL_PERMISSIONS
 from ..specprocessor import Spec, LITERAL_TYPE
 
 
@@ -214,9 +214,7 @@ class WebappSpec(Spec):
                 }
             },
             "permissions": {
-                "allowed_nodes": PERMISSIONS['web'] |
-                                 PERMISSIONS['privileged'] |
-                                 PERMISSIONS['certified'],
+                "allowed_nodes": ALL_PERMISSIONS,
                 "expected_type": dict,
                 "unknown_node_level": "error",
                 "child_nodes": {

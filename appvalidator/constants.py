@@ -1,6 +1,5 @@
 "Constants that will be used across files."
 
-import json
 import os
 import types
 
@@ -52,6 +51,9 @@ PERMISSIONS = {
         'wifi-manage', 'wappush'
     ])
 }
+ALL_PERMISSIONS = set.union(*PERMISSIONS.values())
+PRIVILEGED_PERMISSIONS = ALL_PERMISSIONS - PERMISSIONS['certified']
+WEB_PERMISSIONS = PERMISSIONS['web']
 
 SHORT_LOCALES = {
     'en': 'en-US', 'ga': 'ga-IE', 'pt': 'pt-PT', 'sv': 'sv-SE', 'zh': 'zh-CN'
@@ -72,7 +74,7 @@ SUPPORTED_LOCALES = [
 
 # Graciously provided by @kumar in bug 614574
 if (not SPIDERMONKEY_INSTALLATION or
-    not os.path.exists(SPIDERMONKEY_INSTALLATION)):
+        not os.path.exists(SPIDERMONKEY_INSTALLATION)):
     for p in os.environ.get("PATH", "").split(":"):
         SPIDERMONKEY_INSTALLATION = os.path.join(p, "js")
         if os.path.exists(SPIDERMONKEY_INSTALLATION):
@@ -83,7 +85,7 @@ if not os.path.exists(SPIDERMONKEY_INSTALLATION):
 
 # The fallback is simply to disable JS tests.
 if (not os.path.exists(SPIDERMONKEY_INSTALLATION) or
-    os.environ.get("TRAVIS", "") == "true"):
+        os.environ.get("TRAVIS", "") == "true"):
     SPIDERMONKEY_INSTALLATION = None
 
 try:
