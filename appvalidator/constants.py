@@ -49,9 +49,16 @@ PERMISSIONS = {
         'open-remote-window', 'permissions', 'phonenumberservice', 'power',
         'settings', 'sms', 'telephony', 'time', 'voicemail', 'webapps-manage',
         'wifi-manage', 'wappush'
-    ])
+    ]),
+    'prerelease': set([
+        'moz-attention',
+        'moz-firefox-accounts',
+        'moz-audio-channel-telephony',
+        'moz-audio-channel-ringer',
+    ]),
 }
 ALL_PERMISSIONS = set.union(*PERMISSIONS.values())
+PRERELEASE_PERMISSIONS = PERMISSIONS['prerelease']
 PRIVILEGED_PERMISSIONS = ALL_PERMISSIONS - PERMISSIONS['certified']
 WEB_PERMISSIONS = PERMISSIONS['web']
 

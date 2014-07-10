@@ -4,7 +4,8 @@ import urlparse
 
 import appvalidator.python.copy as copy
 
-from ..constants import DESCRIPTION_TYPES, ALL_PERMISSIONS
+from ..constants import (ALL_PERMISSIONS, DESCRIPTION_TYPES,
+                         PRERELEASE_PERMISSIONS)
 from ..specprocessor import Spec, LITERAL_TYPE
 
 
@@ -643,7 +644,11 @@ class WebappSpec(Spec):
 
     def process_permissions(self, node):
         requested_permissions = set()
+
         for permission, per_node in node.items():
+            if permission in PRERELEASE_PERMISSIONS:
+                requested_permissions.add(permission)
+
             if permission not in self.PERMISSIONS_ACCESS:
                 continue
 

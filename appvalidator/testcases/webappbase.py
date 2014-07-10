@@ -61,6 +61,21 @@ def test_permissions(err, package):
                          "App's type: %s" % app_type],
             filename="manifest.webapp" if packaged else "")
 
+    def prerelease_warning(permission):
+        err.warning(
+            err_id=("webappbase", "test_permissions", "prerelease"),
+            warning="App requested prerelease permission",
+            description=["A permission requested by the app is in prerelease "
+                         "availability. An extended review process will be"
+                         "required to approve this app.",
+                         "Requested permission: %s" % permission],
+            filename="manifest.webapp" if packaged else "")
+
+    def warn_prerelease_permissions(prerelease_permissions):
+        for perm in prerelease_permissions:
+            if perm in app_permissions:
+                prerelease_warning(perm)
+
     def verify_permissions(allowed_permissions):
         for perm in app_permissions:
             if perm not in allowed_permissions:
@@ -70,6 +85,7 @@ def test_permissions(err, package):
         verify_permissions(constants.WEB_PERMISSIONS)
     elif app_type == "privileged":
         verify_permissions(constants.PRIVILEGED_PERMISSIONS)
+        warn_prerelease_permissions(constants.PRERELEASE_PERMISSIONS)
 
 
 class DataURIException(Exception):
