@@ -48,6 +48,7 @@ def test_permissions(err, package):
 
     app_type = err.get_resource("app_type")
     packaged = err.get_resource("packaged")
+    app_permissions = err.get_resource("permissions")
 
     def error(permission):
         err.error(
@@ -55,22 +56,36 @@ def test_permissions(err, package):
             error="App requested unavailable permission",
             description=["A permission requested by the app is not available "
                          "for the app's type. See %s for more information." %
-                             MANIFEST_URL % "type",
+                         MANIFEST_URL % "type",
                          "Requested permission: %s" % permission,
                          "App's type: %s" % app_type],
             filename="manifest.webapp" if packaged else "")
 
-    if app_type == "web":
-        for perm in err.get_resource("permissions"):
-            if perm not in constants.PERMISSIONS["web"]:
-                error(perm)
-    elif app_type == "privileged":
-        available_perms = (constants.PERMISSIONS["web"] |
-                           constants.PERMISSIONS["privileged"])
+    def prerelease_warning(permission):
+        err.warning(
+            err_id=("webappbase", "test_permissions", "prerelease"),
+            warning="App requested prerelease permission",
+            description=["A permission requested by the app is in prerelease "
+                         "availability. An extended review process will be"
+                         "required to approve this app.",
+                         "Requested permission: %s" % permission],
+            filename="manifest.webapp" if packaged else "")
 
-        for perm in err.get_resource("permissions"):
-            if perm not in available_perms:
+    def warn_prerelease_permissions(prerelease_permissions):
+        for perm in prerelease_permissions:
+            if perm in app_permissions:
+                prerelease_warning(perm)
+
+    def verify_permissions(allowed_permissions):
+        for perm in app_permissions:
+            if perm not in allowed_permissions:
                 error(perm)
+
+    if app_type == "web":
+        verify_permissions(constants.WEB_PERMISSIONS)
+    elif app_type == "privileged":
+        verify_permissions(constants.PRIVILEGED_PERMISSIONS)
+        warn_prerelease_permissions(constants.PRERELEASE_PERMISSIONS)
 
 
 class DataURIException(Exception):

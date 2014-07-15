@@ -783,9 +783,7 @@ class TestWebapps(WebappBaseTestCase):
     def set_permissions(self):
         """Fill out the permissions node with every possible permission."""
         self.data["permissions"] = {}
-        for perm in set.union(appvalidator.constants.PERMISSIONS['web'],
-                              appvalidator.constants.PERMISSIONS['privileged'],
-                              appvalidator.constants.PERMISSIONS['certified']):
+        for perm in appvalidator.constants.ALL_PERMISSIONS:
             self.data["permissions"][perm] = {
                 "description": "Required to make things good."
             }
