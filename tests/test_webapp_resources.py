@@ -206,6 +206,21 @@ class TestDataOutput(TestCase):
 
     @patch("appvalidator.testcases.webappbase.requests.get")
     @patch("appvalidator.constants.MAX_RESOURCE_SIZE", 100)
+    def test_unicode_binary(self, r_g):
+        normal_response_object = Mock()
+        # The u"é" is *not* encoded in UTF-8 this time, so it would throw an
+        # UnicodeEncodeError if we'd try to decode it.
+        normal_response_object.raw.read.side_effect = [u"é" * 100, ""]
+        normal_response_object.encoding = "UTF-8"
+        normal_response_object.status_code = 200
+        r_g.return_value = normal_response_object
+
+        eq_(appbase.try_get_resource(self.err, None, "http://foo.bar/", "",
+                                     binary=True), u"é" * 100)
+        self.assert_silent()
+
+    @patch("appvalidator.testcases.webappbase.requests.get")
+    @patch("appvalidator.constants.MAX_RESOURCE_SIZE", 100)
     def test_decode_gzip(self, r_g):
         def compressed_gzip_body():
             stream = cStringIO.StringIO()
@@ -290,6 +305,9 @@ class TestResourcePolling(TestCase):
         self.setup_manifest()["icons"] = {"32": "fizz"}
         appbase.test_app_resources(self.err, None)
         eq_(tgr.call_args[0][2], "fizz")
+
+        # Icons must be fetched with "binary" keyword argument.
+        eq_(tgr.call_args[1]['binary'], True)
         eq_(test_icon.call_args[1]["data"].getvalue(), "foobar")
 
     @patch("appvalidator.testcases.webappbase.test_icon", Mock())

@@ -133,7 +133,7 @@ def _normalize_url(err, url):
 
 
 def try_get_resource(err, package, url, filename, resource_type="URL",
-                     max_size=True, simulate=False):
+                     max_size=True, simulate=False, binary=False):
 
     # Try to process data URIs first.
     if url.startswith("data:"):
@@ -211,10 +211,10 @@ def try_get_resource(err, package, url, filename, resource_type="URL",
             # Some versions of requests don't support close().
             pass
 
-        if request.encoding:
-            # If a encoding was specified, decode raw data with it. Needed to
-            # properly feed unicode data to HTMLParser when content is in UTF-8
-            # for instance.
+        if request.encoding and not binary:
+            # If a encoding was specified, and we are not trying to fetch a
+            # binary, decode raw data with it. Needed to properly feed unicode
+            # data to HTMLParser when content is in UTF-8 for instance.
             data = data.decode(request.encoding)
 
         http_cache[url] = data
@@ -374,8 +374,8 @@ def test_app_resources(err, package):
                 filename="manifest.webapp")
             break
 
-        icon_data = try_get_resource(err, package,
-                                     url, "manifest.webapp", "icon")
+        icon_data = try_get_resource(err, package, url, "manifest.webapp",
+                                     "icon", binary=True)
         if not icon_data:
             continue
 
