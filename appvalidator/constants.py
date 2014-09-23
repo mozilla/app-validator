@@ -36,14 +36,15 @@ PERMISSIONS = {
     ]),
     'privileged': set([
         'audio-channel-alarm', 'audio-channel-notification', 'browser',
-        'contacts', 'device-storage:pictures', 'device-storage:videos',
-        'device-storage:music', 'device-storage:sdcard', 'feature-detection',
+        'camera', 'contacts', 'device-storage:pictures',
+        'device-storage:videos', 'device-storage:music',
+        'device-storage:sdcard', 'feature-detection',
         'input', 'mobilenetwork', 'speaker-control', 'systemXHR', 'tcp-socket'
     ]),
     'certified': set([
         'attention', 'audio-channel-ringer', 'audio-channel-telephony',
         'audio-channel-publicnotification', 'background-sensors',
-        'backgroundservice', 'bluetooth', 'camera', 'cellbroadcast',
+        'backgroundservice', 'bluetooth', 'cellbroadcast',
         'downloads', 'device-storage:apps', 'embed-apps', 'idle',
         'mobileconnection', 'network-events', 'networkstats-manage',
         'open-remote-window', 'permissions', 'phonenumberservice', 'power',
