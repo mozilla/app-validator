@@ -44,11 +44,16 @@ def _function(traverser, node):
     function expressions.
     """
 
+    current_contexts = traverser.contexts[:]
+
     def wrap():
         traverser.function_collection.append([])
         traverser._debug("THIS_PUSH")
         # Allow references to "this"
         traverser.this_stack.append(JSObject(traverser=traverser))
+
+        # inherit contexts from the current scope
+        traverser.contexts = current_contexts
 
         params = {}
         for param in node["params"]:
