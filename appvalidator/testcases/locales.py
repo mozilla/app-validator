@@ -1,29 +1,12 @@
 from . import register_test
-from appvalidator.constants import SHORT_LOCALES, SUPPORTED_LOCALES
+from appvalidator.constants import (HIDDEN_LANGUAGES, SHORTER_LANGUAGES, 
+                                    SUPPORTED_LANGUAGES)
 
 
-def canonicalize(locale):
-    # Format the locale properly.
-    if "-" in locale:
-        language, region = locale.split('-', 1)
-    else:
-        language = locale
-        region = ""
-
-    language = language.lower()
-    region = region.upper()
-    locale = '%s-%s' % (language, region)
-
-    if locale in SUPPORTED_LOCALES:
-        return locale
-
-    if language in SUPPORTED_LOCALES:
-        return language
-
-    if language in SHORT_LOCALES:
-        return SHORT_LOCALES[language]
-
-    return locale
+# The validator accepts every language supported by Marketplace, even hidden
+# ones.
+SUPPORTED_LANGUAGES = (
+    SUPPORTED_LANGUAGES + HIDDEN_LANGUAGES + tuple(SHORTER_LANGUAGES.keys()))
 
 
 @register_test(tier=2)
@@ -50,7 +33,21 @@ def validate_locales(err, package=None):
 
     locales = set()
     if "default_locale" in manifest:
-        locales.add(manifest["default_locale"])
+        default_locale = manifest["default_locale"]
+        locales.add(default_locale)
+        # Since default_locale will be used by the Marketplace to decide which
+        # locale the name/description from the manifest are saved in, it's
+        # crucial for it to be valid - raise an error if it's an invalid or
+        # unsupported locale, not just a warning.
+        if not default_locale in SUPPORTED_LANGUAGES:
+            err.error(
+                err_id=("default_locale", "not_supported"),
+                error="Unsupported default_locale provided.",
+                description=["The default_locale provided in the manifest is "
+                             "not supported by the Firefox Marketplace. If a "
+                             "default_locale is provided, it must be be a "
+                             "supported one.",
+                             "Provided defaut_locale: %s" % default_locale])
 
     if "locales" in manifest:
         for locale in manifest["locales"]:
@@ -61,7 +58,7 @@ def validate_locales(err, package=None):
     if not locales:
         return
 
-    if not any(canonicalize(loc) in SUPPORTED_LOCALES for loc in locales):
+    if not any(loc in SUPPORTED_LANGUAGES for loc in locales):
         err.error(
             err_id=("locales", "none_supported"),
             error="No supported locales provided.",
@@ -72,7 +69,7 @@ def validate_locales(err, package=None):
         return
 
     for locale in locales:
-        if canonicalize(locale) not in SUPPORTED_LOCALES:
+        if locale not in SUPPORTED_LANGUAGES:
             err.warning(
                 err_id=("locales", "not_supported"),
                 warning="Unsupported locale provided.",
