@@ -39,7 +39,8 @@ PERMISSIONS = {
         'camera', 'contacts', 'device-storage:pictures',
         'device-storage:videos', 'device-storage:music',
         'device-storage:sdcard', 'feature-detection',
-        'input', 'mobilenetwork', 'speaker-control', 'systemXHR', 'tcp-socket'
+        'input', 'mobileid', 'mobilenetwork', 'speaker-control', 'systemXHR',
+        'tcp-socket'
     ]),
     'certified': set([
         'attention', 'audio-channel-ringer', 'audio-channel-telephony',

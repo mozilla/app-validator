@@ -828,6 +828,12 @@ class TestWebapps(WebappBaseTestCase):
         self.analyze()
         self.assert_failed(with_errors=True)
 
+    def test_permissions_mobileid(self):
+        self.set_permissions()
+        self.data["permissions"]["mobileid"] = {"description": "cause"}
+        self.analyze()
+        self.assert_silent()
+
     def test_csp(self):
         self.data['csp'] = 'this is the csp policy. it can be a string.'
         self.analyze()
