@@ -4,6 +4,7 @@ import tempfile
 import types
 
 import simplejson as json
+from mock import patch
 from nose.tools import eq_
 
 from helper import TestCase
@@ -965,14 +966,24 @@ class TestWebapps(WebappBaseTestCase):
         self.assert_failed(with_errors=True)
 
     def test_origin_allowed(self):
-        self.make_privileged()
-        self.data["origin"] = "app://marketplace.firefox.com"
-        self.analyze()
-        self.assert_silent()
-
-    def test_origin_banned(self):
-        for origin in ("app://system.gaiamobile.org", "app://mozilla.org"):
+        for origin in ("app://marketplace.firefox.com",
+                       "app://gamescentre.mozilla.com",
+                       "app://mozilla.org",
+                       "app://system.gaiamobile.org"):
             self.make_privileged()
+            self.data["origin"] = origin
+            self.analyze()
+            self.assert_silent()
+
+    @patch("appvalidator.specs.webapps.BANNED_ORIGINS", [
+        "gamescentre.mozilla.com",
+        "firefox.com",
+    ])
+    def test_origin_banned(self):
+        self.make_privileged()
+
+        for origin in ("app://gamescentre.mozilla.com",
+                       "app://theconsoleisdead.firefox.com"):
             self.data["origin"] = origin
             self.analyze()
             self.assert_failed(with_errors=True)
