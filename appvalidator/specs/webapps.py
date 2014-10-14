@@ -12,11 +12,9 @@ from ..specprocessor import Spec, LITERAL_TYPE
 # This notably excludes booleans.
 JSON_LITERALS = types.StringTypes + (int, float)
 
-BANNED_ORIGINS = [
-    "gaiamobile.org",
-    "mozilla.com",
-    "mozilla.org",
-]
+# We removed Mozilla origins in bug 1082049 and bug 929600.
+# If we need to revert, add them back here.
+BANNED_ORIGINS = []
 
 _FULL_PERMISSIONS = ("readonly", "readwrite", "readcreate", "createonly")
 
