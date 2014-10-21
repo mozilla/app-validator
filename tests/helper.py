@@ -128,7 +128,7 @@ class TestCase(object):
         Assert that no errors have been raised. If warnings_pass is True, also
         assert that there are no warnings.
         """
-        assert not self.failed(fail_on_warnings=not warnings_pass), \
+        assert not self.err.failed(fail_on_warnings=not warnings_pass), \
                 ("Test was intended to pass%s, but it did not." %
                      (" with warnings" if warnings_pass else ""))
 

@@ -6,15 +6,15 @@ import scripting as testendpoint_js
 from . import register_test
 from .. import unicodehelper
 from ..constants import *
-from ..contextgenerator import ContextGenerator
 
 
 FLAGGED_FILES = set([".DS_Store", "Thumbs.db", "desktop.ini",
                      "_vti_cnf"])
 FLAGGED_EXTENSIONS = set([".orig", ".old", ".tmp", "~"])
 
+
 with open(os.path.join(os.path.dirname(__file__), "hashes.txt")) as f:
-    hash_blacklist = set(map(str.rstrip, f))
+    hashes_whitelist = set([s.strip().split(None, 1)[0] for s in f])
 
 
 @register_test(tier=2)
@@ -24,7 +24,6 @@ def test_packed_packages(err, package=None):
         return
 
     processed_files = 0
-
     garbage_files = 0
 
     # Iterate each item in the package.
@@ -66,8 +65,8 @@ def test_packed_packages(err, package=None):
         except KeyError:
             pass
 
-        # Skip over whitelisted hashes unless we are checking for compatibility.
-        if hashlib.sha1(file_data).hexdigest() in hash_blacklist:
+        # Skip over whitelisted hashes.
+        if hashlib.sha256(file_data).hexdigest() in hashes_whitelist:
             continue
 
         # Process the file.
