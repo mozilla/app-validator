@@ -64,22 +64,20 @@ PRERELEASE_PERMISSIONS = PERMISSIONS['prerelease']
 PRIVILEGED_PERMISSIONS = ALL_PERMISSIONS - PERMISSIONS['certified']
 WEB_PERMISSIONS = PERMISSIONS['web']
 
-SHORT_LOCALES = {
-    'en': 'en-US', 'ga': 'ga-IE', 'pt': 'pt-PT', 'sv': 'sv-SE', 'zh': 'zh-CN'
-}
-
-# Taken from Fireplace's hearth/media/js/l10n.js
-SUPPORTED_LOCALES = [
-    'de', 'en-US', 'es', 'fr', 'pl', 'pt-BR',
-
-    # List of languages from AMO's settings (excluding mkt's active locales).
-    'af', 'ar', 'bg', 'ca', 'cs', 'da', 'el', 'eu', 'fa',
-    'fi', 'ga-IE', 'he', 'hu', 'id', 'it', 'ja', 'ko', 'mn', 'nl',
-    'pt-PT', 'ro', 'ru', 'sk', 'sl', 'sq', 'sv-SE', 'uk', 'vi',
-    'zh-CN', 'zh-TW',
-    # The hidden list from AMO's settings:
-    'cy', 'sr', 'tr',
-]
+# Those 3 *_LANGUAGES settings are taken from zamboni's mkt/settings.py
+SUPPORTED_LANGUAGES = (
+    'bg', 'bn-BD', 'ca', 'cs', 'da', 'de', 'el', 'en-US', 'es', 'eu', 'fr',
+    'ga-IE', 'hr', 'hu', 'it', 'ja', 'ko', 'mk', 'nb-NO', 'nl', 'pa', 'pl',
+    'pt-BR', 'ro', 'ru', 'sk', 'sq', 'sr', 'sr-Latn', 'ta', 'tr', 'xh',
+    'zh-CN', 'zh-TW', 'zu',
+)
+HIDDEN_LANGUAGES = (
+    'af', 'ar', 'fa', 'fi', 'he', 'id', 'mn', 'pt-PT', 'sl', 'sv-SE',
+    'uk', 'vi',
+    'cy',
+)
+SHORTER_LANGUAGES = {'en': 'en-US', 'ga': 'ga-IE', 'pt': 'pt-PT',
+                     'sv': 'sv-SE', 'zh': 'zh-CN'}
 
 # Graciously provided by @kumar in bug 614574
 if (not SPIDERMONKEY_INSTALLATION or
