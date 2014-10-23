@@ -1,3 +1,4 @@
+import hashlib
 from mock import patch
 from nose.tools import eq_
 
@@ -5,7 +6,6 @@ from helper import MockXPI, TestCase
 
 from appvalidator.zip import ZipPackage
 import appvalidator.testcases.content as content
-from appvalidator.errorbundle import ErrorBundle
 from appvalidator.constants import *
 
 
@@ -82,6 +82,7 @@ class MockMarkupEndpoint(MockTestEndpoint):
             return lambda x: self
 
         return MockTestEndpoint.__getattribute__(self, name)
+
 
 class TestContent(TestCase):
 
@@ -161,6 +162,28 @@ class TestContent(TestCase):
 
         content.test_packed_packages(self.err, mock_package)
         self.assert_failed(with_warnings=True, with_errors=True)
+
+    def test_whitelist(self):
+        """Test that whitelisted files are properly skipped tested by the
+        content validator."""
+
+        self.setup_err()
+        # Build a fake package with a js file that would not validate if it
+        # wasn't whitelisted.
+        mock_package = MockXPI({"foo.js": "tests/resources/content/error.js"})
+        # Build the mock whitelist.
+        foo_js = mock_package.read('foo.js')
+        hashes_whitelist = [hashlib.sha256(foo_js).hexdigest()]
+
+        with patch("appvalidator.testcases.content.hashes_whitelist",
+                   hashes_whitelist):
+            eq_(self._run_test(mock_package), 0)
+            self.assert_passes()
+
+        # Prove that it would fail otherwise.
+        eq_(self._run_test(mock_package), 1)
+        self.assert_failed()
+
 
 
 class TestCordova(TestCase):
