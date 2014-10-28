@@ -1,6 +1,6 @@
 import hashlib
 from mock import patch
-from nose.tools import eq_
+from nose.tools import eq_, ok_
 
 from helper import MockXPI, TestCase
 
@@ -171,8 +171,13 @@ class TestContent(TestCase):
         # Build a fake package with a js file that would not validate if it
         # wasn't whitelisted.
         mock_package = MockXPI({"foo.js": "tests/resources/content/error.js"})
-        # Build the mock whitelist.
-        foo_js = mock_package.read('foo.js')
+        
+        # Build the mock whitelist. Convert line-endings to unix-style before
+        # building the hash, it should still validate properly as the code that
+        # validates the package converts every js file to unix-style endings
+        # first.
+        ok_('\r\n' in mock_package.read('foo.js'))
+        foo_js = mock_package.read('foo.js').replace('\r\n', '\n')
         hashes_whitelist = [hashlib.sha256(foo_js).hexdigest()]
 
         with patch("appvalidator.testcases.content.hashes_whitelist",
@@ -183,7 +188,6 @@ class TestContent(TestCase):
         # Prove that it would fail otherwise.
         eq_(self._run_test(mock_package), 1)
         self.assert_failed()
-
 
 
 class TestCordova(TestCase):

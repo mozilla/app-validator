@@ -65,9 +65,11 @@ def test_packed_packages(err, package=None):
         except KeyError:
             pass
 
-        # Skip over whitelisted hashes.
-        if hashlib.sha256(file_data).hexdigest() in hashes_whitelist:
-            continue
+        # Skip over whitelisted hashes - only applies to .js files for now.
+        if name.endswith('.js'):
+            file_data = file_data.replace("\r\n", "\n")
+            if hashlib.sha256(file_data).hexdigest() in hashes_whitelist:
+                continue
 
         # Process the file.
         processed = _process_file(err, package, name, file_data)
