@@ -95,6 +95,10 @@ class WebappBaseTestCase(TestCase):
             "orientation": "landscape",
             "fullscreen": "true",
             "type": "web",
+            "precompile": [
+                "game.js",
+                "database.js"
+            ],
         }
 
         self.resources = [("app_type", "web")]
@@ -1016,5 +1020,11 @@ class TestWebapps(WebappBaseTestCase):
 
     def test_chrome_bad_type(self):
         self.data["chrome"] = []
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_precompile_wrong_format(self):
+        # "precompile" should be list of files not this weird dict.
+        self.data["precompile"] = {"foo.js": True}
         self.analyze()
         self.assert_failed(with_errors=True)
