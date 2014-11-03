@@ -123,7 +123,7 @@ class WebappSpec(Spec):
                                "orientation", "fullscreen", "appcache_path",
                                "type", "activities", "permissions", "csp",
                                "messages", "origin", "redirects",
-                               "permissions", "chrome", "inputs", "role"],
+                               "chrome", "inputs", "role", "precompile"],
         "allowed_nodes": [],
         "disallowed_nodes": ["widget"],
         "child_nodes": {
@@ -230,6 +230,9 @@ class WebappSpec(Spec):
                     }
                 },
                 "process": lambda s: s.process_permissions
+            },
+            "precompile": {
+                "expected_type": list,
             },
             "csp": {"expected_type": types.StringTypes,
                     "not_empty": True},
