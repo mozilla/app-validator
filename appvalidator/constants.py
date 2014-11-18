@@ -28,6 +28,10 @@ ICON_LIMIT = 10
 
 MAX_GARBAGE = 100 * 1024
 
+# The permission sets are supersets of each other with
+# certified > privileged > web. Prerelease permissions are special.
+# There is no prerelease app type but privileged (and certified) apps can
+# use prerelease permissions before we officially support them.
 PERMISSIONS = {
     'web': set([
         'alarms', 'audio-capture', 'audio-channel-content',
