@@ -77,7 +77,6 @@ class TestNavigatorFeatures(FeatureTester):
         ("NOTIFICATION", "navigator.mozNotification.foo();"),
         ("ALARM", "navigator.mozAlarms.foo();"),
         ("TCPSOCKET", "var x = new navigator.mozTCPSocket();"),
-        ("TCPSOCKET", "var x = new navigator.mozTCPServerSocket();"),
         ("THIRDPARTY_KEYBOARD_SUPPORT",
          "var x = navigator.mozInputMethod.foo()"),
         ("NETWORK_INFO_MULTIPLE",
