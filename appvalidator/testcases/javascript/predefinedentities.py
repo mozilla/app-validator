@@ -81,7 +81,6 @@ NAVIGATOR = {
     u"mozGetGamepad": feature("GAMEPAD"),
     u"webkitGetGamepad": feature("GAMEPAD"),
     u"mozTCPSocket": feature("TCPSOCKET"),
-    u"mozTCPServerSocket": feature("TCPSOCKET"),
     u"mozInputMethod": feature("THIRDPARTY_KEYBOARD_SUPPORT"),
     u"mozMobileConnections": feature("NETWORK_INFO_MULTIPLE"),
 
