@@ -84,7 +84,7 @@ NAVIGATOR = {
     u"mozTCPServerSocket": feature("TCPSOCKET"),
     u"mozInputMethod": feature("THIRDPARTY_KEYBOARD_SUPPORT"),
     u"mozMobileConnections": feature("NETWORK_INFO_MULTIPLE"),
-
+    u"getMobileIdAssertion": feature("MOBILE_ID"),
     u"getUserMedia": entity("getUserMedia"),
 }
 
