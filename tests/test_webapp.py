@@ -1028,3 +1028,8 @@ class TestWebapps(WebappBaseTestCase):
         self.data["precompile"] = {"foo.js": True}
         self.analyze()
         self.assert_failed(with_errors=True)
+
+    def test_precompile_feature(self):
+        self.analyze()
+        self.assert_silent()
+        self.assert_has_feature('PRECOMPILE_ASMJS')

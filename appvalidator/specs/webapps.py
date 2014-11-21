@@ -233,6 +233,7 @@ class WebappSpec(Spec):
             },
             "precompile": {
                 "expected_type": list,
+                "process": lambda s: s.process_precompile,
             },
             "csp": {"expected_type": types.StringTypes,
                     "not_empty": True},
@@ -703,6 +704,9 @@ class WebappSpec(Spec):
                                      banned_origin,
                                  "Found origin: %s" % node,
                                  self.MORE_INFO])
+
+    def process_precompile(self, node):
+        self.err.feature_profile.add('PRECOMPILE_ASMJS')
 
     def parse(self, data):
         if isinstance(data, types.StringTypes):
