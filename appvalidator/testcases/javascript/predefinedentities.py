@@ -83,7 +83,7 @@ NAVIGATOR = {
     u"mozTCPSocket": feature("TCPSOCKET"),
     u"mozInputMethod": feature("THIRDPARTY_KEYBOARD_SUPPORT"),
     u"mozMobileConnections": feature("NETWORK_INFO_MULTIPLE"),
-    u"getMobileIdAssertion": feature("MOBILE_ID"),
+    u"getMobileIdAssertion": feature("MOBILEID"),
     u"getUserMedia": entity("getUserMedia"),
 }
 

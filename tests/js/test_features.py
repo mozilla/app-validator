@@ -74,7 +74,7 @@ class TestNavigatorFeatures(FeatureTester):
         ("FM", "navigator.mozFMRadio();"),
         ("SMS", "navigator.mozSms.foo();"),
         ("GAMEPAD", "navigator.getGamepad();"),
-        ("MOBILE_ID", "navigator.getMobileIdAssertion();"),
+        ("MOBILEID", "navigator.getMobileIdAssertion();"),
         ("NOTIFICATION", "navigator.mozNotification.foo();"),
         ("ALARM", "navigator.mozAlarms.foo();"),
         ("TCPSOCKET", "var x = new navigator.mozTCPSocket();"),
