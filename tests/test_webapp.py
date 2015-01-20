@@ -927,6 +927,24 @@ class TestWebapps(WebappBaseTestCase):
         self.analyze()
         self.assert_failed(with_errors=True)
 
+    def test_origin_must_be_lowercase(self):
+        self.make_privileged()
+        self.data['origin'] = 'app://DOMAIN.com'
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_arbitrary_origin(self):
+        self.make_privileged()
+        self.data['origin'] = 'app://just-some-identifier-string'
+        self.analyze()
+        self.assert_silent()
+
+    def test_uuid_origin(self):
+        self.make_privileged()
+        self.data['origin'] = 'app://878a1076-130e-46fc-a73f-634394166d14'
+        self.analyze()
+        self.assert_silent()
+
     def test_origin_pass(self):
         self.make_privileged()
         self.data['origin'] = 'app://domain.com'
@@ -949,7 +967,7 @@ class TestWebapps(WebappBaseTestCase):
         self.make_privileged()
         self.data["origin"] = "app://hello"
         self.analyze()
-        self.assert_failed(with_errors=True)
+        self.assert_silent()
 
     def test_origin_type(self):
         self.make_privileged()
@@ -957,19 +975,31 @@ class TestWebapps(WebappBaseTestCase):
         self.analyze()
         self.assert_failed(with_errors=True)
 
-    def test_origin_format(self):
+    def test_origin_cannot_have_spaces(self):
         self.make_privileged()
-        self.data["origin"] = "http://asdf"
+        self.data["origin"] = "app://origin with spaces"
         self.analyze()
         self.assert_failed(with_errors=True)
 
-    def test_origin_path(self):
+    def test_origin_must_be_web_safe(self):
+        self.make_privileged()
+        self.data["origin"] = "app://control\tchars\ndisallowed"
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_origin_must_have_app_protocol(self):
+        self.make_privileged()
+        self.data["origin"] = "random-identifier-without-protocol"
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_origin_cannot_contain_path(self):
         self.make_privileged()
         self.data["origin"] = "app://domain.com/path"
         self.analyze()
         self.assert_failed(with_errors=True)
 
-    def test_origin_path_trailing_slash(self):
+    def test_origin_cannot_end_in_trailing_slash(self):
         self.make_privileged()
         self.data["origin"] = "app://domain.com/"
         self.analyze()
