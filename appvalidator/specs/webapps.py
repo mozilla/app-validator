@@ -95,6 +95,42 @@ INPUT_DEF_OBJ = {
     }
 }
 
+LANGUAGES_PROVIDED_OBJ = {
+    "expected_type": dict,
+    "process": lambda s: s.process_languages_provided,
+    "allowed_nodes": ["*"],
+    "not_empty": True,
+    "child_nodes": {
+        "*": {
+            "expected_type": dict,
+            "required_nodes": ["name", "version", "apps"],
+            "allowed_once_nodes": ["name", "version", "apps"],
+            "child_nodes": {
+                "name": {
+                    "expected_type": types.StringTypes,
+                    "not_empty": True
+                },
+                "version": {
+                    "expected_type": types.StringTypes,
+                    "not_empty": True,
+                    "value_matches": r"^[a-zA-Z0-9_,\*\-\.]+$"
+                },
+                "apps": {
+                    "not_empty": True,
+                    "expected_type": dict,
+                    "allowed_nodes": ["*"],
+                    "child_nodes": {
+                        "*": {
+                            "expected_type": types.StringTypes,
+                            "not_empty": True
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 class WebappSpec(Spec):
     """This object parses and subsequently validates webapp manifest files."""
 
@@ -123,7 +159,8 @@ class WebappSpec(Spec):
                                "orientation", "fullscreen", "appcache_path",
                                "type", "activities", "permissions", "csp",
                                "messages", "origin", "redirects",
-                               "chrome", "inputs", "role", "precompile"],
+                               "chrome", "inputs", "role", "precompile",
+                               "languages-provided", "languages-target"],
         "allowed_nodes": [],
         "disallowed_nodes": ["widget"],
         "child_nodes": {
@@ -131,7 +168,9 @@ class WebappSpec(Spec):
                      "max_length": 128,
                      "not_empty": True},
             "role": {"expected_type": types.StringTypes,
-                     "values": [u"system", u"input", u"homescreen"]},
+                     "process": lambda s: s.process_role,
+                     "values": [u"system", u"input", u"langpack",
+                                u"homescreen"]},
             "description": {"expected_type": types.StringTypes,
                             "max_length": 1024,
                             "not_empty": True},
@@ -267,6 +306,23 @@ class WebappSpec(Spec):
                     "navigation": {"expected_type": bool},
                 }
             },
+            # For now, we only support languages pack targeting gaia apps and
+            # only with 2.2 version.
+            "languages-target": {
+                "expected_type": dict,
+                "process": lambda s: s.process_languages_target,
+                "allowed_nodes": ["app://*.gaiamobile.org/manifest.webapp"],
+                "unknown_node_level": "error",
+                "not_empty": True,
+                "child_nodes": {
+                    "app://*.gaiamobile.org/manifest.webapp": {
+                        "expected_type": types.StringTypes,
+                        "not_empty": True,
+                        "value_matches": r"^2\.2$"
+                    },
+                }
+            },
+            "languages-provided": LANGUAGES_PROVIDED_OBJ
         }
     }
 
@@ -286,7 +342,17 @@ class WebappSpec(Spec):
         sparse_nodes = copy.deepcopy(sparse_nodes)
 
         if err.get_resource("packaged"):
-            self.SPEC["required_nodes"].append("launch_path")
+            # Packaged apps that are not langpacks need a launch path.
+            self.SPEC["required_nodes_when"]["launch_path"] = (
+                lambda n: n.get("role") != "langpack"
+            )
+            # Lang packs need languages-provided and languages-target though.
+            self.SPEC["required_nodes_when"]["languages-target"] = (
+                lambda n: n.get("role") == "langpack"
+            )
+            self.SPEC["required_nodes_when"]["languages-provided"] = (
+                lambda n: n.get("role") == "langpack"
+            )
 
         # Allow the developer to avoid localizing their name.
         del sparse_nodes["developer"]["required_nodes"]
@@ -345,6 +411,32 @@ class WebappSpec(Spec):
         except ValueError:
             # If there was an error parsing the URL, return False.
             return False
+
+    def process_role(self, node):
+        if node == 'langpack' and not self.data.get('type') == 'privileged':
+            self.err.error(
+                err_id=("spec", "webapp", "role_langpack_privileged"),
+                error="`langpack` role is only valid for privileged apps.",
+                description=["`langpacks` role is only valid for "
+                            "privileged applications",
+                            self.MORE_INFO])
+
+    def validate_langpack_only_field(self, field):
+        role = self.data.get("role", "")
+        if role != "langpack":
+            error_key = field.replace('-', '_')
+            self.err.error(
+                err_id=("spec", "webapp", "%s_langpacks" % error_key),
+                error="`%s` is only valid for langpacks." % field,
+                description=["`%s` is only valid for "
+                            "applications with the `langpacks` role." % field,
+                            self.MORE_INFO])
+
+    def process_languages_target(self, node):
+        self.validate_langpack_only_field("languages-target")
+
+    def process_languages_provided(self, node):
+        self.validate_langpack_only_field("languages-provided")
 
     def process_launch_path(self, node):
         if not node.startswith("/") or node.startswith("//"):

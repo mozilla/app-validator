@@ -110,3 +110,17 @@ class TestLocales(TestCase):
         # Invalid, should use '-', not '_', but since it's just one of the
         # locales and not the default one, a warning is enough.
         self.assert_failed(with_warnings=True)
+
+    def test_passes_languages_target(self):
+        self.manifest['languages-provided'] = {
+            'pt-BR': {}
+        }
+        self.run()
+        self.assert_silent()
+
+    def test_error_invalid_language_target(self):
+        self.manifest['languages-provided'] = {
+            'pt_BR': {}
+        }
+        self.run()
+        self.assert_failed(with_errors=True)

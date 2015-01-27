@@ -73,8 +73,7 @@ def validate_locales(err, package=None):
                              "Provided defaut_locale: %s" % default_locale])
 
     if "locales" in manifest:
-        for locale in manifest["locales"]:
-            locales.add(locale)
+        locales.update(manifest["locales"].keys())
 
     err.save_resource("locales", locales)
 
@@ -101,3 +100,15 @@ def validate_locales(err, package=None):
                              "information listed in this locale will not be "
                              "stored or displayed to users.",
                              "Unsupported locale: %s" % locale])
+
+    # If present, languages-provided also need to be using supported languages.
+    languages_provided = set(manifest.get("languages-provided", {}).keys())
+    for language in languages_provided:
+        if canonicalize(language) not in ALL_SUPPORTED_LANGUAGES:
+            err.error(
+                err_id=("languages-provided", "not_supported"),
+                error="Unsupported language provided.",
+                description=["A language which is not supported by the Firefox"
+                             " Marketplace was specified in the "
+                             "`languages-provided` object in your manifest.",
+                             "Unsupported language: %s" % language])
