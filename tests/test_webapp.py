@@ -166,8 +166,9 @@ class TestWebapps(WebappBaseTestCase):
         self.analyze()
         self.assert_failed(with_warnings=True)
 
-    def test_long_name(self):
-        """Test that long names are flagged for truncation in Gaia."""
+    def test_long_name_with_locale(self):
+        """Test that long localized names are flagged for truncation in
+        Gaia."""
         self.data["locales"]["es"]["name"] = "This is a long name."
         self.analyze()
         self.assert_failed(with_warnings=True)
@@ -178,14 +179,347 @@ class TestWebapps(WebappBaseTestCase):
         self.analyze()
         self.assert_silent()
 
+    def test_role_langpack_not_privileged(self):
+        """Test that langpacks are required to be privileged apps."""
+        self.resources.append(('packaged', True))
+        self.data["role"] = "langpack"
+        self.analyze()
+        self.assert_failed(with_errors=True)
+        self.assert_got_errid(("spec", "webapp", "role_langpack_privileged", ))
+
+    def test_langpack_role_need_languages_target(self):
+        """Test that a language-target is needed for langpacks."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "type": "privileged",
+            "languages-provided": {
+                "de": {
+                    "name": "Deutsch",
+                    "version": "201411051234",
+                    "apps": {
+                      "app://blah.gaiamobile.org/manifest.webapp": "/de/blah",
+                      "app://email.gaiamobile.org/manifest.webapp": "/de/email"
+                    }
+                }
+            },
+        })
+        self.analyze()
+        self.assert_failed(with_errors=True)
+        self.assert_got_errid(("spec", "iterate", "missing_req_cond", ))
+
+    def test_langpack_invalid_languages_target_type(self):
+        """Test language-target type."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "type": "privileged",
+            "languages-provided": {
+                "de": {
+                    "name": "Deutsch",
+                    "version": "201411051234",
+                    "apps": {
+                      "app://blah.gaiamobile.org/manifest.webapp": "/de/blah",
+                      "app://email.gaiamobile.org/manifest.webapp": "/de/email"
+                    }
+                }
+            },
+            "languages-target": ["2.2"],  # Wrong type.
+        })
+        self.analyze()
+        self.assert_failed(with_errors=True)
+        self.assert_got_errid(("spec", "iterate", "bad_type", ))
+
+    def test_langpack_invalid_languages_target_wrong_version_type(self):
+        """Test that language-target version has the correct type."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "type": "privileged",
+            "languages-target": {
+                "app://*.gaiamobile.org/manifest.webapp": 2.2  # Wrong type.
+            },
+            "languages-provided": {
+                "de": {
+                    "name": "Deutsch",
+                    "version": "201411051234",
+                    "apps": {
+                      "app://blah.gaiamobile.org/manifest.webapp": "/de/blah",
+                      "app://email.gaiamobile.org/manifest.webapp": "/de/email"
+                    }
+                }
+            },
+        })
+        self.analyze()
+        self.assert_failed(with_errors=True)
+        self.assert_got_errid(("spec", "iterate", "bad_type", ))
+
+    def test_langpack_invalid_languages_target_wrong_version_value(self):
+        """Test that language-target version has the correct value."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "type": "privileged",
+            "languages-target": {
+                "app://*.gaiamobile.org/manifest.webapp": "2.3"  # Wrong value.
+            },
+            "languages-provided": {
+                "de": {
+                    "name": "Deutsch",
+                    "version": "201411051234",
+                    "apps": {
+                      "app://blah.gaiamobile.org/manifest.webapp": "/de/blah",
+                      "app://email.gaiamobile.org/manifest.webapp": "/de/email"
+                    }
+                }
+            },
+        })
+        self.analyze()
+        self.assert_failed(with_errors=True)
+        self.assert_got_errid(("spec", "iterate", "value_pattern_fail", ))
+
+    def test_langpack_invalid_languages_target(self):
+        """Test that language-target manifest has the correct value."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "type": "privileged",
+            "languages-target": {
+                "app://my.manifest.webapp": "2.2"  # Manifest is incorrect.
+            },
+            "languages-provided": {
+                "de": {
+                    "name": "Deutsch",
+                    "version": "201411051234",
+                    "apps": {
+                      "app://blah.gaiamobile.org/manifest.webapp": "/de/blah",
+                      "app://email.gaiamobile.org/manifest.webapp": "/de/email"
+                    }
+                }
+            },
+        })
+        self.analyze()
+        self.assert_failed(with_errors=True)
+        self.assert_got_errid(("spec", "iterate", "not_allowed", ))
+
+    def test_langpack_role_need_languages_provided(self):
+        """Test that a language-provided is needed for langpacks."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "type": "privileged",
+            "languages-target": {
+                "app://*.gaiamobile.org/manifest.webapp": "2.2"
+            },
+        })
+        self.analyze()
+        self.assert_failed(with_errors=True)
+        self.assert_got_errid(("spec", "iterate", "missing_req_cond", ))
+
+    def test_langpack_invalid_languages_provided_should_not_be_empty(self):
+        """Test that language-provided is not empty."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "type": "privileged",
+            "languages-target": {
+                "app://*.gaiamobile.org/manifest.webapp": "2.2"
+            },
+            "languages-provided": {}
+        })
+        self.analyze()
+        self.assert_failed(with_errors=True)
+        self.assert_got_errid(("spec", "iterate", "empty", ))
+
+    def test_langpack_invalid_languages_provided_language_should_be_dict(self):
+        """Test that language-provided children are dicts."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "type": "privileged",
+            "languages-target": {
+                "app://*.gaiamobile.org/manifest.webapp": "2.2"
+            },
+            "languages-provided": {
+                "de": []
+            },
+        })
+        self.analyze()
+        self.assert_failed(with_errors=True)
+        self.assert_got_errid(("spec", "iterate", "bad_type", ))
+
+    def test_langpack_invalid_languages_provided_need_version(self):
+        """Test that language-provided version is present."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "type": "privileged",
+            "languages-target": {
+                "app://*.gaiamobile.org/manifest.webapp": "2.2"
+            },
+            "languages-provided": {
+                "de": {
+                    "name": "Deutsch",
+                    "apps": {
+                      "app://blah.gaiamobile.org/manifest.webapp": "/de/blah",
+                      "app://email.gaiamobile.org/manifest.webapp": "/de/email"
+                    }
+                }
+            },
+        })
+        self.analyze()
+        self.assert_failed(with_errors=True)
+        self.assert_got_errid(("spec", "iterate", "missing_req", ))
+
+    def test_langpack_invalid_languages_provided_need_apps(self):
+        """Test that language-provided apps is present."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "type": "privileged",
+            "languages-target": {
+                "app://*.gaiamobile.org/manifest.webapp": "2.2"
+            },
+            "languages-provided": {
+                "de": {
+                    "name": "Deutsch",
+                    "version": "201411051234",
+                }
+            },
+        })
+        self.analyze()
+        self.assert_failed(with_errors=True)
+        self.assert_got_errid(("spec", "iterate", "missing_req", ))
+
+    def test_langpack_invalid_languages_provided_apps(self):
+        """Test that language-provided apps should be a dict."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "type": "privileged",
+            "languages-target": {
+                "app://*.gaiamobile.org/manifest.webapp": "2.2"
+            },
+            "languages-provided": {
+                "de": {
+                    "name": "Deutsch",
+                    "version": "201411051234",
+                    "apps": ["app://blah.gaiamobile.org/manifest.webapp"]
+                }
+            },
+        })
+        self.analyze()
+        self.assert_failed(with_errors=True)
+        self.assert_got_errid(("spec", "iterate", "bad_type", ))
+
+    def test_langpack_invalid_languages_provided_apps_empty(self):
+        """Test that language-provided apps should be non-empty dict."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "type": "privileged",
+            "languages-target": {
+                "app://*.gaiamobile.org/manifest.webapp": "2.2"
+            },
+            "languages-provided": {
+                "de": {
+                    "name": "Deutsch",
+                    "version": "201411051234",
+                    "apps": {
+                    }
+                }
+            },
+        })
+        self.analyze()
+        self.assert_failed(with_errors=True)
+        self.assert_got_errid(("spec", "iterate", "empty", ))
+
+    def test_langpack_invalid_languages_provided_version(self):
+        """Test that language-provided version should be a string."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "type": "privileged",
+            "languages-target": {
+                "app://*.gaiamobile.org/manifest.webapp": "2.2"
+            },
+            "languages-provided": {
+                "de": {
+                    "name": "Deutsch",
+                    "version": 201411051234,  # Wrong type, should be a string.
+                    "apps": {
+                      "app://blah.gaiamobile.org/manifest.webapp": "/de/blah",
+                      "app://email.gaiamobile.org/manifest.webapp": "/de/email"
+                    }
+                }
+            },
+        })
+        self.analyze()
+        self.assert_failed(with_errors=True)
+        self.assert_got_errid(("spec", "iterate", "bad_type", ))
+
+    def test_valid_langpack(self):
+        """Test that a valid langpack passes validation."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "type": "privileged",
+            "languages-target": {
+                "app://*.gaiamobile.org/manifest.webapp": "2.2"
+            },
+            "languages-provided": {
+                "de": {
+                    "name": "Deutsch",
+                    "version": "201411051234",
+                    "apps": {
+                      "app://blah.gaiamobile.org/manifest.webapp": "/de/blah",
+                      "app://email.gaiamobile.org/manifest.webapp": "/de/email"
+                    }
+                }
+            },
+        })
+        self.analyze()
+        self.assert_silent()
+
+    def test_languages_target_invalid_for_webapps(self):
+        """Test that language-target is invalid for non-langpack webapps."""
+        self.data.update({
+            "languages-target": {
+                "app://*.gaiamobile.org/manifest.webapp": "2.2"
+            },
+        })
+        self.analyze()
+        self.assert_failed(with_errors=True)
+        self.assert_got_errid(
+            ("spec", "webapp", "languages_target_langpacks", ))
+
+    def test_languages_provided_invalid_for_webapps(self):
+        """Test that language-provided is invalid for non-langpack webapps."""
+        self.data.update({
+            "languages-provided": {
+                "de": {
+                    "name": "Deutsch",
+                    "version": "201411051234",
+                    "apps": {
+                      "app://blah.gaiamobile.org/manifest.webapp": "/de/blah",
+                      "app://email.gaiamobile.org/manifest.webapp": "/de/email"
+                    }
+                }
+            },
+        })
+        self.analyze()
+        self.assert_failed(with_errors=True)
+        self.assert_got_errid(
+            ("spec", "webapp", "languages_provided_langpacks", ))
+
     def test_invalid_role(self):
         """Test that app may not contain invalid role element."""
         self.data["role"] = "hello"
         self.analyze()
         self.assert_failed(with_errors=True)
 
-    def test_long_name(self):
-        """Test that long names are flagged for truncation in Gaia."""
+    def test_empty_name(self):
+        """Test that empty names are not allowed"""
         self.data["name"] = None
         self.analyze()
         self.assert_failed(with_errors=True)
@@ -445,8 +779,8 @@ class TestWebapps(WebappBaseTestCase):
         self.analyze()
         self.assert_failed(with_errors=True)
 
-    def test_required_features_missing(self):
-        """Test that the 'required_features' property can be absent."""
+    def test_required_screen_size_missing(self):
+        """Test that the 'screen_size' property can be absent."""
         del self.data["screen_size"]
         self.analyze()
         self.assert_silent()
