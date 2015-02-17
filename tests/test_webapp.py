@@ -179,20 +179,11 @@ class TestWebapps(WebappBaseTestCase):
         self.analyze()
         self.assert_silent()
 
-    def test_role_langpack_not_privileged(self):
-        """Test that langpacks are required to be privileged apps."""
-        self.resources.append(('packaged', True))
-        self.data["role"] = "langpack"
-        self.analyze()
-        self.assert_failed(with_errors=True)
-        self.assert_got_errid(("spec", "webapp", "role_langpack_privileged", ))
-
     def test_langpack_role_need_languages_target(self):
         """Test that a language-target is needed for langpacks."""
         self.resources.append(('packaged', True))
         self.data.update({
             "role": "langpack",
-            "type": "privileged",
             "languages-provided": {
                 "de": {
                     "name": "Deutsch",
@@ -213,7 +204,6 @@ class TestWebapps(WebappBaseTestCase):
         self.resources.append(('packaged', True))
         self.data.update({
             "role": "langpack",
-            "type": "privileged",
             "languages-provided": {
                 "de": {
                     "name": "Deutsch",
@@ -235,7 +225,6 @@ class TestWebapps(WebappBaseTestCase):
         self.resources.append(('packaged', True))
         self.data.update({
             "role": "langpack",
-            "type": "privileged",
             "languages-target": {
                 "app://*.gaiamobile.org/manifest.webapp": 2.2  # Wrong type.
             },
@@ -259,7 +248,6 @@ class TestWebapps(WebappBaseTestCase):
         self.resources.append(('packaged', True))
         self.data.update({
             "role": "langpack",
-            "type": "privileged",
             "languages-target": {
                 "app://*.gaiamobile.org/manifest.webapp": "2.3"  # Wrong value.
             },
@@ -276,14 +264,13 @@ class TestWebapps(WebappBaseTestCase):
         })
         self.analyze()
         self.assert_failed(with_errors=True)
-        self.assert_got_errid(("spec", "iterate", "value_pattern_fail", ))
+        self.assert_got_errid(("spec", "iterate", "bad_value", ))
 
     def test_langpack_invalid_languages_target(self):
         """Test that language-target manifest has the correct value."""
         self.resources.append(('packaged', True))
         self.data.update({
             "role": "langpack",
-            "type": "privileged",
             "languages-target": {
                 "app://my.manifest.webapp": "2.2"  # Manifest is incorrect.
             },
@@ -307,7 +294,6 @@ class TestWebapps(WebappBaseTestCase):
         self.resources.append(('packaged', True))
         self.data.update({
             "role": "langpack",
-            "type": "privileged",
             "languages-target": {
                 "app://*.gaiamobile.org/manifest.webapp": "2.2"
             },
@@ -321,7 +307,6 @@ class TestWebapps(WebappBaseTestCase):
         self.resources.append(('packaged', True))
         self.data.update({
             "role": "langpack",
-            "type": "privileged",
             "languages-target": {
                 "app://*.gaiamobile.org/manifest.webapp": "2.2"
             },
@@ -336,7 +321,6 @@ class TestWebapps(WebappBaseTestCase):
         self.resources.append(('packaged', True))
         self.data.update({
             "role": "langpack",
-            "type": "privileged",
             "languages-target": {
                 "app://*.gaiamobile.org/manifest.webapp": "2.2"
             },
@@ -353,7 +337,6 @@ class TestWebapps(WebappBaseTestCase):
         self.resources.append(('packaged', True))
         self.data.update({
             "role": "langpack",
-            "type": "privileged",
             "languages-target": {
                 "app://*.gaiamobile.org/manifest.webapp": "2.2"
             },
@@ -376,7 +359,6 @@ class TestWebapps(WebappBaseTestCase):
         self.resources.append(('packaged', True))
         self.data.update({
             "role": "langpack",
-            "type": "privileged",
             "languages-target": {
                 "app://*.gaiamobile.org/manifest.webapp": "2.2"
             },
@@ -396,7 +378,6 @@ class TestWebapps(WebappBaseTestCase):
         self.resources.append(('packaged', True))
         self.data.update({
             "role": "langpack",
-            "type": "privileged",
             "languages-target": {
                 "app://*.gaiamobile.org/manifest.webapp": "2.2"
             },
@@ -417,7 +398,6 @@ class TestWebapps(WebappBaseTestCase):
         self.resources.append(('packaged', True))
         self.data.update({
             "role": "langpack",
-            "type": "privileged",
             "languages-target": {
                 "app://*.gaiamobile.org/manifest.webapp": "2.2"
             },
@@ -439,7 +419,6 @@ class TestWebapps(WebappBaseTestCase):
         self.resources.append(('packaged', True))
         self.data.update({
             "role": "langpack",
-            "type": "privileged",
             "languages-target": {
                 "app://*.gaiamobile.org/manifest.webapp": "2.2"
             },
@@ -463,9 +442,30 @@ class TestWebapps(WebappBaseTestCase):
         self.resources.append(('packaged', True))
         self.data.update({
             "role": "langpack",
-            "type": "privileged",
             "languages-target": {
                 "app://*.gaiamobile.org/manifest.webapp": "2.2"
+            },
+            "languages-provided": {
+                "de": {
+                    "name": "Deutsch",
+                    "version": "201411051234",
+                    "apps": {
+                      "app://blah.gaiamobile.org/manifest.webapp": "/de/blah",
+                      "app://email.gaiamobile.org/manifest.webapp": "/de/email"
+                    }
+                }
+            },
+        })
+        self.analyze()
+        self.assert_silent()
+
+    def test_valid_langpack_30(self):
+        """Test that a valid langpack for FxOS 3.0 passes validation."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "languages-target": {
+                "app://*.gaiamobile.org/manifest.webapp": "3.0"
             },
             "languages-provided": {
                 "de": {
