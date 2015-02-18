@@ -103,17 +103,18 @@ LANGUAGES_PROVIDED_OBJ = {
     "child_nodes": {
         "*": {
             "expected_type": dict,
-            "required_nodes": ["name", "version", "apps"],
-            "allowed_once_nodes": ["name", "version", "apps"],
+            "required_nodes": ["name", "revision", "apps"],
+            "allowed_once_nodes": ["name", "revision", "apps"],
             "child_nodes": {
                 "name": {
                     "expected_type": types.StringTypes,
                     "not_empty": True
                 },
-                "version": {
-                    "expected_type": types.StringTypes,
+                "revision": {
+                    # "revision" needs to be an integer, the platform uses it
+                    # to compare different packs to use the latest one.
+                    "expected_type": int,
                     "not_empty": True,
-                    "value_matches": r"^[a-zA-Z0-9_,\*\-\.]+$"
                 },
                 "apps": {
                     "not_empty": True,

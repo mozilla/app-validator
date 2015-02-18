@@ -187,7 +187,7 @@ class TestWebapps(WebappBaseTestCase):
             "languages-provided": {
                 "de": {
                     "name": "Deutsch",
-                    "version": "201411051234",
+                    "revision": 201411051234,
                     "apps": {
                       "app://blah.gaiamobile.org/manifest.webapp": "/de/blah",
                       "app://email.gaiamobile.org/manifest.webapp": "/de/email"
@@ -207,7 +207,7 @@ class TestWebapps(WebappBaseTestCase):
             "languages-provided": {
                 "de": {
                     "name": "Deutsch",
-                    "version": "201411051234",
+                    "revision": 201411051234,
                     "apps": {
                       "app://blah.gaiamobile.org/manifest.webapp": "/de/blah",
                       "app://email.gaiamobile.org/manifest.webapp": "/de/email"
@@ -221,7 +221,7 @@ class TestWebapps(WebappBaseTestCase):
         self.assert_got_errid(("spec", "iterate", "bad_type", ))
 
     def test_langpack_invalid_languages_target_wrong_version_type(self):
-        """Test that language-target version has the correct type."""
+        """Test that language-target version number has the correct type."""
         self.resources.append(('packaged', True))
         self.data.update({
             "role": "langpack",
@@ -231,7 +231,7 @@ class TestWebapps(WebappBaseTestCase):
             "languages-provided": {
                 "de": {
                     "name": "Deutsch",
-                    "version": "201411051234",
+                    "revision": 201411051234,
                     "apps": {
                       "app://blah.gaiamobile.org/manifest.webapp": "/de/blah",
                       "app://email.gaiamobile.org/manifest.webapp": "/de/email"
@@ -244,7 +244,7 @@ class TestWebapps(WebappBaseTestCase):
         self.assert_got_errid(("spec", "iterate", "bad_type", ))
 
     def test_langpack_invalid_languages_target_wrong_version_value(self):
-        """Test that language-target version has the correct value."""
+        """Test that language-target version number has the correct value."""
         self.resources.append(('packaged', True))
         self.data.update({
             "role": "langpack",
@@ -254,7 +254,7 @@ class TestWebapps(WebappBaseTestCase):
             "languages-provided": {
                 "de": {
                     "name": "Deutsch",
-                    "version": "201411051234",
+                    "revision": 201411051234,
                     "apps": {
                       "app://blah.gaiamobile.org/manifest.webapp": "/de/blah",
                       "app://email.gaiamobile.org/manifest.webapp": "/de/email"
@@ -277,7 +277,7 @@ class TestWebapps(WebappBaseTestCase):
             "languages-provided": {
                 "de": {
                     "name": "Deutsch",
-                    "version": "201411051234",
+                    "revision": 201411051234,
                     "apps": {
                       "app://blah.gaiamobile.org/manifest.webapp": "/de/blah",
                       "app://email.gaiamobile.org/manifest.webapp": "/de/email"
@@ -332,8 +332,8 @@ class TestWebapps(WebappBaseTestCase):
         self.assert_failed(with_errors=True)
         self.assert_got_errid(("spec", "iterate", "bad_type", ))
 
-    def test_langpack_invalid_languages_provided_need_version(self):
-        """Test that language-provided version is present."""
+    def test_langpack_invalid_languages_provided_need_revision(self):
+        """Test that language-provided revision is present."""
         self.resources.append(('packaged', True))
         self.data.update({
             "role": "langpack",
@@ -365,7 +365,7 @@ class TestWebapps(WebappBaseTestCase):
             "languages-provided": {
                 "de": {
                     "name": "Deutsch",
-                    "version": "201411051234",
+                    "revision": 201411051234,
                 }
             },
         })
@@ -384,7 +384,7 @@ class TestWebapps(WebappBaseTestCase):
             "languages-provided": {
                 "de": {
                     "name": "Deutsch",
-                    "version": "201411051234",
+                    "revision": 201411051234,
                     "apps": ["app://blah.gaiamobile.org/manifest.webapp"]
                 }
             },
@@ -404,7 +404,7 @@ class TestWebapps(WebappBaseTestCase):
             "languages-provided": {
                 "de": {
                     "name": "Deutsch",
-                    "version": "201411051234",
+                    "revision": 201411051234,
                     "apps": {
                     }
                 }
@@ -414,8 +414,8 @@ class TestWebapps(WebappBaseTestCase):
         self.assert_failed(with_errors=True)
         self.assert_got_errid(("spec", "iterate", "empty", ))
 
-    def test_langpack_invalid_languages_provided_version(self):
-        """Test that language-provided version should be a string."""
+    def test_langpack_invalid_languages_provided_revision(self):
+        """Test that language-provided revision should be an int."""
         self.resources.append(('packaged', True))
         self.data.update({
             "role": "langpack",
@@ -425,7 +425,7 @@ class TestWebapps(WebappBaseTestCase):
             "languages-provided": {
                 "de": {
                     "name": "Deutsch",
-                    "version": 201411051234,  # Wrong type, should be a string.
+                    "revision": "201411051234",  # Wrong type, should be a int.
                     "apps": {
                       "app://blah.gaiamobile.org/manifest.webapp": "/de/blah",
                       "app://email.gaiamobile.org/manifest.webapp": "/de/email"
@@ -448,7 +448,7 @@ class TestWebapps(WebappBaseTestCase):
             "languages-provided": {
                 "de": {
                     "name": "Deutsch",
-                    "version": "201411051234",
+                    "revision": 201411051234,
                     "apps": {
                       "app://blah.gaiamobile.org/manifest.webapp": "/de/blah",
                       "app://email.gaiamobile.org/manifest.webapp": "/de/email"
@@ -470,7 +470,7 @@ class TestWebapps(WebappBaseTestCase):
             "languages-provided": {
                 "de": {
                     "name": "Deutsch",
-                    "version": "201411051234",
+                    "revision": 201411051234,
                     "apps": {
                       "app://blah.gaiamobile.org/manifest.webapp": "/de/blah",
                       "app://email.gaiamobile.org/manifest.webapp": "/de/email"
@@ -499,7 +499,7 @@ class TestWebapps(WebappBaseTestCase):
             "languages-provided": {
                 "de": {
                     "name": "Deutsch",
-                    "version": "201411051234",
+                    "revision": 201411051234,
                     "apps": {
                       "app://blah.gaiamobile.org/manifest.webapp": "/de/blah",
                       "app://email.gaiamobile.org/manifest.webapp": "/de/email"
