@@ -168,7 +168,6 @@ class WebappSpec(Spec):
                      "max_length": 128,
                      "not_empty": True},
             "role": {"expected_type": types.StringTypes,
-                     "process": lambda s: s.process_role,
                      "values": [u"system", u"input", u"langpack",
                                 u"homescreen"]},
             "description": {"expected_type": types.StringTypes,
@@ -318,7 +317,7 @@ class WebappSpec(Spec):
                     "app://*.gaiamobile.org/manifest.webapp": {
                         "expected_type": types.StringTypes,
                         "not_empty": True,
-                        "value_matches": r"^2\.2$"
+                        "values": ["2.2", "3.0"]
                     },
                 }
             },
@@ -411,15 +410,6 @@ class WebappSpec(Spec):
         except ValueError:
             # If there was an error parsing the URL, return False.
             return False
-
-    def process_role(self, node):
-        if node == 'langpack' and not self.data.get('type') == 'privileged':
-            self.err.error(
-                err_id=("spec", "webapp", "role_langpack_privileged"),
-                error="`langpack` role is only valid for privileged apps.",
-                description=["`langpacks` role is only valid for "
-                            "privileged applications",
-                            self.MORE_INFO])
 
     def validate_langpack_only_field(self, field):
         role = self.data.get("role", "")
