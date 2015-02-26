@@ -1,7 +1,7 @@
 import re
 import subprocess
 
-import simplejson as json
+import json
 
 from appvalidator.contextgenerator import ContextGenerator
 import appvalidator.unicodehelper as unicodehelper

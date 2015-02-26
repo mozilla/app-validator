@@ -3,7 +3,7 @@ import os
 import tempfile
 import types
 
-import simplejson as json
+import json
 from mock import patch
 from nose.tools import eq_
 

@@ -2,7 +2,7 @@ import re
 import subprocess
 from tempfile import NamedTemporaryFile
 
-import simplejson as json
+import json
 
 from appvalidator.constants import SPIDERMONKEY_INSTALLATION
 from appvalidator.contextgenerator import ContextGenerator
@@ -140,7 +140,7 @@ def get_tree_from_spidermonkey(shell, code):
     data = unicodehelper.decode(data)
     try:
         return json.loads(data, strict=False)
-    except json.decoder.JSONDecodeError:
+    except ValueError:
         # Okay, maybe it was an encoding issue.
         data = run_with_tempfile(shell, code)
         data = unicodehelper.decode(data)

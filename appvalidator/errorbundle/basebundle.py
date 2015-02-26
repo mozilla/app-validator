@@ -3,7 +3,7 @@ import types
 import uuid
 from StringIO import StringIO
 
-import simplejson as json
+import json
 
 from .outputhandlers.shellcolors import OutputHandler
 from .. import unicodehelper
