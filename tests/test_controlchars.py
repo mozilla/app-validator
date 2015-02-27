@@ -1,4 +1,3 @@
-from simplejson import JSONDecodeError
 import sys
 
 from nose.tools import eq_, nottest, raises
@@ -35,7 +34,7 @@ class TestControlChars(TestCase):
         self.assert_failed(with_warnings=True)
         eq_(self.err.warnings[0]["id"][2], "syntax_error")
 
-    @raises(JSONDecodeError)
+    @raises(ValueError)
     def test_controlchar_in_webapp(self):
         """
         Test that unescaped control characters cause parse errors in the webapp

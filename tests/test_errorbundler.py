@@ -1,7 +1,7 @@
 import sys
 from StringIO import StringIO
 
-import simplejson as json
+import json
 from mock import patch
 from nose.tools import eq_
 

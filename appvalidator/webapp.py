@@ -1,4 +1,4 @@
-import simplejson as json
+import json
 
 import unicodehelper
 from .specs.webapps import WebappSpec
