@@ -42,7 +42,7 @@ PERMISSIONS = {
         'audio-channel-alarm', 'audio-channel-notification', 'browser',
         'camera', 'contacts', 'device-storage:pictures',
         'device-storage:videos', 'device-storage:music',
-        'device-storage:sdcard', 'feature-detection',
+        'device-storage:sdcard', 'external-app', 'feature-detection',
         'input', 'mobileid', 'mobilenetwork', 'nfc', 'speaker-control',
         'systemXHR', 'tcp-socket'
     ]),
