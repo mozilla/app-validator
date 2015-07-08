@@ -196,11 +196,23 @@ def ArrayExpression(traverser, node):
 def ObjectExpression(traverser, node):
     var = JSObject(traverser=traverser)
     for prop in node["properties"]:
-        key = prop["key"]
-        var.set(key["value" if key["type"] == "Literal" else "name"],
-                traverser.traverse_node(prop["value"]),
-                traverser=traverser, ignore_setters=True)
-        # TODO: Observe "kind"
+        if prop["type"] == "PrototypeMutation":
+            var_name = "prototype"
+        else:
+            key = prop["key"]
+            if key["type"] == "Literal":
+                var_name = key["value"]
+            elif isinstance(key["name"], basestring):
+                var_name = key["name"]
+            else:
+                if "property" in key["name"]:
+                    name = key["name"]
+                else:
+                    name = {"property": key["name"]}
+                var_name = _get_member_exp_property(traverser, name)
+
+        var_value = traverser.traverse_node(prop["value"])
+        var.set(var_name, var_value, traverser)
 
     return var
 
