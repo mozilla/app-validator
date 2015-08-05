@@ -730,7 +730,7 @@ class WebappSpec(Spec):
         requested_permissions = set()
 
         for permission, per_node in node.items():
-            if permission in PRERELEASE_PERMISSIONS:
+            if permission in ALL_PERMISSIONS:
                 requested_permissions.add(permission)
 
             if permission not in self.PERMISSIONS_ACCESS:
@@ -761,8 +761,6 @@ class WebappSpec(Spec):
                                          self.PERMISSIONS_ACCESS[permission]),
                                  "Found value: %s" % access_value,
                                  self.MORE_INFO])
-
-            requested_permissions.add(permission)
 
         self.err.save_resource("permissions", list(requested_permissions))
 
