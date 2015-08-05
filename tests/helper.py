@@ -155,6 +155,12 @@ class TestCase(object):
             '"%s" not found in feature profile (%s)' % (
                 name, ', '.join(self.err.feature_profile)))
 
+    def assert_has_permission(self, name):
+        permissions = self.err.get_resource("permissions")
+        assert name in permissions, (
+            '"%s" not found in permissions (%s)' % (
+                name, ', '.join(permissions)))
+
 
 class MockZipFile:
 

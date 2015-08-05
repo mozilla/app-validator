@@ -1134,12 +1134,17 @@ class TestWebapps(WebappBaseTestCase):
         self.set_permissions()
         self.analyze()
         self.assert_silent()
+        for perm in appvalidator.constants.ALL_PERMISSIONS:
+            self.assert_has_permission(perm)
 
     def test_permissions_extra_invalid(self):
         self.set_permissions()
         self.data["permissions"]["foo"] = {"description": "lol"}
         self.analyze()
         self.assert_failed(with_errors=True)
+        assert 'foo' not in self.err.get_resource("permissions")
+        for perm in appvalidator.constants.ALL_PERMISSIONS:
+            self.assert_has_permission(perm)
 
     def test_permissions_missing_desc(self):
         self.set_permissions()
@@ -1246,7 +1251,6 @@ class TestWebapps(WebappBaseTestCase):
         ]
         self.analyze()
         self.assert_failed(with_errors=True)
-
 
     def test_redirects_missing_nodes(self):
         self.data['redirects'] = [
