@@ -42,9 +42,8 @@ PERMISSIONS = {
         'audio-channel-alarm', 'audio-channel-notification', 'browser',
         'camera', 'contacts', 'device-storage:pictures',
         'device-storage:videos', 'device-storage:music',
-        'device-storage:sdcard', 'external-app', 'feature-detection',
-        'input', 'mobileid', 'mobilenetwork', 'nfc', 'speaker-control',
-        'systemXHR', 'tcp-socket'
+        'device-storage:sdcard', 'feature-detection', 'input', 'mobileid',
+        'mobilenetwork', 'nfc', 'speaker-control', 'systemXHR', 'tcp-socket'
     ]),
     'certified': set([
         'attention', 'audio-channel-ringer', 'audio-channel-telephony',
@@ -57,7 +56,12 @@ PERMISSIONS = {
         'wifi-manage', 'wappush'
     ]),
     'prerelease': set([
+        # Through it doesn't have a moz- prefix, external-app is limited at the
+        # moment, and co-exists with moz-external-app, so both are in the
+        # prerelease set.
+        'external-app',
         'moz-attention',
+        'moz-external-app',
         'moz-firefox-accounts',
         'moz-audio-channel-telephony',
         'moz-audio-channel-ringer',
