@@ -105,6 +105,7 @@ LANGUAGES_PROVIDED_OBJ = {
             "expected_type": dict,
             "required_nodes": ["name", "revision", "apps"],
             "allowed_once_nodes": ["name", "revision", "apps"],
+            "allowed_once_nodes": ["name", "revision", "apps", "speech-data"],
             "child_nodes": {
                 "name": {
                     "expected_type": types.StringTypes,
@@ -125,6 +126,14 @@ LANGUAGES_PROVIDED_OBJ = {
                             "expected_type": types.StringTypes,
                             "not_empty": True
                         }
+                    }
+                },
+                "speech-data": {
+                    "not_empty": True,
+                    "expected_type": list,
+                    "child_nodes": {
+                        "expected_type": types.StringTypes,
+                        "not_empty": True
                     }
                 }
             }

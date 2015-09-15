@@ -556,6 +556,136 @@ class TestWebapps(WebappBaseTestCase):
         self.assert_got_errid(
             ("spec", "webapp", "languages_provided_langpacks", ))
 
+    def test_langpack_valid_speechdata(self):
+        """Test that valid speech-data passes validation."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "languages-target": {
+                "app://*.gaiamobile.org/manifest.webapp": "2.5"
+            },
+            "languages-provided": {
+                "de": {
+                    "name": "Deutsch",
+                    "revision": 201411051234,
+                    "apps": {
+                      "app://email.gaiamobile.org/manifest.webapp": "/de/email"
+                    },
+                    "speech-data": [
+                        "/de/speech-data/feat.params",
+                        "/de/speech-data/de.dic",
+                        "/de/speech-data/de.dic.dmp",
+                        "/de/speech-data/mdef",
+                        "/de/speech-data/means",
+                        "/de/speech-data/mixture_weights",
+                        "/de/speech-data/noisedict",
+                        "/de/speech-data/sendump",
+                        "/de/speech-data/transition_matrices",
+                        "/de/speech-data/variances"
+                    ]
+                }
+            },
+        })
+        self.analyze()
+        self.assert_silent()
+
+    def test_langpack_invalid_speechdata_empty(self):
+        """Test that speech-data should not be empty."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "languages-target": {
+                "app://*.gaiamobile.org/manifest.webapp": "2.5"
+            },
+            "languages-provided": {
+                "de": {
+                    "name": "Deutsch",
+                    "revision": 201411051234,
+                    "apps": {
+                      "app://email.gaiamobile.org/manifest.webapp": "/de/email"
+                    },
+                    "speech-data": []
+                }
+            },
+        })
+        self.analyze()
+        self.assert_failed(with_errors=True)
+        self.assert_got_errid(("spec", "iterate", "empty", ))
+
+    def test_langpack_invalid_speechdata_type(self):
+        """Test that speech-data should be an array."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "languages-target": {
+                "app://*.gaiamobile.org/manifest.webapp": "2.5"
+            },
+            "languages-provided": {
+                "de": {
+                    "name": "Deutsch",
+                    "revision": 201411051234,
+                    "apps": {
+                      "app://email.gaiamobile.org/manifest.webapp": "/de/email"
+                    },
+                    "speech-data": {}
+                }
+            },
+        })
+        self.analyze()
+        self.assert_failed(with_errors=True)
+        self.assert_got_errid(("spec", "iterate", "bad_type", ))
+
+    def test_langpack_invalid_speechdata_descendants_empty(self):
+        """Test that speech-data descendants should not be empty."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "languages-target": {
+                "app://*.gaiamobile.org/manifest.webapp": "2.5"
+            },
+            "languages-provided": {
+                "de": {
+                    "name": "Deutsch",
+                    "revision": 201411051234,
+                    "apps": {
+                      "app://email.gaiamobile.org/manifest.webapp": "/de/email"
+                    },
+                    "speech-data": [
+                        "",
+                        "/de/speech-data/feat.params",
+                    ]
+                }
+            },
+        })
+        self.analyze()
+        self.assert_failed(with_errors=True)
+        self.assert_got_errid(("spec", "iterate", "empty", ))
+
+    def test_langpack_invalid_speechdata_descendants_type(self):
+        """Test that speech-data descendants should be strings."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "languages-target": {
+                "app://*.gaiamobile.org/manifest.webapp": "2.5"
+            },
+            "languages-provided": {
+                "de": {
+                    "name": "Deutsch",
+                    "revision": 201411051234,
+                    "apps": {
+                      "app://email.gaiamobile.org/manifest.webapp": "/de/email"
+                    },
+                    "speech-data": [
+                        1
+                    ]
+                }
+            },
+        })
+        self.analyze()
+        self.assert_failed(with_errors=True)
+        self.assert_got_errid(("spec", "iterate", "bad_type", ))
+
     def test_invalid_role(self):
         """Test that app may not contain invalid role element."""
         self.data["role"] = "hello"
