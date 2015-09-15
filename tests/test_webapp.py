@@ -199,6 +199,50 @@ class TestWebapps(WebappBaseTestCase):
         self.assert_failed(with_errors=True)
         self.assert_got_errid(("spec", "iterate", "missing_req_cond", ))
 
+    def test_langpack_languages_target_version_value(self):
+        """Test that language-target version is in major.minor format."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "languages-target": {
+                "app://*.gaiamobile.org/manifest.webapp": "2.5"
+            },
+            "languages-provided": {
+                "de": {
+                    "name": "Deutsch",
+                    "revision": 201411051234,
+                    "apps": {
+                      "app://blah.gaiamobile.org/manifest.webapp": "/de/blah",
+                      "app://email.gaiamobile.org/manifest.webapp": "/de/email"
+                    }
+                }
+            },
+        })
+        self.analyze()
+        self.assert_silent()
+
+    def test_langpack_languages_target_version_value_suffix(self):
+        """Test that language-target version can have a dash suffix."""
+        self.resources.append(('packaged', True))
+        self.data.update({
+            "role": "langpack",
+            "languages-target": {
+                "app://*.gaiamobile.org/manifest.webapp": "2.5-xyz"
+            },
+            "languages-provided": {
+                "de": {
+                    "name": "Deutsch",
+                    "revision": 201411051234,
+                    "apps": {
+                      "app://blah.gaiamobile.org/manifest.webapp": "/de/blah",
+                      "app://email.gaiamobile.org/manifest.webapp": "/de/email"
+                    }
+                }
+            },
+        })
+        self.analyze()
+        self.assert_silent()
+
     def test_langpack_invalid_languages_target_type(self):
         """Test language-target type."""
         self.resources.append(('packaged', True))
@@ -249,7 +293,7 @@ class TestWebapps(WebappBaseTestCase):
         self.data.update({
             "role": "langpack",
             "languages-target": {
-                "app://*.gaiamobile.org/manifest.webapp": "2.3"  # Wrong value.
+                "app://*.gaiamobile.org/manifest.webapp": "2"  # Wrong value.
             },
             "languages-provided": {
                 "de": {
@@ -264,7 +308,7 @@ class TestWebapps(WebappBaseTestCase):
         })
         self.analyze()
         self.assert_failed(with_errors=True)
-        self.assert_got_errid(("spec", "iterate", "bad_value", ))
+        self.assert_got_errid(("spec", "iterate", "value_pattern_fail", ))
 
     def test_langpack_invalid_languages_target(self):
         """Test that language-target manifest has the correct value."""

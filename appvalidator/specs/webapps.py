@@ -306,8 +306,7 @@ class WebappSpec(Spec):
                     "navigation": {"expected_type": bool},
                 }
             },
-            # For now, we only support languages pack targeting gaia apps and
-            # only with 2.2 version.
+            # At present we only support langpacks targeting Gaia system apps.
             "languages-target": {
                 "expected_type": dict,
                 "process": lambda s: s.process_languages_target,
@@ -318,7 +317,7 @@ class WebappSpec(Spec):
                     "app://*.gaiamobile.org/manifest.webapp": {
                         "expected_type": types.StringTypes,
                         "not_empty": True,
-                        "values": ["2.2", "3.0"]
+                        "value_matches": r"\d+.\d+(?:-\w+)?"
                     },
                 }
             },
