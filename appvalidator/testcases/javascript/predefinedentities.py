@@ -236,7 +236,10 @@ GLOBAL_ENTITIES = {
     u"speechSynthesis": feature("SPEECH_SYN"),
     u"SpeechSynthesisUtterance": feature("SPEECH_SYN"),
     u"SpeechRecognition": feature("SPEECH_REC"),
+
+    u"UDPSocket": feature("UDPSOCKET"),
 }
+
 
 def enable_debug():
     def assert_(wrapper, arguments, traverser):
