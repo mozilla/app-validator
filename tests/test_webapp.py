@@ -692,6 +692,19 @@ class TestWebapps(WebappBaseTestCase):
         self.analyze()
         self.assert_failed(with_errors=True)
 
+    def test_no_homescreen_hosted(self):
+        "Homescreens must not be hosted apps."
+        self.data["role"] = "homescreen"
+        self.analyze()
+        self.assert_failed(with_errors=True)
+
+    def test_homescreen_packaged(self):
+        "Homescreens must be packaged apps."
+        self.data["role"] = "homescreen"
+        self.resources.append(("packaged", True))
+        self.analyze()
+        self.assert_silent()
+
     def test_empty_name(self):
         """Test that empty names are not allowed"""
         self.data["name"] = None

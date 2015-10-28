@@ -362,6 +362,10 @@ class WebappSpec(Spec):
                 lambda n: n.get("role") == "langpack"
             )
 
+        # Homescreens must be packaged.
+        if not err.get_resource("packaged"):
+            child_nodes["role"]["values"].remove("homescreen")
+
         # Allow the developer to avoid localizing their name.
         del sparse_nodes["developer"]["required_nodes"]
         sparse_nodes["developer"]["allowed_once_nodes"].append("name")
