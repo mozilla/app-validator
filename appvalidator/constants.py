@@ -44,7 +44,7 @@ PERMISSIONS = {
         'device-storage:videos', 'device-storage:music',
         'device-storage:sdcard', 'feature-detection', 'input', 'mobileid',
         'mobilenetwork', 'nfc', 'speaker-control', 'systemXHR', 'tcp-socket',
-        'udp-socket',
+        'udp-socket', 'homescreen-webapps-manage'
     ]),
     'certified': set([
         'attention', 'audio-channel-ringer', 'audio-channel-telephony',
